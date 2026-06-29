@@ -1,0 +1,24 @@
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: var(--header-height); /* Offset for fixed topbar */
+  width: 100%;
+}
+
+/* Hide the default layout footer when Home page renders its own footer */
+.main-layout:has(.home-page) .main-footer {
+  display: none;
+}
+
+.main-footer {
+  background: #060f08;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  padding: 1.5rem 2rem;
+  font-size: 0.85rem;
+}
