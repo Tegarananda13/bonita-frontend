@@ -277,8 +277,10 @@
 .status-lunas    { background: #ecfdf5; color: #059669; }
 .status-belum    { background: #f1f5f9; color: #64748b; }
 .status-pending  { background: #fffbeb; color: #d97706; }
+.status-dp       { background: #fdf4ff; color: #9333ea; }
 .status-verified { background: #ecfdf5; color: #059669; }
 .status-ditolak  { background: #fef2f2; color: #dc2626; }
+.status-siap     { background: #f0f9ff; color: #0369a1; font-weight: 700; }
 
 /* Detail button */
 .detail-btn {
@@ -823,3 +825,32 @@
   border-top: 1px solid #f1f5f9;
   padding-top: 0.6rem;
 }
+
+/* Card untuk jamaah yang sudah selesai */
+.my-jamaah-card-selesai {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+  border: 1.5px solid #a7f3d0;
+  opacity: 0.9;
+}
+
+.my-jamaah-card-selesai .my-jamaah-avatar {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+/* Spinner dark (for light background) */
+.mini-spin-dark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #64748b;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* Toast fadeInUp */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+

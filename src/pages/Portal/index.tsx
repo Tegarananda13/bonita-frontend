@@ -205,17 +205,114 @@ const BankInfoCard = () => {
 
 // ── Tab Pembayaran ────────────────────────────────────────────────────────────
 
+// ── Selamat Card ─────────────────────────────────────────────────────────────
+
+const SelamatCard = ({
+  token,
+  nomorInvoice,
+}: {
+  token: string;
+  nomorInvoice: string;
+}) => {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadInvoice = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`${API}/customer/invoice`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Gagal mengambil invoice");
+      const html = await res.text();
+      // Buka di tab baru
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) {
+        // Jika popup diblokir, download langsung
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `invoice-${nomorInvoice}.html`;
+        a.click();
+      }
+    } catch {
+      alert("Gagal mengunduh invoice. Coba lagi.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="selamat-card">
+      {/* Confetti dots */}
+      <div className="selamat-confetti" aria-hidden>
+        {["🎉","✨","🌟","🎊","⭐","🎉"].map((e, i) => (
+          <span key={i} className={`confetti-dot confetti-dot-${i+1}`}>{e}</span>
+        ))}
+      </div>
+
+      <div className="selamat-icon">🎉</div>
+      <div className="selamat-title">Selamat!</div>
+      <div className="selamat-sub">Seluruh proses administrasi telah selesai.</div>
+
+      <div className="selamat-status-list">
+        <div className="selamat-status-item">
+          <span className="selamat-check">✅</span>
+          <span>Pembayaran Lunas</span>
+        </div>
+        <div className="selamat-status-item">
+          <span className="selamat-check">✅</span>
+          <span>Dokumen Lengkap</span>
+        </div>
+        <div className="selamat-status-item">
+          <span className="selamat-check">✅</span>
+          <span>Siap Berangkat</span>
+        </div>
+      </div>
+
+      {nomorInvoice && (
+        <div className="selamat-invoice-nomor">
+          🧾 {nomorInvoice}
+        </div>
+      )}
+
+      <button
+        className="selamat-download-btn"
+        onClick={handleDownloadInvoice}
+        disabled={downloading || !nomorInvoice}
+      >
+        {downloading ? (
+          <><div className="mini-spin" />Memuat...</>
+        ) : (
+          <>⬇️ Download Invoice</>
+        )}
+      </button>
+
+      <div className="selamat-note">
+        Tim Bonita akan menghubungi Anda untuk informasi keberangkatan selanjutnya.
+      </div>
+    </div>
+  );
+};
+
+// ── Tab Pembayaran ────────────────────────────────────────────────────────────
+
 const TabPembayaran = ({
   token,
   harga,
   paymentStatus,
+  documentStatus,
 }: {
   token: string;
   harga: number;
   paymentStatus: string;
+  documentStatus: string;
 }) => {
   const [riwayat, setRiwayat] = useState<PembayaranItem[]>([]);
   const [totalDibayar, setTotalDibayar] = useState(0);
+  const [hargaPaket, setHargaPaket] = useState(0);
+  const [statusBayar, setStatusBayar] = useState("belum");
+  const [nomorInvoice, setNomorInvoice] = useState("");
   const [loading, setLoading] = useState(true);
 
   // Form state — all-in-one: nominal + bukti
@@ -237,6 +334,9 @@ const TabPembayaran = ({
       });
       setRiwayat(res.data?.riwayat ?? []);
       setTotalDibayar(res.data?.total_dibayar ?? 0);
+      if (res.data?.harga_paket) setHargaPaket(res.data.harga_paket);
+      if (res.data?.payment_status) setStatusBayar(res.data.payment_status);
+      if (res.data?.nomor_invoice) setNomorInvoice(res.data.nomor_invoice);
     } catch {
       setRiwayat([]);
     } finally {
@@ -246,11 +346,14 @@ const TabPembayaran = ({
 
   useEffect(() => { fetchPembayaran(); }, [fetchPembayaran]);
 
-  const sisaBayar = harga - totalDibayar;
-  const pct = harga > 0 ? Math.min((totalDibayar / harga) * 100, 100) : 0;
+  const hargaEfektif = hargaPaket > 0 ? hargaPaket : harga;
+  const statusEfektif = statusBayar !== "belum" ? statusBayar : paymentStatus;
+  const sisaBayar = hargaEfektif - totalDibayar;
+  const pct = hargaEfektif > 0 ? Math.min((totalDibayar / hargaEfektif) * 100, 100) : 0;
   const isLunas =
-    paymentStatus?.toLowerCase() === "lunas" ||
-    (harga > 0 && totalDibayar > 0 && totalDibayar >= harga);
+    statusEfektif?.toLowerCase() === "lunas" ||
+    (hargaEfektif > 0 && totalDibayar > 0 && totalDibayar >= hargaEfektif);
+  const isSelesai = isLunas && documentStatus?.toLowerCase() === "lengkap";
 
   const handleBuktiChange = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -320,12 +423,18 @@ const TabPembayaran = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+      {/* 🎉 Selamat Card — muncul jika lunas + dokumen lengkap */}
+      {isSelesai && (
+        <SelamatCard token={token} nomorInvoice={nomorInvoice} />
+      )}
+
       {/* Progress bar */}
       <div className="bayar-progress-wrap">
         <div className="bayar-progress-nums">
           <div>
             <div className="bayar-terbayar">{fmtRupiah(totalDibayar)}</div>
-            <div className="bayar-total-label">dari {fmtRupiah(harga)}</div>
+            <div className="bayar-total-label">dari {fmtRupiah(hargaEfektif)}</div>
           </div>
           {!isLunas && (
             <div className="bayar-sisa-label">
@@ -343,6 +452,7 @@ const TabPembayaran = ({
           </div>
         )}
       </div>
+
 
       {/* ─── Form All-in-One ─── */}
       {!isLunas && (
@@ -1020,6 +1130,7 @@ const Portal = () => {
                 token={token}
                 harga={harga}
                 paymentStatus={paymentStatus}
+                documentStatus={documentStatus}
               />
             ) : (
               <TabDokumen token={token} />

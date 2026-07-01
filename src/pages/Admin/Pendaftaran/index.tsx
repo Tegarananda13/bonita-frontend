@@ -40,18 +40,22 @@ const fmtDate = (d: string) =>
 const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  proses:    { label: "Proses",    cls: "status-proses" },
-  selesai:   { label: "Selesai",   cls: "status-selesai" },
-  batal:     { label: "Batal",     cls: "status-batal" },
-  menunggu:  { label: "Menunggu",  cls: "status-menunggu" },
-  lunas:     { label: "Lunas",     cls: "status-lunas" },
-  belum:     { label: "Belum",     cls: "status-belum" },
-  pending:   { label: "Pending",   cls: "status-pending" },
-  dp:        { label: "DP",        cls: "status-dp" },
-  terverifikasi: { label: "Terverifikasi", cls: "status-verified" },
-  ditolak:   { label: "Ditolak",  cls: "status-ditolak" },
-  lengkap:   { label: "Lengkap",  cls: "status-selesai" },
-  revisi:    { label: "Perlu Revisi", cls: "status-batal" },
+  proses:              { label: "Proses",          cls: "status-proses" },
+  selesai:             { label: "Selesai",          cls: "status-selesai" },
+  batal:               { label: "Batal",            cls: "status-batal" },
+  menunggu:            { label: "Menunggu",         cls: "status-menunggu" },
+  lunas:               { label: "Lunas",            cls: "status-lunas" },
+  belum:               { label: "Belum",            cls: "status-belum" },
+  pending:             { label: "Pending",          cls: "status-pending" },
+  dp:                  { label: "DP",               cls: "status-dp" },
+  terverifikasi:       { label: "Terverifikasi",    cls: "status-verified" },
+  diterima:            { label: "Diterima",         cls: "status-verified" },
+  ditolak:             { label: "Ditolak",          cls: "status-ditolak" },
+  lengkap:             { label: "Lengkap",          cls: "status-selesai" },
+  revisi:              { label: "Perlu Revisi",     cls: "status-batal" },
+  siap_berangkat:      { label: "Siap Berangkat",   cls: "status-siap" },
+  menunggu_pembayaran: { label: "Menunggu Bayar",   cls: "status-pending" },
+  menunggu_dokumen:    { label: "Menunggu Dokumen", cls: "status-pending" },
 };
 
 const StatusPill = ({ value }: { value: string }) => {
@@ -518,6 +522,302 @@ const AdminPendaftaran = () => {
 
 // ── Jamaah Saya View ──────────────────────────────────────────────────────────
 
+// Toast mini
+const Toast = ({ msg, type }: { msg: string; type: "success" | "error" }) => (
+  <div
+    style={{
+      position: "fixed", bottom: "1.5rem", right: "1.5rem", zIndex: 9999,
+      background: type === "success" ? "#059669" : "#dc2626",
+      color: "#fff", padding: "0.875rem 1.25rem",
+      borderRadius: "12px", fontSize: "0.875rem", fontWeight: 600,
+      boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+      display: "flex", alignItems: "center", gap: "0.5rem",
+      animation: "fadeInUp 0.3s ease",
+    }}
+  >
+    {type === "success" ? "✅" : "❌"} {msg}
+  </div>
+);
+
+// Modal Konfirmasi Selesai
+const KonfirmasiSelesaiModal = ({
+  jamaahName,
+  onBatal,
+  onYa,
+  loading,
+}: {
+  jamaahName: string;
+  onBatal: () => void;
+  onYa: () => void;
+  loading: boolean;
+}) => (
+  <div
+    className="modal-overlay"
+    onClick={(e) => e.target === e.currentTarget && onBatal()}
+  >
+    <div className="modal-panel" style={{ maxWidth: 480 }}>
+      <div className="modal-header">
+        <div>
+          <div className="modal-title">✅ Tandai Perjalanan Selesai</div>
+          <div className="modal-subtitle">{jamaahName}</div>
+        </div>
+        <button className="modal-close-btn" onClick={onBatal}>✕</button>
+      </div>
+      <div className="modal-body">
+        <div style={{
+          background: "#f0fdf4", border: "1.5px solid #86efac",
+          borderRadius: "14px", padding: "1.25rem 1.5rem",
+          marginBottom: "1rem",
+        }}>
+          <div style={{ fontSize: "2rem", textAlign: "center", marginBottom: "0.75rem" }}>🕌</div>
+          <p style={{ fontSize: "0.9rem", color: "#374151", lineHeight: 1.7, textAlign: "center" }}>
+            Apakah Anda yakin jamaah ini telah menyelesaikan perjalanan umrah?
+          </p>
+          <p style={{ fontSize: "0.78rem", color: "#6b7280", textAlign: "center", marginTop: "0.5rem" }}>
+            Status akan berubah menjadi <strong>Selesai</strong> dan tidak dapat dikembalikan.
+          </p>
+        </div>
+      </div>
+      <div className="modal-footer" style={{ display: "flex", gap: "0.75rem" }}>
+        <button
+          className="modal-close-full-btn"
+          onClick={onBatal}
+          disabled={loading}
+          style={{ flex: 1 }}
+        >
+          Batal
+        </button>
+        <button
+          onClick={onYa}
+          disabled={loading}
+          style={{
+            flex: 1, padding: "0.75rem", borderRadius: "10px",
+            background: loading ? "#6ee7b7" : "linear-gradient(135deg, #059669, #047857)",
+            color: "#fff", fontWeight: 700, fontSize: "0.875rem",
+            border: "none", cursor: loading ? "not-allowed" : "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
+          }}
+        >
+          {loading ? (
+            <><div className="mini-spin-w" />Memproses...</>
+          ) : (
+            <>✅ Ya, Tandai Selesai</>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ── PIC Detail Modal (menggantikan inline expand) ─────────────────────────────
+
+const PICDetailModal = ({
+  p,
+  token,
+  onClose,
+  onSelesai,
+}: {
+  p: PendaftaranItem;
+  token: string | null;
+  onClose: () => void;
+  onSelesai: (id: string, name: string) => void;
+}) => {
+  const [data, setData] = useState<DetailPendaftaran | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState<{ jumlah: number; status: string; tanggal: string }[]>([]);
+  const [docs, setDocs] = useState<{ jenis: string; status: string }[]>([]);
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:8080/admin/pendaftaran/${p.nomor_pendaftaran}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const dp = res.data?.pendaftaran;
+        setData({
+          id:               dp?.ID ?? dp?.id,
+          nomor_pendaftaran: dp?.NomorPendaftaran ?? dp?.nomor_pendaftaran,
+          nama_customer:    dp?.Customer?.Nama   ?? dp?.Customer?.nama,
+          no_hp:            dp?.Customer?.NoHP   ?? dp?.Customer?.NoHp ?? dp?.Customer?.no_hp ?? "-",
+          email:            dp?.Customer?.Email  ?? dp?.Customer?.email ?? "-",
+          paket:            dp?.Paket?.NamaPaket ?? dp?.Paket?.nama_paket,
+          harga:            dp?.Paket?.Harga     ?? dp?.Paket?.harga ?? 0,
+          tanggal_berangkat: dp?.Paket?.TanggalBerangkat ?? dp?.Paket?.tanggal_berangkat,
+          payment_status:   dp?.PaymentStatus   ?? dp?.payment_status,
+          document_status:  dp?.DocumentStatus  ?? dp?.document_status,
+          status:           dp?.Status          ?? dp?.status,
+          admin_pic:        dp?.User?.Nama       ?? dp?.User?.nama ?? null,
+        });
+        // Pembayaran: Go model → field PascalCase
+        const rawBayar = res.data?.pembayaran ?? [];
+        setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+          jumlah:  (b.Jumlah  ?? b.jumlah  ?? 0) as number,
+          status:  (b.Status  ?? b.status  ?? "") as string,
+          tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
+        })));
+        // Dokumen: Go model → field PascalCase
+        const rawDok = res.data?.dokumen ?? [];
+        setDocs(rawDok.map((d: Record<string, unknown>) => ({
+          jenis:  (d.Jenis  ?? d.jenis  ?? "") as string,
+          status: (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
+        })));
+      } catch {
+        /* silent */
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [p.nomor_pendaftaran, token]);
+
+  const isSiapBerangkat = p.status?.toLowerCase() === "siap_berangkat";
+  const isSelesai       = p.status?.toLowerCase() === "selesai";
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-panel" style={{ maxWidth: 560 }}>
+        {/* Header */}
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">👤 Detail Jamaah Saya</div>
+            <div className="modal-subtitle">{p.nomor_pendaftaran}</div>
+          </div>
+          <button type="button" className="modal-close-btn" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div className="modal-body">
+          {loading ? (
+            <div className="modal-loading">
+              <div className="modal-spin" />
+              Memuat detail...
+            </div>
+          ) : !data ? (
+            <div className="modal-loading" style={{ color: "#ef4444" }}>Gagal memuat data.</div>
+          ) : (
+            <>
+              {/* Status row */}
+              <div className="modal-status-row">
+                <div className="modal-status-item">
+                  <div className="modal-status-label">Status</div>
+                  {isSelesai ? (
+                    <span style={{ background: "#d1fae5", color: "#065f46", padding: "0.25rem 0.75rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700 }}>✔ Umroh Selesai</span>
+                  ) : (
+                    <StatusPill value={data.status} />
+                  )}
+                </div>
+                <div className="modal-status-item">
+                  <div className="modal-status-label">Pembayaran</div>
+                  <StatusPill value={data.payment_status} />
+                </div>
+                <div className="modal-status-item">
+                  <div className="modal-status-label">Dokumen</div>
+                  <StatusPill value={data.document_status} />
+                </div>
+              </div>
+
+              {/* Info Jamaah */}
+              <div className="modal-section-title">👤 Informasi Jamaah</div>
+              <div className="modal-info-grid">
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Nama</div>
+                  <div className="modal-info-val">{data.nama_customer}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">No. HP</div>
+                  <div className="modal-info-val">{data.no_hp}</div>
+                </div>
+                <div className="modal-info-item full">
+                  <div className="modal-info-label">Email</div>
+                  <div className="modal-info-val">{data.email}</div>
+                </div>
+              </div>
+
+              {/* Info Paket */}
+              <div className="modal-section-title">🕌 Paket</div>
+              <div className="modal-info-grid">
+                <div className="modal-info-item full">
+                  <div className="modal-info-label">Nama Paket</div>
+                  <div className="modal-info-val">{data.paket}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Harga</div>
+                  <div className="modal-info-val" style={{ color: "#4f46e5", fontWeight: 800 }}>{fmtRupiah(data.harga)}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Tgl Berangkat</div>
+                  <div className="modal-info-val">{data.tanggal_berangkat ? fmtDate(data.tanggal_berangkat) : "-"}</div>
+                </div>
+              </div>
+
+              {/* Riwayat Pembayaran */}
+              {payments.length > 0 && (
+                <>
+                  <div className="modal-section-title">💳 Riwayat Pembayaran</div>
+                  {payments.map((pay, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.75rem", background: "#f8fafc", borderRadius: "8px", marginBottom: "0.3rem", fontSize: "0.85rem" }}>
+                      <span style={{ color: "#374151" }}>
+                        {i === 0 ? "DP" : `Pembayaran ${i + 1}`}
+                        {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
+                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ fontWeight: 700, color: "#1e293b" }}>{fmtRupiah(pay.jumlah)}</span>
+                        <StatusPill value={pay.status} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Dokumen */}
+              {docs.length > 0 && (
+                <>
+                  <div className="modal-section-title" style={{ marginTop: "0.75rem" }}>📄 Dokumen</div>
+                  {docs.map((dok, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.75rem", background: "#f8fafc", borderRadius: "8px", marginBottom: "0.3rem", fontSize: "0.85rem" }}>
+                      <span style={{ color: "#374151", textTransform: "capitalize" }}>{dok.jenis || "-"}</span>
+                      <StatusPill value={dok.status} />
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Tandai Selesai */}
+              {isSiapBerangkat && (
+                <div style={{ marginTop: "1.25rem", paddingTop: "1rem", borderTop: "1px solid #f1f5f9" }}>
+                  <button
+                    type="button"
+                    onClick={() => onSelesai(p.id, p.nama_customer)}
+                    style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", background: "linear-gradient(135deg, #059669, #047857)", color: "#fff", fontWeight: 700, fontSize: "0.9rem", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", boxShadow: "0 4px 12px rgba(5,150,105,0.3)" }}
+                  >
+                    ✅ Tandai Selesai
+                  </button>
+                  <p style={{ fontSize: "0.75rem", color: "#94a3b8", textAlign: "center", marginTop: "0.5rem" }}>
+                    Klik jika jamaah telah kembali dari perjalanan umroh.
+                  </p>
+                </div>
+              )}
+
+              {isSelesai && (
+                <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#d1fae5", border: "1px solid #6ee7b7", borderRadius: "10px", fontSize: "0.85rem", color: "#065f46", fontWeight: 600, textAlign: "center" }}>
+                  ✔ Perjalanan umroh jamaah ini telah selesai
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="modal-footer">
+          <button type="button" className="modal-close-full-btn" onClick={onClose}>Tutup</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const JamaahSayaView = ({
   token,
   authH,
@@ -529,29 +829,62 @@ const JamaahSayaView = ({
 }) => {
   const [list, setList] = useState<PendaftaranItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [picTab, setPicTab] = useState<"aktif" | "selesai">("aktif");
+  const [selectedJamaah, setSelectedJamaah] = useState<PendaftaranItem | null>(null);
+  const [konfirmasiTarget, setKonfirmasiTarget] = useState<{ id: string; name: string } | null>(null);
+  const [tandaiLoading, setTandaiLoading] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
-  useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        // ambil semua, filter yang assigned ke admin ini
-        // backend mengembalikan user_id; frontend filter berdasarkan yang assigned
-        const res = await axios.get("http://localhost:8080/admin/pendaftaran/saya", {
-          headers: authH(),
-        });
-        setList(res.data?.data ?? []);
-      } catch {
-        // fallback: endpoint belum ada, tampilkan empty
-        setList([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, [authH, refreshKey]);
+  const showToast = (msg: string, type: "success" | "error") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("http://localhost:8080/admin/pendaftaran/saya", {
+        headers: authH(),
+      });
+      setList(res.data?.data ?? []);
+    } catch {
+      setList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [authH]);
+
+  useEffect(() => { fetchList(); }, [fetchList, refreshKey]);
+
+  const aktifList = list.filter((p) => p.status?.toLowerCase() !== "selesai");
+  const selesaiList = list.filter((p) => p.status?.toLowerCase() === "selesai");
+  const displayList = picTab === "aktif" ? aktifList : selesaiList;
+
+  const handleTandaiSelesai = async () => {
+    if (!konfirmasiTarget) return;
+    setTandaiLoading(true);
+    try {
+      await axios.put(
+        `http://localhost:8080/admin/pendaftaran/${konfirmasiTarget.id}/selesai`,
+        {},
+        { headers: authH() }
+      );
+      showToast("Jamaah berhasil ditandai selesai.", "success");
+      setKonfirmasiTarget(null);
+      fetchList(); // refresh
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.error ?? "Gagal menandai selesai.")
+        : "Gagal menandai selesai.";
+      showToast(msg, "error");
+    } finally {
+      setTandaiLoading(false);
+    }
+  };
 
   return (
     <div>
+      {/* Header */}
       <div className="my-jamaah-header">
         <div className="my-jamaah-info">
           <div className="my-jamaah-icon">👤</div>
@@ -565,6 +898,52 @@ const JamaahSayaView = ({
         <div className="my-jamaah-count">{list.length} jamaah</div>
       </div>
 
+      {/* Tabs Aktif / Selesai */}
+      <div style={{
+        display: "flex", gap: "0.5rem",
+        marginBottom: "1.25rem",
+        background: "#f8fafc",
+        padding: "0.35rem",
+        borderRadius: "12px",
+        border: "1px solid #e8edf5",
+        width: "fit-content",
+      }}>
+        {(["aktif", "selesai"] as const).map((tab) => {
+          const count = tab === "aktif" ? aktifList.length : selesaiList.length;
+          const isActive = picTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setPicTab(tab)}
+              style={{
+                padding: "0.5rem 1.25rem",
+                borderRadius: "9px",
+                border: "none",
+                fontWeight: isActive ? 700 : 500,
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                background: isActive ? "#fff" : "transparent",
+                color: isActive ? (tab === "selesai" ? "#059669" : "#1e293b") : "#94a3b8",
+                boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                transition: "all 0.2s",
+                display: "flex", alignItems: "center", gap: "0.4rem",
+              }}
+            >
+              {tab === "aktif" ? "🟢 Aktif" : "✅ Selesai"}
+              <span style={{
+                background: isActive ? (tab === "selesai" ? "#d1fae5" : "#eff6ff") : "#f1f5f9",
+                color: isActive ? (tab === "selesai" ? "#065f46" : "#3b82f6") : "#94a3b8",
+                padding: "0.1rem 0.5rem", borderRadius: "999px",
+                fontSize: "0.72rem", fontWeight: 700,
+              }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* List */}
       {loading ? (
         <div className="pendaftaran-table-card">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -579,51 +958,99 @@ const JamaahSayaView = ({
             </div>
           ))}
         </div>
-      ) : list.length === 0 ? (
+      ) : displayList.length === 0 ? (
         <div className="my-jamaah-empty">
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>👥</div>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+            {picTab === "selesai" ? "🎉" : "👥"}
+          </div>
           <div style={{ fontWeight: 700, color: "#1e293b", marginBottom: "0.4rem", fontSize: "1rem" }}>
-            Belum Ada Jamaah
+            {picTab === "selesai" ? "Belum Ada Jamaah Selesai" : "Belum Ada Jamaah Aktif"}
           </div>
           <p style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.6 }}>
-            Anda belum menjadi PIC untuk jamaah manapun.<br />
-            Buka tab "Semua Pendaftaran" dan klik "Detail & Assign" untuk mengambil tanggung jawab jamaah.
+            {picTab === "selesai"
+              ? "Jamaah yang sudah selesai melaksanakan umroh akan muncul di sini."
+              : "Anda belum menjadi PIC untuk jamaah manapun.\nBuka tab \"Semua Pendaftaran\" dan klik \"Detail & Assign\" untuk mengambil tanggung jawab jamaah."}
           </p>
         </div>
       ) : (
         <div className="my-jamaah-grid">
-          {list.map((p) => (
-            <div key={p.id} className="my-jamaah-card">
-              <div className="my-jamaah-card-top">
-                <div className="my-jamaah-avatar">
-                  {p.nama_customer?.charAt(0)?.toUpperCase() ?? "?"}
+          {displayList.map((p) => {
+            const isSelesai = p.status?.toLowerCase() === "selesai";
+            return (
+              <div
+                key={p.id}
+                className={`my-jamaah-card ${isSelesai ? "my-jamaah-card-selesai" : ""}`}
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedJamaah(p)}
+              >
+                <div className="my-jamaah-card-top">
+                  <div className="my-jamaah-avatar">
+                    {p.nama_customer?.charAt(0)?.toUpperCase() ?? "?"}
+                  </div>
+                  <div className="my-jamaah-card-info">
+                    <div className="my-jamaah-name">{p.nama_customer}</div>
+                    <div className="my-jamaah-nomor">{p.nomor_pendaftaran}</div>
+                  </div>
+                  {isSelesai ? (
+                    <span style={{ background: "#d1fae5", color: "#065f46", padding: "0.25rem 0.75rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                      ✔ Selesai
+                    </span>
+                  ) : (
+                    <StatusPill value={p.status} />
+                  )}
                 </div>
-                <div className="my-jamaah-card-info">
-                  <div className="my-jamaah-name">{p.nama_customer}</div>
-                  <div className="my-jamaah-nomor">{p.nomor_pendaftaran}</div>
+                <div className="my-jamaah-card-paket">{p.paket}</div>
+                <div className="my-jamaah-card-status-row">
+                  <div className="my-jamaah-status-item">
+                    <span className="my-jamaah-status-label">Bayar</span>
+                    <StatusPill value={p.payment_status} />
+                  </div>
+                  <div className="my-jamaah-status-item">
+                    <span className="my-jamaah-status-label">Dokumen</span>
+                    <StatusPill value={p.document_status} />
+                  </div>
                 </div>
-                <StatusPill value={p.status} />
+                <div className="my-jamaah-card-date">
+                  Daftar: {fmtDate(p.tanggal_daftar)}
+                </div>
+                {/* Hint tap */}
+                <div style={{ textAlign: "center", fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
+                  Klik untuk detail {p.status?.toLowerCase() === "siap_berangkat" ? "& tandai selesai" : ""}
+                </div>
               </div>
-              <div className="my-jamaah-card-paket">{p.paket}</div>
-              <div className="my-jamaah-card-status-row">
-                <div className="my-jamaah-status-item">
-                  <span className="my-jamaah-status-label">Bayar</span>
-                  <StatusPill value={p.payment_status} />
-                </div>
-                <div className="my-jamaah-status-item">
-                  <span className="my-jamaah-status-label">Dokumen</span>
-                  <StatusPill value={p.document_status} />
-                </div>
-              </div>
-              <div className="my-jamaah-card-date">
-                Daftar: {fmtDate(p.tanggal_daftar)}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      {/* Modal Detail PIC */}
+      {selectedJamaah && (
+        <PICDetailModal
+          p={selectedJamaah}
+          token={token}
+          onClose={() => setSelectedJamaah(null)}
+          onSelesai={(id, name) => {
+            setSelectedJamaah(null);
+            setKonfirmasiTarget({ id, name });
+          }}
+        />
+      )}
+
+      {/* Modal Konfirmasi */}
+      {konfirmasiTarget && (
+        <KonfirmasiSelesaiModal
+          jamaahName={konfirmasiTarget.name}
+          onBatal={() => setKonfirmasiTarget(null)}
+          onYa={handleTandaiSelesai}
+          loading={tandaiLoading}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
     </div>
   );
 };
+
 
 export default AdminPendaftaran;
