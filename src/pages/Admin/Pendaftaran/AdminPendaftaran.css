@@ -59,6 +59,28 @@
   background: #fafafe;
 }
 
+.btn-primary-sm {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  background: linear-gradient(135deg, #4f46e5, #3730a3);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(79,70,229,0.25);
+}
+
+.btn-primary-sm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(79,70,229,0.35);
+}
+
 /* ── Stats ── */
 .pendaftaran-stats-row {
   display: grid;

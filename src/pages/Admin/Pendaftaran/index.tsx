@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPendaftaran.css";
@@ -273,6 +274,7 @@ const DetailModal = ({
 
 const AdminPendaftaran = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   const [list, setList] = useState<PendaftaranItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -324,7 +326,17 @@ const AdminPendaftaran = () => {
           <p>Monitor, kelola, dan assign PIC untuk setiap pendaftaran jamaah umroh.</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn-outline-sm" onClick={fetchData}>
+          <button
+            type="button"
+            className="btn-primary-sm"
+            onClick={() => navigate("/admin/tambah-jamaah")}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Tambah Jamaah
+          </button>
+          <button type="button" className="btn-outline-sm" onClick={fetchData}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />

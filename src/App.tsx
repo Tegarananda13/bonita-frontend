@@ -18,6 +18,7 @@ import AdminPembayaran from './pages/Admin/Pembayaran';
 import AdminDokumen from './pages/Admin/Dokumen';
 import ManajemenAdmin from './pages/Admin/ManajemenAdmin';
 import ProtectedRoute from './pages/Admin/components/ProtectedRoute';
+import TambahJamaah from './pages/Admin/TambahJamaah';
 
 // ── Guard: redirect ke dashboard jika sudah login ──────────────────────
 const GuestRoute = ({ children }: { children: React.ReactNode }) => {
@@ -82,6 +83,7 @@ function App() {
           {/* Placeholder pages — bisa diisi nanti */}
           <Route path="paket" element={<AdminPaket />} />
           <Route path="pendaftaran" element={<AdminPendaftaran />} />
+          <Route path="tambah-jamaah" element={<TambahJamaah />} />
           <Route path="pembayaran" element={<AdminPembayaran />} />
           <Route path="dokumen" element={<AdminDokumen />} />
         </Route>
