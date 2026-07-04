@@ -4,7 +4,7 @@
 
 /* ---------- Hero Section ---------- */
 .paket-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #0a2e1c 0%, #0f3d28 40%, #1a5c3d 70%, #0f3d28 100%);
   padding: 5rem 2rem 4rem;
   text-align: center;
   position: relative;
@@ -16,8 +16,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 60%);
+    radial-gradient(ellipse at 20% 50%, rgba(201,168,76,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(26,107,67,0.3) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .paket-hero h1 span {
-  background: linear-gradient(135deg, #818cf8, #38bdf8);
+  background: linear-gradient(135deg, #e8c97e, #c9a84c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -110,8 +110,8 @@
 }
 
 .paket-search:focus-within {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  border-color: #1a6b43;
+  box-shadow: 0 0 0 3px rgba(26, 107, 67, 0.12);
   background: #fff;
 }
 
@@ -156,9 +156,9 @@
 }
 
 .filter-btn.active {
-  background: #eef2ff;
-  color: #4f46e5;
-  border-color: #c7d2fe;
+  background: #f0fdf4;
+  color: #1a6b43;
+  border-color: #a7f3d0;
   font-weight: 600;
 }
 
@@ -177,7 +177,7 @@
 }
 
 .sort-select:focus {
-  border-color: #6366f1;
+  border-color: #1a6b43;
 }
 
 .paket-controls-right {
@@ -388,7 +388,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.6rem 1.25rem;
-  background: #0f172a;
+  background: linear-gradient(135deg, #1a6b43, #0f5132);
   color: #ffffff;
   border-radius: 10px;
   font-size: 0.85rem;
@@ -397,11 +397,13 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(15,81,50,0.25);
 }
 
 .paket-cta-btn:hover {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #c9a84c, #a07c2e);
   transform: scale(1.04);
+  box-shadow: 0 5px 16px rgba(201,168,76,0.35);
 }
 
 /* ---------- Kuota Bar ---------- */
@@ -584,34 +586,35 @@
 }
 
 .modal-price-section {
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #0a2e1c 0%, #1a5c3d 100%);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border: 1px solid rgba(201,168,76,0.25);
 }
 
 .modal-price-label {
   font-size: 0.8rem;
-  color: rgba(255,255,255,0.75);
+  color: rgba(232,201,126,0.8);
   font-weight: 500;
 }
 
 .modal-price-value {
   font-size: 1.75rem;
   font-weight: 900;
-  color: #ffffff;
+  color: #e8c97e;
   letter-spacing: -0.03em;
 }
 
 .modal-register-btn {
   padding: 0.75rem 1.5rem;
-  background: rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, #c9a84c, #a07c2e);
   color: #fff;
   border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,0.35);
+  border: none;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
@@ -619,10 +622,12 @@
   transition: all 0.2s;
   text-decoration: none;
   white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(201,168,76,0.3);
 }
 
 .modal-register-btn:hover {
-  background: rgba(255,255,255,0.3);
+  background: linear-gradient(135deg, #e8c97e, #c9a84c);
+  box-shadow: 0 5px 16px rgba(201,168,76,0.45);
 }
 
 .modal-stats {
@@ -686,8 +691,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: rgba(201,168,76,0.15);
+  color: #a07c2e;
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.15rem 0.5rem;
@@ -735,14 +740,14 @@
 }
 
 .fasilitas-item:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: #f0fdf4;
+  border-color: #a7f3d0;
 }
 
 .fasilitas-check {
   width: 20px;
   height: 20px;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #0f5132);
   border-radius: 6px;
   display: flex;
   align-items: center;

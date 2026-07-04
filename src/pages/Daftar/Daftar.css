@@ -51,8 +51,8 @@
   color: #94a3b8;
 }
 
-.daftar-step.active { color: #4f46e5; }
-.daftar-step.done   { color: #059669; }
+.daftar-step.active { color: #1a6b43; }
+.daftar-step.done   { color: #0f5132; }
 
 .step-num {
   width: 24px;
@@ -69,8 +69,8 @@
   transition: all 0.2s;
 }
 
-.daftar-step.active .step-num { background: #6366f1; color: #fff; }
-.daftar-step.done .step-num   { background: #059669; color: #fff; }
+.daftar-step.active .step-num { background: #1a6b43; color: #fff; }
+.daftar-step.done .step-num   { background: #0f5132; color: #fff; }
 
 .step-divider {
   flex: 1;
@@ -80,8 +80,8 @@
   border-radius: 2px;
 }
 
-.step-divider.done { background: #059669; }
-.step-divider.active { background: #6366f1; }
+.step-divider.done { background: #0f5132; }
+.step-divider.active { background: #1a6b43; }
 
 /* ── Card ── */
 .daftar-card {
@@ -147,9 +147,9 @@
 }
 
 .paket-selector-card.selected {
-  border-color: #6366f1;
-  background: #fafafe;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  border-color: #1a6b43;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 3px rgba(26,107,67,0.12);
 }
 
 .paket-selector-radio {
@@ -168,8 +168,8 @@
 }
 
 .paket-selector-card.selected .paket-selector-radio {
-  border-color: #6366f1;
-  background: #6366f1;
+  border-color: #1a6b43;
+  background: #1a6b43;
 }
 
 .paket-selector-check {
@@ -223,7 +223,7 @@
 .paket-selector-harga {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: #1a6b43;
   margin-top: 0.3rem;
 }
 
@@ -278,8 +278,8 @@
 
 .daftar-input:focus,
 .daftar-textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  border-color: #1a6b43;
+  box-shadow: 0 0 0 3px rgba(26,107,67,0.1);
   background: #fff;
 }
 
@@ -340,7 +340,7 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #0f5132);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -349,13 +349,14 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(79,70,229,0.3);
+  box-shadow: 0 3px 10px rgba(15,81,50,0.3);
 }
 
 .btn-next:hover:not(:disabled),
 .btn-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(79,70,229,0.4);
+  box-shadow: 0 6px 18px rgba(201,168,76,0.4);
+  background: linear-gradient(135deg, #c9a84c, #a07c2e);
 }
 
 .btn-next:disabled,
@@ -384,8 +385,8 @@
   display: flex;
   gap: 1rem;
   align-items: flex-start;
-  background: #fafbff;
-  border: 1.5px solid #c7d2fe;
+  background: #f0fdf4;
+  border: 1.5px solid #a7f3d0;
   border-radius: 14px;
   padding: 1rem;
 }
@@ -499,8 +500,8 @@
 }
 
 .nomor-pendaftaran-box {
-  background: #eef2ff;
-  border: 2px dashed #c7d2fe;
+  background: #f0fdf4;
+  border: 2px dashed #a7f3d0;
   border-radius: 14px;
   padding: 1.25rem;
   margin-bottom: 1.75rem;
@@ -509,7 +510,7 @@
 .nomor-pendaftaran-label {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #6366f1;
+  color: #1a6b43;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 0.5rem;
@@ -518,7 +519,7 @@
 .nomor-pendaftaran-value {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #3730a3;
+  color: #0f5132;
   letter-spacing: 0.04em;
   font-family: "JetBrains Mono", "Fira Code", monospace;
 }
@@ -541,7 +542,7 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #0f5132);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -549,7 +550,7 @@
   font-weight: 700;
   font-family: var(--font-family);
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(79,70,229,0.3);
+  box-shadow: 0 3px 10px rgba(15,81,50,0.3);
   text-decoration: none;
   transition: all 0.2s;
 }

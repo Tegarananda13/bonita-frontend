@@ -3,8 +3,8 @@
    ============================================= */
 
 :root {
-  --portal-purple: #4f46e5;
-  --portal-purple-light: #6366f1;
+  --portal-purple: #1a6b43;
+  --portal-purple-light: #2d9e6b;
   --portal-green: #059669;
   --portal-orange: #d97706;
   --portal-red: #dc2626;
@@ -12,7 +12,7 @@
 
 .portal-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #f0fdf4 100%);
+  background: linear-gradient(135deg, #f0fdf4 0%, #faf7f2 50%, #f0fdf4 100%);
   padding: 2rem 1rem;
   font-family: var(--font-family);
 }
@@ -31,14 +31,14 @@
 .portal-hero-icon {
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, #1a6b43, #0f5132);
   border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
   margin: 0 auto 1.25rem;
-  box-shadow: 0 8px 24px rgba(79,70,229,0.3);
+  box-shadow: 0 8px 24px rgba(15,81,50,0.3);
 }
 
 .portal-hero h1 {
@@ -111,8 +111,8 @@
 }
 
 .portal-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  border-color: #2d9e6b;
+  box-shadow: 0 0 0 3px rgba(26,107,67,0.1);
   background: #fff;
 }
 
@@ -142,7 +142,7 @@
 .otp-resend button {
   background: none;
   border: none;
-  color: #4f46e5;
+  color: #1a6b43;
   font-weight: 600;
   cursor: pointer;
   font-size: 0.8rem;
@@ -184,7 +184,7 @@
 .portal-btn-primary {
   width: 100%;
   padding: 0.875rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -193,7 +193,7 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+  box-shadow: 0 4px 12px rgba(15,81,50,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,7 +202,7 @@
 
 .portal-btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(79,70,229,0.4);
+  box-shadow: 0 8px 20px rgba(201,168,76,0.4);
 }
 
 .portal-btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
@@ -226,7 +226,7 @@
   margin-top: 0.75rem;
 }
 
-.portal-btn-outline:hover { border-color: #6366f1; color: #4f46e5; background: #fafafe; }
+.portal-btn-outline:hover { border-color: #2d9e6b; color: #1a6b43; background: #f0fdf4; }
 
 /* Mini spinner */
 .mini-spin {
@@ -243,7 +243,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid rgba(79,70,229,0.2);
-  border-top-color: #6366f1;
+  border-top-color: #2d9e6b;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -253,7 +253,7 @@
 /* ── Dashboard Header ── */
 .portal-dash-header {
   padding: 1.75rem 2rem 1.25rem;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #1a6b43 0%, #0f5132 100%);
   color: #fff;
 }
 
@@ -333,8 +333,8 @@
   transition: all 0.2s;
 }
 
-.portal-tab:hover { color: #4f46e5; background: #f5f6ff; }
-.portal-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; background: #fff; }
+.portal-tab:hover { color: #1a6b43; background: #f0fdf4; }
+.portal-tab.active { color: #1a6b43; border-bottom-color: #1a6b43; background: #fff; }
 
 .tab-badge {
   display: inline-flex;
@@ -389,7 +389,7 @@
   border-radius: 999px;
 }
 
-.sval-proses   { background: #eef2ff; color: #4f46e5; }
+.sval-proses   { background: #f0fdf4; color: #1a6b43; }
 .sval-selesai  { background: #ecfdf5; color: #059669; }
 .sval-belum    { background: #f1f5f9; color: #64748b; }
 .sval-pending  { background: #fffbeb; color: #d97706; }
@@ -518,8 +518,8 @@
 }
 
 .bayar-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  border-color: #2d9e6b;
+  box-shadow: 0 0 0 3px rgba(26,107,67,0.1);
 }
 
 .bayar-hint {
@@ -537,7 +537,7 @@
 .bayar-submit-btn {
   flex: 1;
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -550,12 +550,12 @@
   justify-content: center;
   gap: 0.45rem;
   transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(79,70,229,0.3);
+  box-shadow: 0 3px 10px rgba(15,81,50,0.3);
 }
 
 .bayar-submit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(79,70,229,0.4);
+  box-shadow: 0 6px 18px rgba(201,168,76,0.4);
 }
 
 .bayar-submit-btn:disabled { opacity: 0.65; cursor: not-allowed; }
@@ -578,7 +578,7 @@
   transition: border-color 0.15s;
 }
 
-.riwayat-item:hover { border-color: #c7d2fe; }
+.riwayat-item:hover { border-color: #a7f3d0; }
 
 .riwayat-left { flex: 1; min-width: 0; }
 
@@ -617,8 +617,8 @@
   align-items: center;
   gap: 0.3rem;
   padding: 0.35rem 0.75rem;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #f0fdf4;
+  color: #1a6b43;
   border: none;
   border-radius: 7px;
   font-size: 0.72rem;
@@ -692,7 +692,7 @@
 }
 
 .upload-drop-area:hover,
-.upload-drop-area.dragging { border-color: #6366f1; background: #fafafe; }
+.upload-drop-area.dragging { border-color: #2d9e6b; background: #f0fdf4; }
 
 .upload-drop-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
@@ -731,7 +731,7 @@
 .modal-upload-btn {
   flex: 2;
   padding: 0.7rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -822,8 +822,8 @@
   transition: all 0.15s;
 }
 
-.dok-type-btn:hover { border-color: #c7d2fe; color: #4f46e5; }
-.dok-type-btn.selected { border-color: #6366f1; background: #eef2ff; color: #4f46e5; }
+.dok-type-btn:hover { border-color: #a7f3d0; color: #1a6b43; }
+.dok-type-btn.selected { border-color: #2d9e6b; background: #f0fdf4; color: #1a6b43; }
 
 .dokumen-drop-area {
   border: 2px dashed #e2e8f0;
@@ -837,14 +837,14 @@
   margin-bottom: 0.875rem;
 }
 
-.dokumen-drop-area:hover { border-color: #6366f1; background: #fafafe; }
+.dokumen-drop-area:hover { border-color: #2d9e6b; background: #f0fdf4; }
 .dokumen-drop-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .dokumen-drop-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
 .dokumen-drop-text { font-size: 0.8rem; color: #64748b; }
 
 .dokumen-file-selected {
   font-size: 0.8rem;
-  color: #4f46e5;
+  color: #1a6b43;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -892,7 +892,7 @@
   transition: border-color 0.15s;
 }
 
-.dokumen-item:hover { border-color: #c7d2fe; }
+.dokumen-item:hover { border-color: #a7f3d0; }
 
 .dokumen-item-left {
   display: flex;
@@ -1022,8 +1022,8 @@
 }
 
 .bayar-bukti-drop:hover {
-  border-color: #6366f1;
-  background: #fafafe;
+  border-color: #2d9e6b;
+  background: #f0fdf4;
 }
 
 .bayar-bukti-icon { font-size: 1.75rem; }
@@ -1043,7 +1043,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #4f46e5;
+  color: #1a6b43;
   font-weight: 600;
 }
 

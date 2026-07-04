@@ -83,12 +83,18 @@ const FasilitasPanel = ({
         },
         auth
       );
-      const paketRes = await axios.get(
-        `http://localhost:8080/admin/paket/${paket.ID}`,
-        auth
-      );
-
-setList(paketRes.data.data.Fasilitas ?? []);
+      // Gunakan fasilitas yang dikembalikan langsung dari POST response
+      const newFasilitas = res.data?.data;
+      if (newFasilitas) {
+        setList((prev) => [...prev, newFasilitas]);
+      } else {
+        // Fallback: fetch ulang dari server
+        const paketRes = await axios.get(
+          `http://localhost:8080/admin/paket/${paket.ID}`,
+          auth
+        );
+        setList(paketRes.data?.paket?.Fasilitas ?? []);
+      }
       setNama("");
       setDeskripsi("");
     } catch (err: unknown) {
@@ -234,6 +240,21 @@ const PaketDrawer = ({
   const [fotoPreview, setFotoPreview] = useState<string>(editData?.FotoPaket ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // ── Fasilitas lokal (hanya saat Create) ──
+  const [fasilitasInput, setFasilitasInput] = useState<{ nama: string; deskripsi: string }[]>([]);
+  const [fasNama, setFasNama] = useState("");
+  const [fasDeskripsi, setFasDeskripsi] = useState("");
+  const [fasError, setFasError] = useState("");
+
+  const handleAddFasilitas = () => {
+    if (!fasNama.trim()) { setFasError("Nama fasilitas wajib diisi."); return; }
+    setFasilitasInput((prev) => [...prev, { nama: fasNama.trim(), deskripsi: fasDeskripsi.trim() }]);
+    setFasNama(""); setFasDeskripsi(""); setFasError("");
+  };
+  const handleRemoveFasilitas = (i: number) => {
+    setFasilitasInput((prev) => prev.filter((_, idx) => idx !== i));
+  };
   const handleField = (k: keyof PaketFormData) => (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => setForm((p) => ({ ...p, [k]: e.target.value }));
@@ -265,12 +286,25 @@ const PaketDrawer = ({
       Authorization: `Bearer ${token}`,
       "Content-Type": "multipart/form-data",
     };
+    const authJSON = { Authorization: `Bearer ${token}` };
     try {
       setSubmitting(true);
       if (isEdit) {
         await axios.put(`http://localhost:8080/admin/paket/${editData!.ID}`, fd, { headers });
       } else {
-        await axios.post("http://localhost:8080/admin/paket", fd, { headers });
+        // Buat paket dulu
+        const createRes = await axios.post("http://localhost:8080/admin/paket", fd, { headers });
+        const newPaketId = createRes.data?.data?.id ?? createRes.data?.paket?.ID ?? createRes.data?.id;
+        // Kirim semua fasilitas yang sudah ditambahkan ke form
+        if (newPaketId && fasilitasInput.length > 0) {
+          for (const fas of fasilitasInput) {
+            await axios.post(
+              `http://localhost:8080/admin/paket/${newPaketId}/fasilitas`,
+              { nama_fasilitas: fas.nama, deskripsi: fas.deskripsi },
+              { headers: authJSON }
+            );
+          }
+        }
       }
       onSaved();
       onClose();
@@ -428,6 +462,79 @@ const PaketDrawer = ({
                 rows={4}
               />
             </div>
+
+            {/* Fasilitas (hanya saat Create) */}
+            {!isEdit && (
+              <div className="form-field">
+                <label className="form-label">
+                  Fasilitas Paket
+                  <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: "0.75rem", marginLeft: "0.4rem" }}>
+                    (opsional, bisa ditambah setelah paket dibuat)
+                  </span>
+                </label>
+
+                {/* Input tambah fasilitas */}
+                <div className="fasilitas-inline-add">
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Nama fasilitas (cth. Makan 3x Sehari)"
+                    value={fasNama}
+                    onChange={(e) => setFasNama(e.target.value)}
+                    disabled={submitting}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddFasilitas(); } }}
+                  />
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Keterangan singkat (opsional)"
+                    value={fasDeskripsi}
+                    onChange={(e) => setFasDeskripsi(e.target.value)}
+                    disabled={submitting}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddFasilitas(); } }}
+                  />
+                  {fasError && (
+                    <div style={{ fontSize: "0.78rem", color: "#dc2626" }}>{fasError}</div>
+                  )}
+                  <button
+                    type="button"
+                    className="fasilitas-inline-btn"
+                    onClick={handleAddFasilitas}
+                    disabled={submitting}
+                  >
+                    + Tambah Fasilitas
+                  </button>
+                </div>
+
+                {/* Daftar fasilitas yang sudah ditambahkan */}
+                {fasilitasInput.length > 0 && (
+                  <div className="fasilitas-inline-list">
+                    {fasilitasInput.map((f, i) => (
+                      <div key={i} className="fasilitas-inline-item">
+                        <div className="fasilitas-check-icon">✓</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "#1e293b" }}>{f.nama}</div>
+                          {f.deskripsi && (
+                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{f.deskripsi}</div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="fasilitas-delete-btn"
+                          onClick={() => handleRemoveFasilitas(i)}
+                          disabled={submitting}
+                          title="Hapus"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M18 6 6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="drawer-footer">
             <button type="button" className="btn-cancel" onClick={onClose} disabled={submitting}>

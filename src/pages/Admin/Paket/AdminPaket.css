@@ -899,3 +899,62 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Fasilitas Inline (di form drawer) ── */
+.fasilitas-inline-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.fasilitas-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  color: #1a6b43;
+  border: 1.5px dashed #a7f3d0;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+}
+
+.fasilitas-inline-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #6ee7b7;
+  color: #0f5132;
+}
+
+.fasilitas-inline-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fasilitas-inline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.fasilitas-inline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.875rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+
+.fasilitas-inline-item:hover {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}

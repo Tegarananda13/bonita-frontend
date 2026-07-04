@@ -18,6 +18,7 @@ interface PaketItem {
   tanggal_berangkat: string;
   durasi: number;
   sisa_kuota: number;
+  kuota_max: number;
 }
 
 interface PaketDetail extends PaketItem {
@@ -41,10 +42,13 @@ const formatDate = (d?: string) => {
   });
 };
 
-function getKuotaInfo(sisa: number) {
+function getKuotaInfo(sisa: number, max: number = 0) {
   if (sisa <= 0) return { label: "Penuh", colorClass: "kuota-full", fillClass: "fill-red", pct: 100 };
-  if (sisa <= 5) return { label: `Sisa ${sisa}`, colorClass: "kuota-limited", fillClass: "fill-yellow", pct: 75 };
-  return { label: `Sisa ${sisa}`, colorClass: "kuota-available", fillClass: "fill-green", pct: Math.max(20, 100 - sisa * 5) };
+  if (sisa <= 5) return { label: `Sisa ${sisa}`, colorClass: "kuota-limited", fillClass: "fill-yellow", pct: max > 0 ? Math.round(((max - sisa) / max) * 100) : 85 };
+  // Kuota masih banyak — bar hampir kosong (tampilkan % terpakai)
+  const terpakai = max > 0 ? max - sisa : 0;
+  const pct = max > 0 ? Math.max(2, Math.round((terpakai / max) * 100)) : 5;
+  return { label: `Sisa ${sisa}`, colorClass: "kuota-available", fillClass: "fill-green", pct };
 }
 
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=800&q=80";
@@ -403,7 +407,7 @@ const Paket = () => {
         ) : (
           <div className="paket-grid">
             {filtered.map((item) => {
-              const kuota = getKuotaInfo(item.sisa_kuota);
+              const kuota = getKuotaInfo(item.sisa_kuota, item.kuota_max);
               return (
                 <div
                   className="paket-card"
