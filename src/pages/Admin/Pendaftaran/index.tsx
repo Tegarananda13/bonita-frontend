@@ -82,6 +82,8 @@ const DetailModal = ({
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
   const [assignSuccess, setAssignSuccess] = useState(false);
+  const [payments, setPayments] = useState<{ id: string; jumlah: number; status: string; tanggal: string; bukti: string }[]>([]);
+  const [docs, setDocs] = useState<{ id: string; jenis: string; status: string; file_path: string }[]>([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -104,6 +106,23 @@ const DetailModal = ({
           status: p?.Status ?? p?.status,
           admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
         });
+        // Pembayaran
+        const rawBayar = res.data?.pembayaran ?? [];
+        setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+          id:      String(b.ID      ?? b.id      ?? ""),
+          jumlah:  (b.Jumlah  ?? b.jumlah  ?? 0) as number,
+          status:  (b.Status  ?? b.status  ?? "") as string,
+          tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
+          bukti:   String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
+        })));
+        // Dokumen
+        const rawDok = res.data?.dokumen ?? [];
+        setDocs(rawDok.map((d: Record<string, unknown>) => ({
+          id:        String(d.ID ?? d.id ?? ""),
+          jenis:     String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
+          status:    (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
+          file_path: String(d.FilePath ?? d.file_path ?? ""),
+        })));
       } catch {
         setData(null);
       } finally {
@@ -212,6 +231,64 @@ const DetailModal = ({
                   <div className="modal-info-val">{data.tanggal_berangkat ? fmtDate(data.tanggal_berangkat) : "-"}</div>
                 </div>
               </div>
+
+              {/* Riwayat Pembayaran */}
+              {payments.length > 0 && (
+                <>
+                  <div className="modal-section-title">💳 Riwayat Pembayaran</div>
+                  {payments.map((pay, i) => (
+                    <div key={pay.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
+                        <span style={{ color: "#374151", fontWeight: 600 }}>
+                          {i === 0 ? "DP" : `Pembayaran ${i + 1}`}
+                          {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontWeight: 700, color: "#1e293b" }}>{fmtRupiah(pay.jumlah)}</span>
+                          <StatusPill value={pay.status} />
+                        </div>
+                      </div>
+                      {pay.bukti && (
+                        <div style={{ borderTop: "1px solid #e2e8f0", padding: "0.5rem 0.875rem", display: "flex", alignItems: "center", gap: "0.5rem", background: "#fff" }}>
+                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Bukti:</span>
+                          <a href={pay.bukti} target="_blank" rel="noreferrer"
+                            style={{ fontSize: "0.78rem", color: "#1a6b43", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem" }}
+                          >
+                            🖼️ Lihat Foto Bukti Pembayaran
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Dokumen */}
+              {docs.length > 0 && (
+                <>
+                  <div className="modal-section-title" style={{ marginTop: "0.5rem" }}>📄 Dokumen</div>
+                  {docs.map((dok, i) => (
+                    <div key={dok.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
+                        <span style={{ color: "#374151", textTransform: "capitalize", fontWeight: 600 }}>{dok.jenis || "-"}</span>
+                        <StatusPill value={dok.status} />
+                      </div>
+                      {dok.file_path && (
+                        <div style={{ borderTop: "1px solid #e2e8f0", padding: "0.5rem 0.875rem", display: "flex", alignItems: "center", gap: "0.5rem", background: "#fff" }}>
+                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>File:</span>
+                          <a href={dok.file_path} target="_blank" rel="noreferrer"
+                            style={{ fontSize: "0.78rem", color: "#1a6b43", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem" }}
+                          >
+                            📎 Lihat File Dokumen
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
 
               {/* Assign PIC */}
               <div className="modal-assign-section">
@@ -369,15 +446,16 @@ const AdminPendaftaran = () => {
           {!loading && (
             <div className="pendaftaran-stats-row">
               {[
-                { icon: "📋", label: "Total",    value: list.length,             cls: "" },
-                { icon: "⏳", label: "Proses",   value: countByStatus("proses"), cls: "s-proses" },
-                { icon: "✅", label: "Selesai",  value: countByStatus("selesai"), cls: "s-selesai" },
-                { icon: "❌", label: "Batal",    value: countByStatus("batal"),  cls: "s-batal" },
+                { icon: "📋", label: "Total",          value: list.length,                        cls: "",        filter: "semua"            },
+                { icon: "⏳", label: "Proses",         value: countByStatus("proses"),             cls: "s-proses", filter: "proses"           },
+                { icon: "✈️", label: "Siap Berangkat", value: countByStatus("siap_berangkat"),    cls: "s-siap",  filter: "siap_berangkat"   },
+                { icon: "✅", label: "Selesai",        value: countByStatus("selesai"),            cls: "s-selesai", filter: "selesai"         },
+                { icon: "❌", label: "Batal",          value: countByStatus("batal"),              cls: "s-batal", filter: "batal"            },
               ].map((s) => (
                 <div
                   className={`pendaftaran-stat-card ${s.cls}`}
                   key={s.label}
-                  onClick={() => setFilterStatus(s.label === "Total" ? "semua" : s.label.toLowerCase())}
+                  onClick={() => setFilterStatus(s.filter)}
                   style={{ cursor: "pointer" }}
                 >
                   <div className="pendaftaran-stat-icon">{s.icon}</div>
@@ -410,7 +488,10 @@ const AdminPendaftaran = () => {
             >
               <option value="semua">Semua Status</option>
               <option value="proses">Proses</option>
+              <option value="siap_berangkat">Siap Berangkat</option>
               <option value="selesai">Selesai</option>
+              <option value="menunggu_pembayaran">Menunggu Bayar</option>
+              <option value="menunggu_dokumen">Menunggu Dokumen</option>
               <option value="batal">Batal</option>
             </select>
             {!loading && (

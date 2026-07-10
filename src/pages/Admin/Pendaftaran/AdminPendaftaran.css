@@ -108,6 +108,7 @@
 .pendaftaran-stat-card.s-proses  { border-color: #c7d2fe; }
 .pendaftaran-stat-card.s-selesai { border-color: #a7f3d0; }
 .pendaftaran-stat-card.s-batal   { border-color: #fca5a5; }
+.pendaftaran-stat-card.s-siap    { border-color: #7dd3fc; }
 
 .pendaftaran-stat-icon { font-size: 1.4rem; flex-shrink: 0; }
 
