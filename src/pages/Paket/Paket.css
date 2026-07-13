@@ -814,3 +814,26 @@
     text-align: center;
   }
 }
+
+/* ── Jenis Paket Badge (Customer) ── */
+.paket-jenis-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+  background: rgba(26,107,67,0.12);
+  color: #0f5132;
+  border: 1px solid rgba(26,107,67,0.25);
+}
+
+.paket-jenis-badge.paket-jenis-reguler       { background: rgba(26,107,67,0.1);   color: #1a6b43; border-color: rgba(26,107,67,0.25); }
+.paket-jenis-badge.paket-jenis-exclusive     { background: rgba(201,168,76,0.12); color: #a07c2e; border-color: rgba(201,168,76,0.3); }
+.paket-jenis-badge.paket-jenis-plus-turki    { background: rgba(29,78,216,0.08);  color: #1d4ed8; border-color: rgba(29,78,216,0.2); }
+.paket-jenis-badge.paket-jenis-plus-dubai    { background: rgba(194,65,12,0.08);  color: #c2410c; border-color: rgba(194,65,12,0.2); }
+.paket-jenis-badge.paket-jenis-ramadhan      { background: rgba(124,58,237,0.08); color: #7c3aed; border-color: rgba(124,58,237,0.2); }
+.paket-jenis-badge.paket-jenis-syawal        { background: rgba(4,120,87,0.1);    color: #047857; border-color: rgba(4,120,87,0.25); }

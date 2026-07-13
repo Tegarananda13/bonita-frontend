@@ -13,6 +13,7 @@ interface FasilitasItem {
 interface PaketItem {
   id: string;
   nama_paket: string;
+  jenis_paket: string;
   foto_paket: string;
   harga: number;
   tanggal_berangkat: string;
@@ -427,6 +428,11 @@ const Paket = () => {
                   </div>
 
                   <div className="paket-card-body">
+                    {item.jenis_paket && (
+                      <span className={`paket-jenis-badge paket-jenis-${item.jenis_paket.toLowerCase().replace(/\s+/g, "-")}`}>
+                        {item.jenis_paket}
+                      </span>
+                    )}
                     <h2 className="paket-card-title">{item.nama_paket}</h2>
 
                     <div className="paket-card-meta">

@@ -958,3 +958,24 @@
   border-color: #a7f3d0;
   background: #f0fdf4;
 }
+
+/* ── Jenis Paket Badge ── */
+.jenis-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: #f0fdf4;
+  color: #1a6b43;
+  border: 1px solid #a7f3d0;
+}
+
+.jenis-badge.jenis-reguler       { background: #f0fdf4; color: #1a6b43; border-color: #a7f3d0; }
+.jenis-badge.jenis-exclusive     { background: #fefce8; color: #a07c2e; border-color: #fde68a; }
+.jenis-badge.jenis-plus-turki    { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.jenis-badge.jenis-plus-dubai    { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.jenis-badge.jenis-ramadhan      { background: #faf5ff; color: #7c3aed; border-color: #ddd6fe; }
+.jenis-badge.jenis-syawal        { background: #ecfdf5; color: #047857; border-color: #6ee7b7; }

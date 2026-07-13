@@ -12,6 +12,7 @@ interface Fasilitas {
 interface PaketAdmin {
   ID: string;
   NamaPaket: string;
+  JenisPaket: string;
   FotoPaket: string;
   Harga: number;
   TanggalBerangkat: string;
@@ -24,6 +25,7 @@ interface PaketAdmin {
 }
 interface PaketFormData {
   nama_paket: string;
+  jenis_paket: string;
   harga: string;
   durasi: string;
   tanggal_berangkat: string;
@@ -31,8 +33,17 @@ interface PaketFormData {
   kuota_max: string;
   batas_pendaftaran: string;
 }
+const JENIS_PAKET_OPTIONS = [
+  "Reguler",
+  "Exclusive",
+  "Plus Turki",
+  "Plus Dubai",
+  "Ramadhan",
+  "Syawal",
+];
 const EMPTY_FORM: PaketFormData = {
   nama_paket: "",
+  jenis_paket: "",
   harga: "",
   durasi: "",
   tanggal_berangkat: "",
@@ -227,6 +238,7 @@ const PaketDrawer = ({
     editData
       ? {
           nama_paket: editData.NamaPaket,
+          jenis_paket: editData.JenisPaket ?? "",
           harga: String(editData.Harga),
           durasi: String(editData.Durasi),
           tanggal_berangkat: toDatetimeLocal(editData.TanggalBerangkat),
@@ -268,6 +280,7 @@ const PaketDrawer = ({
     e.preventDefault();
     setError("");
     if (!form.nama_paket.trim()) { setError("Nama paket wajib diisi."); return; }
+    if (!form.jenis_paket) { setError("Jenis paket wajib dipilih."); return; }
     if (!form.harga || isNaN(Number(form.harga))) { setError("Harga tidak valid."); return; }
     if (!form.durasi || isNaN(Number(form.durasi))) { setError("Durasi tidak valid."); return; }
     if (!form.tanggal_berangkat) { setError("Tanggal berangkat wajib diisi."); return; }
@@ -275,6 +288,7 @@ const PaketDrawer = ({
     if (!isEdit && !fotoFile) { setError("Foto paket wajib diupload."); return; }
     const fd = new FormData();
     fd.append("nama_paket", form.nama_paket.trim());
+    fd.append("jenis_paket", form.jenis_paket);
     fd.append("harga", form.harga);
     fd.append("durasi", form.durasi);
     fd.append("tanggal_berangkat", new Date(form.tanggal_berangkat).toISOString());
@@ -375,6 +389,23 @@ const PaketDrawer = ({
                 onChange={handleField("nama_paket")}
                 disabled={submitting}
               />
+            </div>
+            {/* Jenis Paket */}
+            <div className="form-field">
+              <label className="form-label" htmlFor="jenis-paket">Jenis Paket *</label>
+              <select
+                id="jenis-paket"
+                className="form-input"
+                value={form.jenis_paket}
+                onChange={(e) => setForm((p) => ({ ...p, jenis_paket: e.target.value }))}
+                disabled={submitting}
+                style={{ cursor: "pointer" }}
+              >
+                <option value="">-- Pilih Jenis Paket --</option>
+                {JENIS_PAKET_OPTIONS.map((j) => (
+                  <option key={j} value={j}>{j}</option>
+                ))}
+              </select>
             </div>
             {/* Harga & Durasi */}
             <div className="field-group">
@@ -688,6 +719,7 @@ const AdminPaket = () => {
           <thead>
             <tr>
               <th>Paket</th>
+              <th>Jenis</th>
               <th>Harga</th>
               <th>Berangkat</th>
               <th>Kuota</th>
@@ -745,6 +777,16 @@ const AdminPaket = () => {
                           <div className="paket-durasi">{p.Durasi} hari</div>
                         </div>
                       </div>
+                    </td>
+                    {/* Jenis */}
+                    <td>
+                      {p.JenisPaket ? (
+                        <span className={`jenis-badge jenis-${p.JenisPaket.toLowerCase().replace(/\s+/g, "-")}`}>
+                          {p.JenisPaket}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#94a3b8", fontSize: "0.78rem" }}>—</span>
+                      )}
                     </td>
                     {/* Harga */}
                     <td><span className="paket-price">{fmtRupiah(p.Harga)}</span></td>

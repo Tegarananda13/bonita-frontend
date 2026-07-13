@@ -37,11 +37,13 @@ const API = "http://localhost:8080";
 const STORAGE_KEY = "customer_session";
 
 const DOK_TYPES = [
-  { key: "paspor", label: "Paspor", icon: "🛂", wajib: true },
-  { key: "ktp", label: "KTP", icon: "🪪", wajib: true },
-  { key: "foto", label: "Foto", icon: "🖼️", wajib: true },
-  { key: "vaksin", label: "Vaksin", icon: "💉", wajib: false },
-  { key: "lainnya", label: "Lainnya", icon: "📄", wajib: false },
+  { key: "paspor",         label: "Paspor",          icon: "🛂",  wajib: true  },
+  { key: "ktp",            label: "KTP",             icon: "🪪",  wajib: true  },
+  { key: "akte_kelahiran", label: "Akte Kelahiran",   icon: "📜",  wajib: true  },
+  { key: "kartu_keluarga", label: "Kartu Keluarga",   icon: "👨‍👩‍👧", wajib: true  },
+  { key: "vaksin",         label: "Vaksin",           icon: "💉",  wajib: true  },
+  { key: "foto",           label: "Foto",             icon: "🖼️", wajib: false },
+  { key: "lainnya",        label: "Lainnya",          icon: "📄",  wajib: false },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -674,7 +676,7 @@ const TabDokumen = ({ token }: { token: string }) => {
       {/* Info dokumen wajib */}
       <div className="dokumen-wajib-info">
         <strong>📋 Dokumen Wajib</strong>
-        Upload 3 dokumen berikut untuk melengkapi berkas Anda.
+        Upload 5 dokumen berikut untuk melengkapi berkas Anda.
         <div className="dokumen-wajib-list">
           {DOK_TYPES.filter((t) => t.wajib).map((t) => {
             const uploaded = uploadedMap.get(t.key);
