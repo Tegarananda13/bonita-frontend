@@ -600,6 +600,7 @@ const TabPembayaran = ({
 const TabDokumen = ({ token }: { token: string }) => {
   const [dokumenList, setDokumenList] = useState<DokumenItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dpDiterima, setDpDiterima] = useState(false);
   const [selectedType, setSelectedType] = useState("paspor");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -620,7 +621,22 @@ const TabDokumen = ({ token }: { token: string }) => {
     }
   }, [token]);
 
-  useEffect(() => { fetchDokumen(); }, [fetchDokumen]);
+  const checkDpStatus = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/customer/pembayaran`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const riwayat: PembayaranItem[] = res.data?.riwayat ?? [];
+      setDpDiterima(riwayat.some((p) => p.status === "diterima" && p.jumlah >= 5_000_000));
+    } catch {
+      setDpDiterima(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    checkDpStatus();
+    fetchDokumen();
+  }, [checkDpStatus, fetchDokumen]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] ?? null);
@@ -673,6 +689,51 @@ const TabDokumen = ({ token }: { token: string }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+      {/* ── Banner Syarat Upload DP ── */}
+      {!dpDiterima ? (
+        <div style={{
+          background: "linear-gradient(135deg, #fffbeb, #fef3c7)",
+          border: "1.5px solid #f59e0b",
+          borderRadius: "14px",
+          padding: "1.125rem 1.375rem",
+          display: "flex",
+          gap: "0.875rem",
+          alignItems: "flex-start",
+        }}>
+          <span style={{ fontSize: "1.5rem", flexShrink: 0 }}>🔒</span>
+          <div>
+            <div style={{ fontWeight: 700, color: "#92400e", fontSize: "0.9rem", marginBottom: "0.3rem" }}>
+              Syarat Upload Dokumen
+            </div>
+            <div style={{ fontSize: "0.82rem", color: "#78350f", lineHeight: 1.6 }}>
+              Dokumen persyaratan umroh baru dapat diunggah setelah{" "}
+              <strong>pembayaran DP pertama sebesar minimal Rp5.000.000</strong>{" "}
+              telah diverifikasi oleh admin Bonita.
+            </div>
+            <div style={{ marginTop: "0.6rem", fontSize: "0.78rem", color: "#b45309", fontWeight: 600 }}>
+              ⏳ Menunggu verifikasi pembayaran DP oleh admin...
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
+          border: "1.5px solid #6ee7b7",
+          borderRadius: "14px",
+          padding: "0.875rem 1.25rem",
+          display: "flex",
+          gap: "0.75rem",
+          alignItems: "center",
+          fontSize: "0.85rem",
+          color: "#065f46",
+          fontWeight: 600,
+        }}>
+          <span style={{ fontSize: "1.2rem" }}>✅</span>
+          Pembayaran DP telah diverifikasi. Anda dapat mengunggah dokumen.
+        </div>
+      )}
+
       {/* Info dokumen wajib */}
       <div className="dokumen-wajib-info">
         <strong>📋 Dokumen Wajib</strong>
@@ -697,8 +758,18 @@ const TabDokumen = ({ token }: { token: string }) => {
       </div>
 
       {/* Upload dokumen baru */}
-      <div className="dokumen-upload-card">
+      <div className="dokumen-upload-card" style={!dpDiterima ? { opacity: 0.85 } : {}}>
         <div className="dokumen-upload-title">📤 Upload Dokumen</div>
+
+        {!dpDiterima && (
+          <div style={{
+            background: "#fef9c3", border: "1px solid #fbbf24", borderRadius: "10px",
+            padding: "0.7rem 1rem", fontSize: "0.82rem", color: "#92400e",
+            marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem",
+          }}>
+            🔒 Dokumen baru dapat diunggah setelah pembayaran DP pertama diverifikasi oleh admin.
+          </div>
+        )}
 
         <div className="section-title" style={{ marginBottom: "0.5rem" }}>Jenis Dokumen</div>
         <div className="dokumen-type-selector">
@@ -708,6 +779,7 @@ const TabDokumen = ({ token }: { token: string }) => {
               type="button"
               className={`dok-type-btn ${selectedType === t.key ? "selected" : ""}`}
               onClick={() => setSelectedType(t.key)}
+              disabled={!dpDiterima}
             >
               {t.icon} {t.label}
               {t.wajib && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
@@ -715,8 +787,8 @@ const TabDokumen = ({ token }: { token: string }) => {
           ))}
         </div>
 
-        <div className="dokumen-drop-area">
-          <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileRef} />
+        <div className="dokumen-drop-area" style={!dpDiterima ? { pointerEvents: "none", opacity: 0.5 } : {}}>
+          <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileRef} disabled={!dpDiterima} />
           {file ? (
             <div className="dokumen-file-selected">📎 {file.name}</div>
           ) : (
@@ -730,7 +802,12 @@ const TabDokumen = ({ token }: { token: string }) => {
         {uploadError && <div className="portal-error" style={{ marginBottom: "0.875rem" }}>{uploadError}</div>}
         {uploadSuccess && <div className="portal-success-msg" style={{ marginBottom: "0.875rem" }}>✓ {uploadSuccess}</div>}
 
-        <button className="dokumen-submit-btn" onClick={handleUpload} disabled={uploading || !file}>
+        <button
+          className="dokumen-submit-btn"
+          onClick={handleUpload}
+          disabled={uploading || !file || !dpDiterima}
+          style={!dpDiterima ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+        >
           {uploading ? <><div className="mini-spin" />Mengupload...</> : <>📤 Upload Dokumen</>}
         </button>
       </div>
