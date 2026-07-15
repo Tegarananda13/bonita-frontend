@@ -7,8 +7,8 @@ const WHY_ITEMS = [
   {
     icon: "🏅",
     cls: "why-card-icon-1",
-    title: "Terpercaya & Berizin Resmi",
-    text: "Bonita telah terdaftar resmi di Kementerian Agama RI dengan rekam jejak yang bersih dan transparan.",
+    title: "Legal dan Terpercaya",
+    text: "Beroperasi secara resmi serta berkomitmen menjalankan layanan sesuai ketentuan yang berlaku.",
   },
   {
     icon: "🕌",
@@ -284,9 +284,8 @@ const Home = () => {
                 </div>
               </div>
               <p className="vm-card-text">
-                Menjadi penyelenggara umroh terdepan di Indonesia yang memberikan
-                pengalaman ibadah terbaik — khusyu, aman, dan berkesan — bagi setiap
-                jamaah dari seluruh penjuru nusantara.
+                Menjadi penyelenggara perjalanan ibadah umrah yang terpercaya, profesional, dan berorientasi pada kepuasan 
+                jamaah dengan memberikan pelayanan berkualitas sesuai syariat Islam.
               </p>
               <div style={{
                 background: "rgba(201,168,76,0.1)",
@@ -313,11 +312,11 @@ const Home = () => {
               </div>
               <div className="vm-misi-list">
                 {[
-                  "Memberikan pelayanan umroh yang profesional, amanah, dan sesuai syariat Islam",
-                  "Menyediakan berbagai paket umroh yang terjangkau tanpa mengorbankan kualitas",
-                  "Membangun sistem digital yang memudahkan jamaah dalam setiap proses perjalanan",
-                  "Menjaga kepercayaan jamaah dengan transparansi penuh dalam setiap layanan",
-                  "Terus berinovasi demi meningkatkan kualitas pengalaman ibadah jamaah",
+                  "Menyelenggarakan layanan umrah yang aman, nyaman, dan sesuai dengan ketentuan syariat",
+                  "Memberikan pelayanan prima melalui sumber daya manusia yang profesional dan berintegritas",
+                  "Menghadirkan inovasi layanan untuk memudahkan proses pendaftaran hingga kepulangan jamaah",
+                  "Membangun hubungan jangka panjang dengan jamaah berdasarkan kepercayaan, kejujuran, dan tanggung jawab",
+                  "Berkontribusi dalam meningkatkan kualitas pelayanan ibadah umrah di Indonesia",
                 ].map((m, i) => (
                   <div className="vm-misi-item" key={i}>
                     <div className="vm-misi-check">✓</div>
