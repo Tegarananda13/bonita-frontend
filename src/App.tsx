@@ -13,6 +13,7 @@ import AdminLogin from './pages/Admin/Login';
 import AdminLayout from './pages/Admin/components/AdminLayout';
 import AdminDashboard from './pages/Admin/Dashboard';
 import AdminPaket from './pages/Admin/Paket';
+import AdminPaketDetail from './pages/Admin/Paket/AdminPaketDetail';
 import AdminPendaftaran from './pages/Admin/Pendaftaran';
 import AdminPembayaran from './pages/Admin/Pembayaran';
 import AdminDokumen from './pages/Admin/Dokumen';
@@ -82,6 +83,7 @@ function App() {
 
           {/* Placeholder pages — bisa diisi nanti */}
           <Route path="paket" element={<AdminPaket />} />
+          <Route path="paket/:id" element={<AdminPaketDetail />} />
           <Route path="pendaftaran" element={<AdminPendaftaran />} />
           <Route path="tambah-jamaah" element={<TambahJamaah />} />
           <Route path="pembayaran" element={<AdminPembayaran />} />

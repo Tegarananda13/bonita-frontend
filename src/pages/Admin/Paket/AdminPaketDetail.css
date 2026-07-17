@@ -1,0 +1,429 @@
+/* ── AdminPaketDetail.css ──────────────────────────────────────────────────── */
+/* Tema: hijau (#1a6b43) + emas (#c9a84c) sesuai design system Bonita         */
+
+:root {
+  --apd-green: #1a6b43;
+  --apd-green-light: #e8f5ef;
+  --apd-gold: #c9a84c;
+  --apd-gold-light: #fdf6e3;
+  --apd-text: #1e293b;
+  --apd-sub: #64748b;
+  --apd-border: #e2e8f0;
+  --apd-radius: 16px;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+.apd-page {
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.apd-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.apd-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--apd-green);
+  margin: 0;
+}
+
+.apd-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  border: 2px solid var(--apd-green);
+  background: transparent;
+  color: var(--apd-green);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.apd-back-btn:hover {
+  background: var(--apd-green);
+  color: #fff;
+}
+
+/* ── Card shared ─────────────────────────────────────────────────────────────── */
+.apd-card {
+  background: #fff;
+  border-radius: var(--apd-radius);
+  border: 1px solid var(--apd-border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  padding: 1.5rem;
+}
+
+/* ── Info Card ───────────────────────────────────────────────────────────────── */
+.apd-info-card {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.apd-foto-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.apd-foto {
+  width: 260px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--apd-border);
+}
+
+.apd-status-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.apd-info-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.apd-jenis-badge {
+  display: inline-block;
+  padding: 0.3rem 0.875rem;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.apd-nama {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--apd-text);
+  margin: 0 0 0.4rem;
+}
+
+.apd-deskripsi {
+  font-size: 0.85rem;
+  color: var(--apd-sub);
+  margin: 0 0 1rem;
+  line-height: 1.6;
+}
+
+.apd-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.apd-info-item {
+  background: var(--apd-green-light);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.apd-info-label {
+  font-size: 0.72rem;
+  color: var(--apd-sub);
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+
+.apd-info-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--apd-text);
+}
+
+.apd-info-value.highlight {
+  color: var(--apd-green);
+  font-size: 1.05rem;
+}
+
+/* Kuota */
+.apd-kuota-section {}
+
+.apd-kuota-row {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 0.6rem;
+}
+
+.apd-kuota-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.apd-kuota-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--apd-text);
+}
+.apd-kuota-num.filled { color: var(--apd-gold); }
+.apd-kuota-num.sisa   { color: var(--apd-green); }
+
+.apd-kuota-lbl {
+  font-size: 0.72rem;
+  color: var(--apd-sub);
+  font-weight: 500;
+}
+
+.apd-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.apd-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--apd-green), var(--apd-gold));
+  border-radius: 99px;
+  transition: width 0.5s ease;
+  min-width: 0;
+}
+
+/* ── Statistik Cards ─────────────────────────────────────────────────────────── */
+.apd-statistik-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+.apd-stat-card {
+  background: #fff;
+  border-radius: var(--apd-radius);
+  border: 1px solid var(--apd-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 1.25rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.apd-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.apd-stat-icon { font-size: 1.75rem; }
+
+.apd-stat-value {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.apd-stat-label {
+  font-size: 0.75rem;
+  color: var(--apd-sub);
+  font-weight: 500;
+}
+
+.st-total { border-top: 3px solid #1a6b43; }
+.st-total .apd-stat-value { color: #1a6b43; }
+
+.st-dp    { border-top: 3px solid #f59e0b; }
+.st-dp .apd-stat-value { color: #f59e0b; }
+
+.st-lunas { border-top: 3px solid #10b981; }
+.st-lunas .apd-stat-value { color: #10b981; }
+
+.st-siap-b { border-top: 3px solid #3b82f6; }
+.st-siap-b .apd-stat-value { color: #3b82f6; }
+
+.st-done  { border-top: 3px solid #6366f1; }
+.st-done .apd-stat-value { color: #6366f1; }
+
+/* ── Tabel Jamaah ────────────────────────────────────────────────────────────── */
+.apd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.apd-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--apd-text);
+  margin: 0;
+}
+
+.apd-count-badge {
+  background: var(--apd-green-light);
+  color: var(--apd-green);
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.apd-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--apd-border);
+}
+
+.apd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.apd-table th {
+  background: linear-gradient(135deg, var(--apd-green), #145335);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.apd-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--apd-border);
+  vertical-align: middle;
+  color: var(--apd-text);
+}
+
+.apd-table tbody tr:last-child td { border-bottom: none; }
+
+.apd-table tbody tr:hover { background: #f8fafc; }
+
+.apd-td-nama { font-weight: 600; color: var(--apd-text); }
+.apd-td-date { color: var(--apd-sub); white-space: nowrap; }
+
+.apd-nomor {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--apd-green);
+  background: var(--apd-green-light);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+/* Status badges */
+.apd-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.st-proses           { background: #dbeafe; color: #1d4ed8; }
+.st-menunggu-bayar   { background: #fef9c3; color: #854d0e; }
+.st-menunggu-dok     { background: #ede9fe; color: #6d28d9; }
+.st-siap             { background: #dcfce7; color: #15803d; }
+.st-selesai          { background: #f0fdf4; color: #166534; }
+.st-batal            { background: #fee2e2; color: #b91c1c; }
+
+/* Payment badges */
+.apd-badge-pay {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.pay-belum { background: #f1f5f9; color: #64748b; }
+.pay-DP    { background: #fef3c7; color: #92400e; }
+.pay-lunas { background: #dcfce7; color: #15803d; }
+
+/* Dokumen badges */
+.apd-badge-dok {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.dok-belum   { background: #f1f5f9; color: #64748b; }
+.dok-pending { background: #fef3c7; color: #92400e; }
+.dok-revisi  { background: #fee2e2; color: #b91c1c; }
+.dok-lengkap { background: #dcfce7; color: #15803d; }
+
+/* Aksi */
+.apd-detail-btn {
+  padding: 0.4rem 0.85rem;
+  background: linear-gradient(135deg, var(--apd-green), #145335);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.apd-detail-btn:hover { opacity: 0.85; }
+
+/* ── Empty ── */
+.apd-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--apd-sub);
+}
+.apd-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+.apd-empty p { font-size: 0.9rem; margin: 0; }
+
+/* ── Loading / Error ── */
+.apd-loading, .apd-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: var(--apd-sub);
+  text-align: center;
+}
+
+.apd-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: var(--apd-green);
+  border-radius: 50%;
+  animation: apd-spin 0.7s linear infinite;
+}
+
+@keyframes apd-spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .apd-info-card { flex-direction: column; }
+  .apd-foto { width: 100%; height: 200px; }
+  .apd-grid { grid-template-columns: repeat(2, 1fr); }
+  .apd-statistik-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .apd-page { padding: 1rem; }
+  .apd-statistik-grid { grid-template-columns: repeat(2, 1fr); }
+  .apd-grid { grid-template-columns: 1fr 1fr; }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, type FormEvent, type ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPaket.css";
@@ -587,6 +587,7 @@ const PaketDrawer = ({
 // ── Main Page ────────────────────────────────────────────────────────────────
 const AdminPaket = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [paketList, setPaketList] = useState<PaketAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -808,6 +809,17 @@ const AdminPaket = () => {
                     {/* Actions */}
                     <td>
                       <div className="action-cell">
+                        <button
+                          className="action-btn action-btn-detail"
+                          onClick={() => navigate(`/admin/paket/${p.ID}`)}
+                          title="Lihat detail paket"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                          Detail
+                        </button>
                         <button
                           className="action-btn action-btn-fasilitas"
                           onClick={() => setFasilitasPaket(p)}

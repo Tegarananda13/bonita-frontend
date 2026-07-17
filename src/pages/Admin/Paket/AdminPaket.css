@@ -305,6 +305,13 @@
 
 .action-btn-fasilitas:hover { background: #dcfce7; }
 
+.action-btn-detail {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.action-btn-detail:hover { background: #dbeafe; }
+
 .action-btn-delete {
   background: #fef2f2;
   color: #dc2626;

@@ -490,7 +490,7 @@ const Home = () => {
                   <div className="contact-info-icon contact-info-icon-loc">📍</div>
                   <div>
                     <div className="contact-info-label">Alamat Kantor</div>
-                    <div className="contact-info-val">Jl. Contoh No. 123, Jakarta Selatan</div>
+                    <div className="contact-info-val">Jalan Raya Kapeh Panji.49b, Jambu Air, Kec. Banuhampu, Kabupaten Agam, Sumatera Barat 26181</div>
                   </div>
                 </div>
 
@@ -600,8 +600,8 @@ const Home = () => {
             <div className="footer-col-title">Legal</div>
             <div className="footer-links">
               <a href="#">Syarat & Ketentuan</a>
-              <a href="#">Kebijakan Privasi</a>
-              <a href="#">Kebijakan Refund</a>
+              {/* <a href="#">Kebijakan Privasi</a>
+              <a href="#">Kebijakan Refund</a> */}
               <a href="#">FAQ</a>
             </div>
           </div>

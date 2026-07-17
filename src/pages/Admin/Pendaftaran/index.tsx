@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPendaftaran.css";
@@ -352,6 +352,7 @@ const DetailModal = ({
 const AdminPendaftaran = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [list, setList] = useState<PendaftaranItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -360,6 +361,12 @@ const AdminPendaftaran = () => {
   const [activeView, setActiveView] = useState<"semua" | "milik-saya">("semua");
   const [detailNomor, setDetailNomor] = useState<string | null>(null);
   const [jamaahSayaKey, setJamaahSayaKey] = useState(0);
+
+  // Buka modal detail otomatis jika URL mengandung ?nomor=
+  useEffect(() => {
+    const nomor = searchParams.get("nomor");
+    if (nomor) setDetailNomor(nomor);
+  }, [searchParams]);
 
   const authH = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
