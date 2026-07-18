@@ -16,13 +16,20 @@ interface PaketPublic {
 }
 
 interface FormData {
+  nik: string;
   nama: string;
+  tempat_lahir: string;
+  tanggal_lahir: string;
+  jenis_kelamin: string;
   no_hp: string;
   email: string;
   alamat: string;
 }
 
-const EMPTY_FORM: FormData = { nama: "", no_hp: "", email: "", alamat: "" };
+const EMPTY_FORM: FormData = {
+  nik: "", nama: "", tempat_lahir: "", tanggal_lahir: "",
+  jenis_kelamin: "", no_hp: "", email: "", alamat: "",
+};
 
 const FALLBACK = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=400&q=70";
 
@@ -78,12 +85,20 @@ const Daftar = () => {
   };
 
   const goToStep3 = () => {
-    if (!form.nama.trim()) { setError("Nama lengkap wajib diisi."); return; }
-    if (!form.no_hp.trim()) { setError("Nomor HP wajib diisi."); return; }
-    if (!/^(\+62|62|0)8[0-9]{8,11}$/.test(form.no_hp.replace(/\s/g, ""))) {
-      setError("Format nomor HP tidak valid.");
-      return;
+    if (!form.nik.trim())          { setError("NIK wajib diisi."); return; }
+    if (!/^\d{16}$/.test(form.nik.trim())) { setError("NIK harus terdiri dari 16 digit angka."); return; }
+    if (!form.nama.trim())         { setError("Nama lengkap wajib diisi."); return; }
+    if (!form.tempat_lahir.trim()) { setError("Tempat lahir wajib diisi."); return; }
+    if (!form.tanggal_lahir)       { setError("Tanggal lahir wajib diisi."); return; }
+    if (new Date(form.tanggal_lahir) > new Date()) { setError("Tanggal lahir tidak boleh melebihi hari ini."); return; }
+    if (!form.jenis_kelamin)       { setError("Jenis kelamin wajib dipilih."); return; }
+    if (!form.no_hp.trim())        { setError("Nomor HP wajib diisi."); return; }
+    if (!/^[0-9+\s-]{8,15}$/.test(form.no_hp.replace(/\s/g, ""))) {
+      setError("Format nomor HP tidak valid."); return;
     }
+    if (!form.email.trim())        { setError("Email wajib diisi."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError("Format email tidak valid."); return; }
+    if (!form.alamat.trim())       { setError("Alamat wajib diisi."); return; }
     setError("");
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -96,11 +111,15 @@ const Daftar = () => {
     try {
       setSubmitting(true);
       const res = await axios.post("http://localhost:8080/pendaftaran", {
-        nama:     form.nama.trim(),
-        no_hp:    form.no_hp.trim(),
-        email:    form.email.trim(),
-        alamat:   form.alamat.trim(),
-        paket_id: selectedPaket!.id,
+        nik:           form.nik.trim(),
+        nama:          form.nama.trim(),
+        tempat_lahir:  form.tempat_lahir.trim(),
+        tanggal_lahir: form.tanggal_lahir,
+        jenis_kelamin: form.jenis_kelamin,
+        no_hp:         form.no_hp.trim(),
+        email:         form.email.trim(),
+        alamat:        form.alamat.trim(),
+        paket_id:      selectedPaket!.id,
       });
       setNomorPendaftaran(res.data?.data?.nomor_pendaftaran ?? "");
       setStep(3);
@@ -279,6 +298,22 @@ const Daftar = () => {
               )}
 
               <div className="daftar-form-grid">
+                {/* NIK */}
+                <div className="daftar-form-field full">
+                  <label className="daftar-label" htmlFor="nik">NIK (Nomor Induk Kependudukan) *</label>
+                  <input
+                    id="nik"
+                    className="daftar-input"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={16}
+                    placeholder="16 digit angka sesuai KTP"
+                    value={form.nik}
+                    onChange={(e) => setForm((p) => ({ ...p, nik: e.target.value.replace(/\D/g, "") }))}
+                  />
+                </div>
+
+                {/* Nama */}
                 <div className="daftar-form-field full">
                   <label className="daftar-label" htmlFor="nama">Nama Lengkap *</label>
                   <input
@@ -291,6 +326,48 @@ const Daftar = () => {
                   />
                 </div>
 
+                {/* Tempat Lahir */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="tempat-lahir">Tempat Lahir *</label>
+                  <input
+                    id="tempat-lahir"
+                    className="daftar-input"
+                    type="text"
+                    placeholder="Contoh: Jakarta"
+                    value={form.tempat_lahir}
+                    onChange={(e) => setForm((p) => ({ ...p, tempat_lahir: e.target.value }))}
+                  />
+                </div>
+
+                {/* Tanggal Lahir */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="tanggal-lahir">Tanggal Lahir *</label>
+                  <input
+                    id="tanggal-lahir"
+                    className="daftar-input"
+                    type="date"
+                    max={new Date().toISOString().split("T")[0]}
+                    value={form.tanggal_lahir}
+                    onChange={(e) => setForm((p) => ({ ...p, tanggal_lahir: e.target.value }))}
+                  />
+                </div>
+
+                {/* Jenis Kelamin */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="jenis-kelamin">Jenis Kelamin *</label>
+                  <select
+                    id="jenis-kelamin"
+                    className="daftar-input"
+                    value={form.jenis_kelamin}
+                    onChange={(e) => setForm((p) => ({ ...p, jenis_kelamin: e.target.value }))}
+                  >
+                    <option value="">-- Pilih --</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+
+                {/* No HP */}
                 <div className="daftar-form-field">
                   <label className="daftar-label" htmlFor="no-hp">Nomor HP/WhatsApp *</label>
                   <input
@@ -303,8 +380,9 @@ const Daftar = () => {
                   />
                 </div>
 
+                {/* Email */}
                 <div className="daftar-form-field">
-                  <label className="daftar-label" htmlFor="email">Email <span style={{ color: "#94a3b8", fontWeight: 400 }}>(opsional)</span></label>
+                  <label className="daftar-label" htmlFor="email">Email *</label>
                   <input
                     id="email"
                     className="daftar-input"
@@ -315,12 +393,13 @@ const Daftar = () => {
                   />
                 </div>
 
+                {/* Alamat */}
                 <div className="daftar-form-field full">
-                  <label className="daftar-label" htmlFor="alamat">Alamat <span style={{ color: "#94a3b8", fontWeight: 400 }}>(opsional)</span></label>
+                  <label className="daftar-label" htmlFor="alamat">Alamat *</label>
                   <textarea
                     id="alamat"
                     className="daftar-textarea"
-                    placeholder="Alamat lengkap..."
+                    placeholder="Alamat lengkap sesuai KTP..."
                     value={form.alamat}
                     onChange={(e) => setForm((p) => ({ ...p, alamat: e.target.value }))}
                     rows={3}

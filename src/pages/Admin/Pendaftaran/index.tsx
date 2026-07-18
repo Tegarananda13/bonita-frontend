@@ -22,15 +22,19 @@ interface DetailPendaftaran {
   id: string;
   nomor_pendaftaran: string;
   nama_customer: string;
+  nik: string;
   no_hp: string;
   email: string;
+  tempat_lahir: string;
+  tanggal_lahir: string;
+  jenis_kelamin: string;
   paket: string;
   harga: number;
   tanggal_berangkat: string;
   payment_status: string;
   document_status: string;
   status: string;
-  admin_pic?: string; // nama admin yang handle
+  admin_pic?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -96,8 +100,12 @@ const DetailModal = ({
           id: p?.ID ?? p?.id,
           nomor_pendaftaran: p?.NomorPendaftaran ?? p?.nomor_pendaftaran,
           nama_customer: p?.Customer?.Nama ?? p?.Customer?.nama,
-          no_hp: p?.Customer?.NoHP ?? p?.Customer?.NoHp ?? p?.Customer?.no_hp ?? "-",
-          email: p?.Customer?.Email ?? p?.Customer?.email ?? "-",
+          nik:           p?.Customer?.NIK  ?? p?.Customer?.nik  ?? "-",
+          no_hp:         p?.Customer?.NoHP ?? p?.Customer?.NoHp ?? p?.Customer?.no_hp ?? "-",
+          email:         p?.Customer?.Email ?? p?.Customer?.email ?? "-",
+          tempat_lahir:  p?.Customer?.TempatLahir ?? p?.Customer?.tempat_lahir ?? "-",
+          tanggal_lahir: p?.Customer?.TanggalLahir ?? p?.Customer?.tanggal_lahir ?? "",
+          jenis_kelamin: p?.Customer?.JenisKelamin ?? p?.Customer?.jenis_kelamin ?? "-",
           paket: p?.Paket?.NamaPaket ?? p?.Paket?.nama_paket,
           harga: p?.Paket?.Harga ?? p?.Paket?.harga ?? 0,
           tanggal_berangkat: p?.Paket?.TanggalBerangkat ?? p?.Paket?.tanggal_berangkat,
@@ -199,9 +207,25 @@ const DetailModal = ({
               {/* Info jamaah */}
               <div className="modal-section-title">👤 Informasi Jamaah</div>
               <div className="modal-info-grid">
-                <div className="modal-info-item">
+                <div className="modal-info-item full">
                   <div className="modal-info-label">Nama Lengkap</div>
                   <div className="modal-info-val">{data.nama_customer}</div>
+                </div>
+                <div className="modal-info-item full">
+                  <div className="modal-info-label">NIK</div>
+                  <div className="modal-info-val" style={{ fontFamily: "monospace" }}>{data.nik}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Tempat Lahir</div>
+                  <div className="modal-info-val">{data.tempat_lahir}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Tanggal Lahir</div>
+                  <div className="modal-info-val">{data.tanggal_lahir ? fmtDate(data.tanggal_lahir) : "-"}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Jenis Kelamin</div>
+                  <div className="modal-info-val">{data.jenis_kelamin}</div>
                 </div>
                 <div className="modal-info-item">
                   <div className="modal-info-label">No. HP</div>
@@ -739,8 +763,12 @@ const PICDetailModal = ({
           id:               dp?.ID ?? dp?.id,
           nomor_pendaftaran: dp?.NomorPendaftaran ?? dp?.nomor_pendaftaran,
           nama_customer:    dp?.Customer?.Nama   ?? dp?.Customer?.nama,
+          nik:              dp?.Customer?.NIK    ?? dp?.Customer?.nik  ?? "-",
           no_hp:            dp?.Customer?.NoHP   ?? dp?.Customer?.NoHp ?? dp?.Customer?.no_hp ?? "-",
           email:            dp?.Customer?.Email  ?? dp?.Customer?.email ?? "-",
+          tempat_lahir:     dp?.Customer?.TempatLahir ?? dp?.Customer?.tempat_lahir ?? "-",
+          tanggal_lahir:    dp?.Customer?.TanggalLahir ?? dp?.Customer?.tanggal_lahir ?? "",
+          jenis_kelamin:    dp?.Customer?.JenisKelamin ?? dp?.Customer?.jenis_kelamin ?? "-",
           paket:            dp?.Paket?.NamaPaket ?? dp?.Paket?.nama_paket,
           harga:            dp?.Paket?.Harga     ?? dp?.Paket?.harga ?? 0,
           tanggal_berangkat: dp?.Paket?.TanggalBerangkat ?? dp?.Paket?.tanggal_berangkat,
@@ -824,9 +852,25 @@ const PICDetailModal = ({
               {/* Info Jamaah */}
               <div className="modal-section-title">👤 Informasi Jamaah</div>
               <div className="modal-info-grid">
-                <div className="modal-info-item">
+                <div className="modal-info-item full">
                   <div className="modal-info-label">Nama</div>
                   <div className="modal-info-val">{data.nama_customer}</div>
+                </div>
+                <div className="modal-info-item full">
+                  <div className="modal-info-label">NIK</div>
+                  <div className="modal-info-val" style={{ fontFamily: "monospace" }}>{data.nik}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Tempat Lahir</div>
+                  <div className="modal-info-val">{data.tempat_lahir}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Tanggal Lahir</div>
+                  <div className="modal-info-val">{data.tanggal_lahir ? fmtDate(data.tanggal_lahir) : "-"}</div>
+                </div>
+                <div className="modal-info-item">
+                  <div className="modal-info-label">Jenis Kelamin</div>
+                  <div className="modal-info-val">{data.jenis_kelamin}</div>
                 </div>
                 <div className="modal-info-item">
                   <div className="modal-info-label">No. HP</div>

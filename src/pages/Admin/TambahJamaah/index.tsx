@@ -21,7 +21,11 @@ const TambahJamaah = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
 
+  const [nik, setNik] = useState("");
   const [nama, setNama] = useState("");
+  const [tempatLahir, setTempatLahir] = useState("");
+  const [tanggalLahir, setTanggalLahir] = useState("");
+  const [jenisKelamin, setJenisKelamin] = useState("");
   const [noHp, setNoHp] = useState("");
   const [email, setEmail] = useState("");
   const [alamat, setAlamat] = useState("");
@@ -67,22 +71,40 @@ const TambahJamaah = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(""); setSuccess("");
-    if (!nama.trim())  return setError("Nama jamaah wajib diisi.");
-    if (!noHp.trim())  return setError("Nomor HP wajib diisi.");
-    if (!email.trim()) return setError("Email wajib diisi.");
-    if (!paketId)      return setError("Pilih paket umroh terlebih dahulu.");
+    if (!nik.trim())          return setError("NIK wajib diisi.");
+    if (!/^\d{16}$/.test(nik.trim())) return setError("NIK harus 16 digit angka.");
+    if (!nama.trim())         return setError("Nama jamaah wajib diisi.");
+    if (!tempatLahir.trim())  return setError("Tempat lahir wajib diisi.");
+    if (!tanggalLahir)        return setError("Tanggal lahir wajib diisi.");
+    if (new Date(tanggalLahir) > new Date()) return setError("Tanggal lahir tidak boleh melebihi hari ini.");
+    if (!jenisKelamin)        return setError("Jenis kelamin wajib dipilih.");
+    if (!noHp.trim())         return setError("Nomor HP wajib diisi.");
+    if (!email.trim())        return setError("Email wajib diisi.");
+    if (!alamat.trim())       return setError("Alamat wajib diisi.");
+    if (!paketId)             return setError("Pilih paket umroh terlebih dahulu.");
 
     setSubmitting(true);
     try {
       const res = await axios.post(
         "http://localhost:8080/admin/customer",
-        { nama: nama.trim(), no_hp: noHp.trim(), email: email.trim(), alamat: alamat.trim(), paket_id: paketId },
+        {
+          nik:           nik.trim(),
+          nama:          nama.trim(),
+          tempat_lahir:  tempatLahir.trim(),
+          tanggal_lahir: tanggalLahir,
+          jenis_kelamin: jenisKelamin,
+          no_hp:         noHp.trim(),
+          email:         email.trim(),
+          alamat:        alamat.trim(),
+          paket_id:      paketId,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const nomor   = res.data?.pendaftaran?.nomor_pendaftaran ?? "-";
       const invoice = res.data?.pendaftaran?.nomor_invoice ?? "-";
       setSuccess(`✅ Jamaah "${nama}" berhasil didaftarkan!\nNo. Pendaftaran: ${nomor}\nNo. Invoice: ${invoice}`);
-      setNama(""); setNoHp(""); setEmail(""); setAlamat(""); setPaketId("");
+      setNik(""); setNama(""); setTempatLahir(""); setTanggalLahir("");
+      setJenisKelamin(""); setNoHp(""); setEmail(""); setAlamat(""); setPaketId("");
       setTimeout(() => navigate("/admin/pendaftaran"), 2200);
     } catch (err: unknown) {
       setError(axios.isAxiosError(err)
@@ -116,24 +138,58 @@ const TambahJamaah = () => {
           <div className="tj-section">
             <div className="tj-section-title"><span>👤</span> Data Jamaah</div>
             <div className="tj-field-grid">
+              {/* NIK */}
+              <div className="tj-field full">
+                <label className="tj-label" htmlFor="tj-nik">NIK <span className="tj-required">*</span></label>
+                <input id="tj-nik" type="text" inputMode="numeric" maxLength={16} className="tj-input"
+                  placeholder="16 digit angka sesuai KTP"
+                  value={nik} onChange={e => setNik(e.target.value.replace(/\D/g, ""))} disabled={submitting} autoFocus />
+              </div>
+              {/* Nama */}
               <div className="tj-field full">
                 <label className="tj-label" htmlFor="tj-nama">Nama Lengkap <span className="tj-required">*</span></label>
-                <input id="tj-nama" type="text" className="tj-input" placeholder="Contoh: Ahmad Fauzi"
-                  value={nama} onChange={e => setNama(e.target.value)} disabled={submitting} autoFocus />
+                <input id="tj-nama" type="text" className="tj-input" placeholder="Sesuai KTP/Paspor"
+                  value={nama} onChange={e => setNama(e.target.value)} disabled={submitting} />
               </div>
+              {/* Tempat Lahir */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-tempat">Tempat Lahir <span className="tj-required">*</span></label>
+                <input id="tj-tempat" type="text" className="tj-input" placeholder="Contoh: Jakarta"
+                  value={tempatLahir} onChange={e => setTempatLahir(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Tanggal Lahir */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-tgl-lahir">Tanggal Lahir <span className="tj-required">*</span></label>
+                <input id="tj-tgl-lahir" type="date" className="tj-input"
+                  max={new Date().toISOString().split("T")[0]}
+                  value={tanggalLahir} onChange={e => setTanggalLahir(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Jenis Kelamin */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-kelamin">Jenis Kelamin <span className="tj-required">*</span></label>
+                <select id="tj-kelamin" className="tj-input"
+                  value={jenisKelamin} onChange={e => setJenisKelamin(e.target.value)} disabled={submitting}>
+                  <option value="">-- Pilih --</option>
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
+              {/* No HP */}
               <div className="tj-field">
                 <label className="tj-label" htmlFor="tj-nohp">Nomor HP <span className="tj-required">*</span></label>
                 <input id="tj-nohp" type="tel" className="tj-input" placeholder="08xxxxxxxxxx"
                   value={noHp} onChange={e => setNoHp(e.target.value)} disabled={submitting} />
               </div>
+              {/* Email */}
               <div className="tj-field">
                 <label className="tj-label" htmlFor="tj-email">Email <span className="tj-required">*</span></label>
                 <input id="tj-email" type="email" className="tj-input" placeholder="email@contoh.com"
                   value={email} onChange={e => setEmail(e.target.value)} disabled={submitting} />
               </div>
+              {/* Alamat */}
               <div className="tj-field full">
-                <label className="tj-label" htmlFor="tj-alamat">Alamat</label>
-                <textarea id="tj-alamat" className="tj-input tj-textarea" rows={3} placeholder="Alamat lengkap (opsional)"
+                <label className="tj-label" htmlFor="tj-alamat">Alamat <span className="tj-required">*</span></label>
+                <textarea id="tj-alamat" className="tj-input tj-textarea" rows={3} placeholder="Alamat lengkap sesuai KTP"
                   value={alamat} onChange={e => setAlamat(e.target.value)} disabled={submitting} />
               </div>
             </div>
