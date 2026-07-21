@@ -10,7 +10,20 @@ interface Message {
   sender: 'bot' | 'user';
   text: string;
   timestamp: Date;
+  // tombol kategori hanya muncul pada pesan tertentu
+  showKategori?: boolean;
 }
+
+// ── Session Storage Keys ───────────────────────────────────────────────────────
+
+const SS_FLOW           = 'bonita_chat_flow';
+const SS_STEP           = 'bonita_chat_step';
+const SS_PENDAFTARAN_ID = 'bonita_chat_pendaftaran_id';
+const SS_NOMOR_UMR      = 'bonita_chat_nomor_umr';
+const SS_KATEGORI       = 'bonita_chat_kategori';
+
+type FlowState = '' | 'pengaduan';
+type StepState = '' | 'ask_nomor' | 'ask_kategori' | string; // ask_isi_<kategori> | done | error
 
 // ── Quick reply suggestions ────────────────────────────────────────────────────
 
@@ -19,7 +32,10 @@ const QUICK_REPLIES = [
   'Berapa harga paket umroh?',
   'Bagaimana cara mendaftar?',
   'Apa saja dokumen yang diperlukan?',
+  'Saya ingin membuat pengaduan',
 ];
+
+const KATEGORI_LIST = ['Pembayaran', 'Dokumen', 'Jadwal', 'Hotel', 'Transportasi', 'Lainnya'];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,16 +46,15 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: nextId(),
     sender: 'bot',
-    text: 'Assalamu\'alaikum 🕌 Selamat datang di Bonita Umroh! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umroh. Ada yang ingin ditanyakan?',
+    text: "Assalamu'alaikum 🕌 Selamat datang di Bonita Umroh! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umroh. Ada yang ingin ditanyakan?",
     timestamp: new Date(),
   },
 ];
 
-// Simple markdown-ish: **bold**, *italic*, \n → <br>
+// Simple markdown-ish: **bold**, \n → <br>
 const renderText = (text: string) => {
   const lines = text.split('\n');
   return lines.map((line, i) => {
-    // Bold
     const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={j}>{part.slice(2, -2)}</strong>;
@@ -55,12 +70,22 @@ const renderText = (text: string) => {
   });
 };
 
+// ── SessionStorage helpers ────────────────────────────────────────────────────
+
+const ssGet = (key: string) => sessionStorage.getItem(key) ?? '';
+const ssSet = (key: string, val: string) => sessionStorage.setItem(key, val);
+const ssClear = () => {
+  [SS_FLOW, SS_STEP, SS_PENDAFTARAN_ID, SS_NOMOR_UMR, SS_KATEGORI].forEach(k =>
+    sessionStorage.removeItem(k)
+  );
+};
+
 // ── Chatbot Widget ─────────────────────────────────────────────────────────────
 
 const ChatbotWidget = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen]   = useState(false);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [input, setInput] = useState('');
+  const [input, setInput]     = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
   const [hasUnread, setHasUnread] = useState(false);
@@ -68,7 +93,6 @@ const ChatbotWidget = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -81,47 +105,75 @@ const ChatbotWidget = () => {
     }
   }, [isOpen, messages]);
 
-  // ── Send message ──────────────────────────────────────────────────────────
+  // ── Tambah pesan bot ────────────────────────────────────────────────────────
+
+  const addBotMsg = (text: string, showKategori = false) => {
+    setMessages(prev => [...prev, {
+      id: nextId(), sender: 'bot', text, timestamp: new Date(), showKategori,
+    }]);
+  };
+
+  // ── Kirim pesan ─────────────────────────────────────────────────────────────
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
-    const userMsg: Message = {
-      id: nextId(),
-      sender: 'user',
-      text: text.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    // Tambah pesan user
+    setMessages(prev => [...prev, {
+      id: nextId(), sender: 'user', text: text.trim(), timestamp: new Date(),
+    }]);
     setInput('');
     setShowQuickReplies(false);
     setIsLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:8080/chatbot', {
-        pertanyaan: text.trim(),
-      });
+      // Baca state flow dari sessionStorage
+      const flow          = ssGet(SS_FLOW) as FlowState;
+      const step          = ssGet(SS_STEP) as StepState;
+      const pendaftaranId = ssGet(SS_PENDAFTARAN_ID);
+      const kategori      = ssGet(SS_KATEGORI);
 
-      const jawaban = res.data?.data?.jawaban ?? 'Maaf, saya tidak bisa menjawab saat ini.';
-
-      const botMsg: Message = {
-        id: nextId(),
-        sender: 'bot',
-        text: jawaban,
-        timestamp: new Date(),
+      const payload: Record<string, string> = {
+        pertanyaan:     text.trim(),
+        flow:           flow,
+        step:           step,
+        pendaftaran_id: pendaftaranId,
+        kategori:       kategori,
       };
 
-      setMessages((prev) => [...prev, botMsg]);
+      const res = await axios.post('http://localhost:8080/chatbot', payload);
+      const data = res.data?.data ?? {};
+
+      const jawaban    = data.jawaban    ?? 'Maaf, saya tidak bisa menjawab saat ini.';
+      const nextFlow   = (data.flow      ?? '') as FlowState;
+      const nextStep   = (data.step      ?? '') as StepState;
+      const nextPendId = data.pendaftaran_id ?? '';
+
+      // Update sessionStorage
+      if (nextFlow === 'pengaduan') {
+        ssSet(SS_FLOW, 'pengaduan');
+        ssSet(SS_STEP, nextStep);
+        if (nextPendId) ssSet(SS_PENDAFTARAN_ID, nextPendId);
+        // Simpan kategori dari step ask_isi_<kategori>
+        if (nextStep.startsWith('ask_isi_')) {
+          const kat = nextStep.replace('ask_isi_', '');
+          ssSet(SS_KATEGORI, kat);
+        }
+      } else {
+        // flow selesai atau normal → clear
+        if (nextStep === 'done' || nextStep === 'error' || nextFlow === '') {
+          ssClear();
+        }
+      }
+
+      // Tampilkan tombol kategori jika step = ask_kategori
+      const showKategori = nextStep === 'ask_kategori';
+
+      addBotMsg(jawaban, showKategori);
       if (!isOpen) setHasUnread(true);
+
     } catch {
-      const errMsg: Message = {
-        id: nextId(),
-        sender: 'bot',
-        text: 'Maaf, koneksi ke server bermasalah. Silakan coba lagi beberapa saat.',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
+      addBotMsg('Maaf, koneksi ke server bermasalah. Silakan coba lagi beberapa saat.');
     } finally {
       setIsLoading(false);
     }
@@ -137,10 +189,6 @@ const ChatbotWidget = () => {
       e.preventDefault();
       sendMessage(input);
     }
-  };
-
-  const handleQuickReply = (text: string) => {
-    sendMessage(text);
   };
 
   const handleOpen = () => {
@@ -186,11 +234,34 @@ const ChatbotWidget = () => {
               {msg.sender === 'bot' && (
                 <div className="bot-avatar-sm">🤖</div>
               )}
-              <div className={`message-bubble ${msg.sender}`}>
-                <p>{renderText(msg.text)}</p>
-                <div className="message-time">
-                  {msg.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              <div>
+                <div className={`message-bubble ${msg.sender}`}>
+                  <p>{renderText(msg.text)}</p>
+                  <div className="message-time">
+                    {msg.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
+
+                {/* Tombol Kategori Pengaduan */}
+                {msg.showKategori && !isLoading && (
+                  <div className="kategori-grid">
+                    {KATEGORI_LIST.map(k => (
+                      <button
+                        key={k}
+                        className="kategori-btn"
+                        onClick={() => sendMessage(k)}
+                      >
+                        {k === 'Pembayaran' && '💳 '}
+                        {k === 'Dokumen'    && '📄 '}
+                        {k === 'Jadwal'     && '📅 '}
+                        {k === 'Hotel'      && '🏨 '}
+                        {k === 'Transportasi' && '✈️ '}
+                        {k === 'Lainnya'    && '💬 '}
+                        {k}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -214,10 +285,10 @@ const ChatbotWidget = () => {
               {QUICK_REPLIES.map((q) => (
                 <button
                   key={q}
-                  className="quick-reply-btn"
-                  onClick={() => handleQuickReply(q)}
+                  className={`quick-reply-btn${q.includes('pengaduan') ? ' quick-reply-pengaduan' : ''}`}
+                  onClick={() => sendMessage(q)}
                 >
-                  {q}
+                  {q.includes('pengaduan') ? '📣 ' : ''}{q}
                 </button>
               ))}
             </div>
@@ -231,7 +302,7 @@ const ChatbotWidget = () => {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Ketik pertanyaan Anda..."
+            placeholder="Ketik pertanyaan atau keluhan Anda..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

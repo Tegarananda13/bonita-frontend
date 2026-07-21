@@ -23,12 +23,19 @@ interface FormData {
   jenis_kelamin: string;
   no_hp: string;
   email: string;
-  alamat: string;
+  alamat_lengkap: string;
+  provinsi: string;
+  kabupaten_kota: string;
+  kecamatan: string;
+  kelurahan_desa: string;
+  kode_pos: string;
 }
 
 const EMPTY_FORM: FormData = {
   nik: "", nama: "", tempat_lahir: "", tanggal_lahir: "",
-  jenis_kelamin: "", no_hp: "", email: "", alamat: "",
+  jenis_kelamin: "", no_hp: "", email: "",
+  alamat_lengkap: "", provinsi: "", kabupaten_kota: "",
+  kecamatan: "", kelurahan_desa: "", kode_pos: "",
 };
 
 const FALLBACK = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=400&q=70";
@@ -98,7 +105,12 @@ const Daftar = () => {
     }
     if (!form.email.trim())        { setError("Email wajib diisi."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError("Format email tidak valid."); return; }
-    if (!form.alamat.trim())       { setError("Alamat wajib diisi."); return; }
+    if (!form.alamat_lengkap.trim()) { setError("Alamat lengkap wajib diisi."); return; }
+    if (!form.provinsi.trim())       { setError("Provinsi wajib diisi."); return; }
+    if (!form.kabupaten_kota.trim()) { setError("Kabupaten/Kota wajib diisi."); return; }
+    if (!form.kecamatan.trim())      { setError("Kecamatan wajib diisi."); return; }
+    if (!form.kelurahan_desa.trim()) { setError("Kelurahan/Desa wajib diisi."); return; }
+    if (!form.kode_pos.trim())       { setError("Kode Pos wajib diisi."); return; }
     setError("");
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -111,15 +123,20 @@ const Daftar = () => {
     try {
       setSubmitting(true);
       const res = await axios.post("http://localhost:8080/pendaftaran", {
-        nik:           form.nik.trim(),
-        nama:          form.nama.trim(),
-        tempat_lahir:  form.tempat_lahir.trim(),
-        tanggal_lahir: form.tanggal_lahir,
-        jenis_kelamin: form.jenis_kelamin,
-        no_hp:         form.no_hp.trim(),
-        email:         form.email.trim(),
-        alamat:        form.alamat.trim(),
-        paket_id:      selectedPaket!.id,
+        nik:            form.nik.trim(),
+        nama:           form.nama.trim(),
+        tempat_lahir:   form.tempat_lahir.trim(),
+        tanggal_lahir:  form.tanggal_lahir,
+        jenis_kelamin:  form.jenis_kelamin,
+        no_hp:          form.no_hp.trim(),
+        email:          form.email.trim(),
+        alamat_lengkap: form.alamat_lengkap.trim(),
+        provinsi:       form.provinsi.trim(),
+        kabupaten_kota: form.kabupaten_kota.trim(),
+        kecamatan:      form.kecamatan.trim(),
+        kelurahan_desa: form.kelurahan_desa.trim(),
+        kode_pos:       form.kode_pos.trim(),
+        paket_id:       selectedPaket!.id,
       });
       setNomorPendaftaran(res.data?.data?.nomor_pendaftaran ?? "");
       setStep(3);
@@ -395,14 +412,81 @@ const Daftar = () => {
 
                 {/* Alamat */}
                 <div className="daftar-form-field full">
-                  <label className="daftar-label" htmlFor="alamat">Alamat *</label>
-                  <textarea
-                    id="alamat"
-                    className="daftar-textarea"
-                    placeholder="Alamat lengkap sesuai KTP..."
-                    value={form.alamat}
-                    onChange={(e) => setForm((p) => ({ ...p, alamat: e.target.value }))}
-                    rows={3}
+                  <label className="daftar-label" htmlFor="alamat-lengkap">Alamat Lengkap *</label>
+                  <input
+                    id="alamat-lengkap"
+                    className="daftar-input"
+                    type="text"
+                    placeholder="Contoh: Jl. Veteran No.12"
+                    value={form.alamat_lengkap}
+                    onChange={(e) => setForm((p) => ({ ...p, alamat_lengkap: e.target.value }))}
+                  />
+                </div>
+
+                {/* Provinsi */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="provinsi">Provinsi *</label>
+                  <input
+                    id="provinsi"
+                    className="daftar-input"
+                    type="text"
+                    placeholder="Contoh: Sumatera Barat"
+                    value={form.provinsi}
+                    onChange={(e) => setForm((p) => ({ ...p, provinsi: e.target.value }))}
+                  />
+                </div>
+
+                {/* Kabupaten/Kota */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="kabupaten-kota">Kabupaten/Kota *</label>
+                  <input
+                    id="kabupaten-kota"
+                    className="daftar-input"
+                    type="text"
+                    placeholder="Contoh: Bukittinggi"
+                    value={form.kabupaten_kota}
+                    onChange={(e) => setForm((p) => ({ ...p, kabupaten_kota: e.target.value }))}
+                  />
+                </div>
+
+                {/* Kecamatan */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="kecamatan">Kecamatan *</label>
+                  <input
+                    id="kecamatan"
+                    className="daftar-input"
+                    type="text"
+                    placeholder="Contoh: Guguk Panjang"
+                    value={form.kecamatan}
+                    onChange={(e) => setForm((p) => ({ ...p, kecamatan: e.target.value }))}
+                  />
+                </div>
+
+                {/* Kelurahan/Desa */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="kelurahan-desa">Kelurahan/Desa *</label>
+                  <input
+                    id="kelurahan-desa"
+                    className="daftar-input"
+                    type="text"
+                    placeholder="Contoh: Tarok Dipo"
+                    value={form.kelurahan_desa}
+                    onChange={(e) => setForm((p) => ({ ...p, kelurahan_desa: e.target.value }))}
+                  />
+                </div>
+
+                {/* Kode Pos */}
+                <div className="daftar-form-field">
+                  <label className="daftar-label" htmlFor="kode-pos">Kode Pos *</label>
+                  <input
+                    id="kode-pos"
+                    className="daftar-input"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    placeholder="Contoh: 26136"
+                    value={form.kode_pos}
+                    onChange={(e) => setForm((p) => ({ ...p, kode_pos: e.target.value.replace(/\D/g, "") }))}
                   />
                 </div>
               </div>
@@ -534,10 +618,15 @@ const Daftar = () => {
                   <div className="daftar-label" style={{ marginBottom: "0.5rem" }}>Data Diri</div>
                   <div className="review-data-grid">
                     {[
-                      { label: "Nama Lengkap", value: form.nama },
-                      { label: "No. HP/WA",    value: form.no_hp },
-                      { label: "Email",         value: form.email || "-" },
-                      { label: "Alamat",        value: form.alamat || "-" },
+                      { label: "Nama Lengkap",   value: form.nama },
+                      { label: "No. HP/WA",       value: form.no_hp },
+                      { label: "Email",            value: form.email || "-" },
+                      { label: "Alamat Lengkap",   value: form.alamat_lengkap || "-" },
+                      { label: "Kelurahan/Desa",   value: form.kelurahan_desa || "-" },
+                      { label: "Kecamatan",        value: form.kecamatan || "-" },
+                      { label: "Kabupaten/Kota",   value: form.kabupaten_kota || "-" },
+                      { label: "Provinsi",         value: form.provinsi || "-" },
+                      { label: "Kode Pos",         value: form.kode_pos || "-" },
                     ].map((d) => (
                       <div className="review-data-item" key={d.label}>
                         <div className="review-data-label">{d.label}</div>

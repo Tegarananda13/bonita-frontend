@@ -390,3 +390,44 @@
     height: 480px;
   }
 }
+
+/* ── Kategori Pengaduan ── */
+.kategori-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  max-width: 260px;
+}
+
+.kategori-btn {
+  background: #f0fdf4;
+  border: 1.5px solid #1a6b43;
+  color: #1a6b43;
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.kategori-btn:hover {
+  background: #1a6b43;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(26, 107, 67, 0.25);
+}
+
+.quick-reply-pengaduan {
+  background: linear-gradient(135deg, #1a6b43, #0f5132) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  font-weight: 600 !important;
+}
+
+.quick-reply-pengaduan:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}

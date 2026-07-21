@@ -28,7 +28,12 @@ const TambahJamaah = () => {
   const [jenisKelamin, setJenisKelamin] = useState("");
   const [noHp, setNoHp] = useState("");
   const [email, setEmail] = useState("");
-  const [alamat, setAlamat] = useState("");
+  const [alamatLengkap, setAlamatLengkap] = useState("");
+  const [provinsi, setProvinsi] = useState("");
+  const [kabupatenKota, setKabupatenKota] = useState("");
+  const [kecamatan, setKecamatan] = useState("");
+  const [kelurahanDesa, setKelurahanDesa] = useState("");
+  const [kodePos, setKodePos] = useState("");
   const [paketId, setPaketId] = useState("");
 
   const [pakets, setPakets] = useState<PaketOption[]>([]);
@@ -80,23 +85,33 @@ const TambahJamaah = () => {
     if (!jenisKelamin)        return setError("Jenis kelamin wajib dipilih.");
     if (!noHp.trim())         return setError("Nomor HP wajib diisi.");
     if (!email.trim())        return setError("Email wajib diisi.");
-    if (!alamat.trim())       return setError("Alamat wajib diisi.");
-    if (!paketId)             return setError("Pilih paket umroh terlebih dahulu.");
+    if (!alamatLengkap.trim()) return setError("Alamat lengkap wajib diisi.");
+    if (!provinsi.trim())      return setError("Provinsi wajib diisi.");
+    if (!kabupatenKota.trim()) return setError("Kabupaten/Kota wajib diisi.");
+    if (!kecamatan.trim())     return setError("Kecamatan wajib diisi.");
+    if (!kelurahanDesa.trim()) return setError("Kelurahan/Desa wajib diisi.");
+    if (!kodePos.trim())       return setError("Kode Pos wajib diisi.");
+    if (!paketId)              return setError("Pilih paket umroh terlebih dahulu.");
 
     setSubmitting(true);
     try {
       const res = await axios.post(
         "http://localhost:8080/admin/customer",
         {
-          nik:           nik.trim(),
-          nama:          nama.trim(),
-          tempat_lahir:  tempatLahir.trim(),
-          tanggal_lahir: tanggalLahir,
-          jenis_kelamin: jenisKelamin,
-          no_hp:         noHp.trim(),
-          email:         email.trim(),
-          alamat:        alamat.trim(),
-          paket_id:      paketId,
+          nik:            nik.trim(),
+          nama:           nama.trim(),
+          tempat_lahir:   tempatLahir.trim(),
+          tanggal_lahir:  tanggalLahir,
+          jenis_kelamin:  jenisKelamin,
+          no_hp:          noHp.trim(),
+          email:          email.trim(),
+          alamat_lengkap: alamatLengkap.trim(),
+          provinsi:       provinsi.trim(),
+          kabupaten_kota: kabupatenKota.trim(),
+          kecamatan:      kecamatan.trim(),
+          kelurahan_desa: kelurahanDesa.trim(),
+          kode_pos:       kodePos.trim(),
+          paket_id:       paketId,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -104,7 +119,10 @@ const TambahJamaah = () => {
       const invoice = res.data?.pendaftaran?.nomor_invoice ?? "-";
       setSuccess(`✅ Jamaah "${nama}" berhasil didaftarkan!\nNo. Pendaftaran: ${nomor}\nNo. Invoice: ${invoice}`);
       setNik(""); setNama(""); setTempatLahir(""); setTanggalLahir("");
-      setJenisKelamin(""); setNoHp(""); setEmail(""); setAlamat(""); setPaketId("");
+      setJenisKelamin(""); setNoHp(""); setEmail("");
+      setAlamatLengkap(""); setProvinsi(""); setKabupatenKota("");
+      setKecamatan(""); setKelurahanDesa(""); setKodePos("");
+      setPaketId("");
       setTimeout(() => navigate("/admin/pendaftaran"), 2200);
     } catch (err: unknown) {
       setError(axios.isAxiosError(err)
@@ -186,11 +204,43 @@ const TambahJamaah = () => {
                 <input id="tj-email" type="email" className="tj-input" placeholder="email@contoh.com"
                   value={email} onChange={e => setEmail(e.target.value)} disabled={submitting} />
               </div>
-              {/* Alamat */}
+              {/* Alamat Lengkap */}
               <div className="tj-field full">
-                <label className="tj-label" htmlFor="tj-alamat">Alamat <span className="tj-required">*</span></label>
-                <textarea id="tj-alamat" className="tj-input tj-textarea" rows={3} placeholder="Alamat lengkap sesuai KTP"
-                  value={alamat} onChange={e => setAlamat(e.target.value)} disabled={submitting} />
+                <label className="tj-label" htmlFor="tj-alamat-lengkap">Alamat Lengkap <span className="tj-required">*</span></label>
+                <input id="tj-alamat-lengkap" type="text" className="tj-input"
+                  placeholder="Contoh: Jl. Veteran No.12"
+                  value={alamatLengkap} onChange={e => setAlamatLengkap(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Provinsi */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-provinsi">Provinsi <span className="tj-required">*</span></label>
+                <input id="tj-provinsi" type="text" className="tj-input" placeholder="Contoh: Sumatera Barat"
+                  value={provinsi} onChange={e => setProvinsi(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Kabupaten/Kota */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-kabupaten">Kabupaten/Kota <span className="tj-required">*</span></label>
+                <input id="tj-kabupaten" type="text" className="tj-input" placeholder="Contoh: Bukittinggi"
+                  value={kabupatenKota} onChange={e => setKabupatenKota(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Kecamatan */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-kecamatan">Kecamatan <span className="tj-required">*</span></label>
+                <input id="tj-kecamatan" type="text" className="tj-input" placeholder="Contoh: Guguk Panjang"
+                  value={kecamatan} onChange={e => setKecamatan(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Kelurahan/Desa */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-kelurahan">Kelurahan/Desa <span className="tj-required">*</span></label>
+                <input id="tj-kelurahan" type="text" className="tj-input" placeholder="Contoh: Tarok Dipo"
+                  value={kelurahanDesa} onChange={e => setKelurahanDesa(e.target.value)} disabled={submitting} />
+              </div>
+              {/* Kode Pos */}
+              <div className="tj-field">
+                <label className="tj-label" htmlFor="tj-kodepos">Kode Pos <span className="tj-required">*</span></label>
+                <input id="tj-kodepos" type="text" inputMode="numeric" maxLength={5} className="tj-input"
+                  placeholder="Contoh: 26136"
+                  value={kodePos} onChange={e => setKodePos(e.target.value.replace(/\D/g, ""))} disabled={submitting} />
               </div>
             </div>
           </div>

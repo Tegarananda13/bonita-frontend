@@ -28,6 +28,12 @@ interface DetailPendaftaran {
   tempat_lahir: string;
   tanggal_lahir: string;
   jenis_kelamin: string;
+  alamat_lengkap?: string;
+  provinsi?: string;
+  kabupaten_kota?: string;
+  kecamatan?: string;
+  kelurahan_desa?: string;
+  kode_pos?: string;
   paket: string;
   harga: number;
   tanggal_berangkat: string;
@@ -106,6 +112,12 @@ const DetailModal = ({
           tempat_lahir:  p?.Customer?.TempatLahir ?? p?.Customer?.tempat_lahir ?? "-",
           tanggal_lahir: p?.Customer?.TanggalLahir ?? p?.Customer?.tanggal_lahir ?? "",
           jenis_kelamin: p?.Customer?.JenisKelamin ?? p?.Customer?.jenis_kelamin ?? "-",
+          alamat_lengkap:  p?.Customer?.AlamatLengkap  ?? p?.Customer?.alamat_lengkap  ?? "",
+          provinsi:        p?.Customer?.Provinsi        ?? p?.Customer?.provinsi        ?? "",
+          kabupaten_kota:  p?.Customer?.KabupatenKota   ?? p?.Customer?.kabupaten_kota  ?? "",
+          kecamatan:       p?.Customer?.Kecamatan       ?? p?.Customer?.kecamatan       ?? "",
+          kelurahan_desa:  p?.Customer?.KelurahanDesa   ?? p?.Customer?.kelurahan_desa  ?? "",
+          kode_pos:        p?.Customer?.KodePos         ?? p?.Customer?.kode_pos        ?? "",
           paket: p?.Paket?.NamaPaket ?? p?.Paket?.nama_paket,
           harga: p?.Paket?.Harga ?? p?.Paket?.harga ?? 0,
           tanggal_berangkat: p?.Paket?.TanggalBerangkat ?? p?.Paket?.tanggal_berangkat,
@@ -236,6 +248,51 @@ const DetailModal = ({
                   <div className="modal-info-val">{data.email}</div>
                 </div>
               </div>
+
+              {/* Info alamat */}
+              {(data.alamat_lengkap || data.provinsi || data.kabupaten_kota) && (
+                <>
+                  <div className="modal-section-title">📍 Alamat</div>
+                  <div className="modal-info-grid">
+                    {data.alamat_lengkap && (
+                      <div className="modal-info-item full">
+                        <div className="modal-info-label">Alamat Lengkap</div>
+                        <div className="modal-info-val">{data.alamat_lengkap}</div>
+                      </div>
+                    )}
+                    {data.kelurahan_desa && (
+                      <div className="modal-info-item">
+                        <div className="modal-info-label">Kelurahan/Desa</div>
+                        <div className="modal-info-val">{data.kelurahan_desa}</div>
+                      </div>
+                    )}
+                    {data.kecamatan && (
+                      <div className="modal-info-item">
+                        <div className="modal-info-label">Kecamatan</div>
+                        <div className="modal-info-val">{data.kecamatan}</div>
+                      </div>
+                    )}
+                    {data.kabupaten_kota && (
+                      <div className="modal-info-item">
+                        <div className="modal-info-label">Kabupaten/Kota</div>
+                        <div className="modal-info-val">{data.kabupaten_kota}</div>
+                      </div>
+                    )}
+                    {data.provinsi && (
+                      <div className="modal-info-item">
+                        <div className="modal-info-label">Provinsi</div>
+                        <div className="modal-info-val">{data.provinsi}</div>
+                      </div>
+                    )}
+                    {data.kode_pos && (
+                      <div className="modal-info-item">
+                        <div className="modal-info-label">Kode Pos</div>
+                        <div className="modal-info-val">{data.kode_pos}</div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* Info paket */}
               <div className="modal-section-title">🕌 Informasi Paket</div>

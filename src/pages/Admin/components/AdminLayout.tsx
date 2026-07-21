@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import "./AdminLayout.css";
 
 interface NavItem {
@@ -81,6 +83,19 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  // Pengaduan
+  {
+    to: "/admin/pengaduan",
+    label: "Pengaduan",
+    roles: ["admin", "owner"],
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    ),
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -92,11 +107,30 @@ const pageTitle: Record<string, string> = {
   "/admin/pembayaran": "Pembayaran",
   "/admin/dokumen": "Dokumen",
   "/admin/manajemen-admin": "Manajemen Admin",
+  "/admin/pengaduan": "Pengaduan",
 };
 
 const AdminLayout = () => {
-  const { role, logout } = useAuth();
+  const { role, logout, token } = useAuth();
   const navigate = useNavigate();
+  const [badgePengaduan, setBadgePengaduan] = useState(0);
+
+  // Fetch jumlah pengaduan menunggu untuk badge sidebar
+  useEffect(() => {
+    if (!token) return;
+    const fetchBadge = async () => {
+      try {
+        const res = await axios.get("http://localhost:8080/admin/pengaduan", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setBadgePengaduan(res.data?.count_menunggu ?? 0);
+      } catch { /* silent */ }
+    };
+    fetchBadge();
+    // refresh setiap 60 detik
+    const interval = setInterval(fetchBadge, 60000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   const currentPath = window.location.pathname;
   const title = Object.entries(pageTitle).find(([key]) =>
@@ -152,6 +186,9 @@ const AdminLayout = () => {
                 >
                   <span className="sidebar-nav-icon">{item.icon}</span>
                   {item.label}
+                  {item.to === "/admin/pengaduan" && badgePengaduan > 0 && (
+                    <span className="sidebar-pengaduan-badge">{badgePengaduan}</span>
+                  )}
                 </NavLink>
               ))}
           </div>
