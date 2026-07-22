@@ -76,6 +76,21 @@ const StatusPill = ({ value }: { value: string }) => {
 
 // ── Detail Modal ───────────────────────────────────────────────────────────────
 
+const API = "http://localhost:8080";
+
+const JENIS_DOKUMEN = [
+  { value: "paspor",         label: "Paspor" },
+  { value: "ktp",            label: "KTP" },
+  { value: "kartu_keluarga", label: "Kartu Keluarga" },
+  { value: "akte_lahir",     label: "Akta Lahir" },
+  { value: "vaksin",         label: "Vaksin" },
+  { value: "foto",           label: "Foto" },
+  { value: "lainnya",        label: "Lainnya" },
+];
+
+type PayItem = { id: string; jumlah: number; status: string; tanggal: string; bukti: string };
+type DocItem = { id: string; jenis: string; status: string; file_path: string };
+
 const DetailModal = ({
   nomor,
   token,
@@ -92,236 +107,545 @@ const DetailModal = ({
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
   const [assignSuccess, setAssignSuccess] = useState(false);
-  const [payments, setPayments] = useState<{ id: string; jumlah: number; status: string; tanggal: string; bukti: string }[]>([]);
-  const [docs, setDocs] = useState<{ id: string; jenis: string; status: string; file_path: string }[]>([]);
+  const [payments, setPayments] = useState<PayItem[]>([]);
+  const [docs, setDocs] = useState<DocItem[]>([]);
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`http://localhost:8080/admin/pendaftaran/${nomor}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const p = res.data?.pendaftaran;
-        setData({
-          id: p?.ID ?? p?.id,
-          nomor_pendaftaran: p?.NomorPendaftaran ?? p?.nomor_pendaftaran,
-          nama_customer: p?.Customer?.Nama ?? p?.Customer?.nama,
-          nik:           p?.Customer?.NIK  ?? p?.Customer?.nik  ?? "-",
-          no_hp:         p?.Customer?.NoHP ?? p?.Customer?.NoHp ?? p?.Customer?.no_hp ?? "-",
-          email:         p?.Customer?.Email ?? p?.Customer?.email ?? "-",
-          tempat_lahir:  p?.Customer?.TempatLahir ?? p?.Customer?.tempat_lahir ?? "-",
-          tanggal_lahir: p?.Customer?.TanggalLahir ?? p?.Customer?.tanggal_lahir ?? "",
-          jenis_kelamin: p?.Customer?.JenisKelamin ?? p?.Customer?.jenis_kelamin ?? "-",
-          alamat_lengkap:  p?.Customer?.AlamatLengkap  ?? p?.Customer?.alamat_lengkap  ?? "",
-          provinsi:        p?.Customer?.Provinsi        ?? p?.Customer?.provinsi        ?? "",
-          kabupaten_kota:  p?.Customer?.KabupatenKota   ?? p?.Customer?.kabupaten_kota  ?? "",
-          kecamatan:       p?.Customer?.Kecamatan       ?? p?.Customer?.kecamatan       ?? "",
-          kelurahan_desa:  p?.Customer?.KelurahanDesa   ?? p?.Customer?.kelurahan_desa  ?? "",
-          kode_pos:        p?.Customer?.KodePos         ?? p?.Customer?.kode_pos        ?? "",
-          paket: p?.Paket?.NamaPaket ?? p?.Paket?.nama_paket,
-          harga: p?.Paket?.Harga ?? p?.Paket?.harga ?? 0,
-          tanggal_berangkat: p?.Paket?.TanggalBerangkat ?? p?.Paket?.tanggal_berangkat,
-          payment_status: p?.PaymentStatus ?? p?.payment_status,
-          document_status: p?.DocumentStatus ?? p?.document_status,
-          status: p?.Status ?? p?.status,
-          admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
-        });
-        // Pembayaran
-        const rawBayar = res.data?.pembayaran ?? [];
-        setPayments(rawBayar.map((b: Record<string, unknown>) => ({
-          id:      String(b.ID      ?? b.id      ?? ""),
-          jumlah:  (b.Jumlah  ?? b.jumlah  ?? 0) as number,
-          status:  (b.Status  ?? b.status  ?? "") as string,
-          tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
-          bukti:   String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
-        })));
-        // Dokumen
-        const rawDok = res.data?.dokumen ?? [];
-        setDocs(rawDok.map((d: Record<string, unknown>) => ({
-          id:        String(d.ID ?? d.id ?? ""),
-          jenis:     String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
-          status:    (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
-          file_path: String(d.FilePath ?? d.file_path ?? ""),
-        })));
-      } catch {
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+  // ── Modal Tambah/Edit Pembayaran ──
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [editPay, setEditPay] = useState<PayItem | null>(null);
+  const [payJumlah, setPayJumlah] = useState("");
+  const [payTanggal, setPayTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [payFile, setPayFile] = useState<File | null>(null);
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [payError, setPayError] = useState("");
+
+  // ── Modal Upload/Edit Dokumen ──
+  const [showDocModal, setShowDocModal] = useState(false);
+  const [editDoc, setEditDoc] = useState<DocItem | null>(null);
+  const [docJenis, setDocJenis] = useState("paspor");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docSubmitting, setDocSubmitting] = useState(false);
+  const [docError, setDocError] = useState("");
+
+  // ── Konfirmasi hapus ──
+  const [deletingPayId, setDeletingPayId] = useState<string | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
+  const authH = { Authorization: `Bearer ${token}` };
+
+  // ── Fetch data ──
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/admin/pendaftaran/${nomor}`, {
+        headers: authH,
+      });
+      const p = res.data?.pendaftaran;
+      setData({
+        id: p?.ID ?? p?.id,
+        nomor_pendaftaran: p?.NomorPendaftaran ?? p?.nomor_pendaftaran,
+        nama_customer: p?.Customer?.Nama ?? p?.Customer?.nama,
+        nik:           p?.Customer?.NIK  ?? p?.Customer?.nik  ?? "-",
+        no_hp:         p?.Customer?.NoHP ?? p?.Customer?.NoHp ?? p?.Customer?.no_hp ?? "-",
+        email:         p?.Customer?.Email ?? p?.Customer?.email ?? "-",
+        tempat_lahir:  p?.Customer?.TempatLahir ?? p?.Customer?.tempat_lahir ?? "-",
+        tanggal_lahir: p?.Customer?.TanggalLahir ?? p?.Customer?.tanggal_lahir ?? "",
+        jenis_kelamin: p?.Customer?.JenisKelamin ?? p?.Customer?.jenis_kelamin ?? "-",
+        alamat_lengkap:  p?.Customer?.AlamatLengkap  ?? p?.Customer?.alamat_lengkap  ?? "",
+        provinsi:        p?.Customer?.Provinsi        ?? p?.Customer?.provinsi        ?? "",
+        kabupaten_kota:  p?.Customer?.KabupatenKota   ?? p?.Customer?.kabupaten_kota  ?? "",
+        kecamatan:       p?.Customer?.Kecamatan       ?? p?.Customer?.kecamatan       ?? "",
+        kelurahan_desa:  p?.Customer?.KelurahanDesa   ?? p?.Customer?.kelurahan_desa  ?? "",
+        kode_pos:        p?.Customer?.KodePos         ?? p?.Customer?.kode_pos        ?? "",
+        paket: p?.Paket?.NamaPaket ?? p?.Paket?.nama_paket,
+        harga: p?.Paket?.Harga ?? p?.Paket?.harga ?? 0,
+        tanggal_berangkat: p?.Paket?.TanggalBerangkat ?? p?.Paket?.tanggal_berangkat,
+        payment_status: p?.PaymentStatus ?? p?.payment_status,
+        document_status: p?.DocumentStatus ?? p?.document_status,
+        status: p?.Status ?? p?.status,
+        admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
+      });
+      const rawBayar = res.data?.pembayaran ?? [];
+      setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+        id:      String(b.ID      ?? b.id      ?? ""),
+        jumlah:  (b.Jumlah  ?? b.jumlah  ?? 0) as number,
+        status:  (b.Status  ?? b.status  ?? "") as string,
+        tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
+        bukti:   String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
+      })));
+      const rawDok = res.data?.dokumen ?? [];
+      setDocs(rawDok.map((d: Record<string, unknown>) => ({
+        id:        String(d.ID ?? d.id ?? ""),
+        jenis:     String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
+        status:    (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
+        file_path: String(d.FilePath ?? d.file_path ?? ""),
+      })));
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomor, token]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleAssign = async () => {
     if (!data) return;
     setAssignError("");
     try {
       setAssigning(true);
-      await axios.put(`http://localhost:8080/admin/pendaftaran/${data.id}/assign`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.put(`${API}/admin/pendaftaran/${data.id}/assign`, {}, { headers: authH });
       setAssignSuccess(true);
       onAssigned();
     } catch (err: unknown) {
-      setAssignError(
-        axios.isAxiosError(err)
-          ? (err.response?.data?.error ?? "Gagal assign.")
-          : "Gagal assign."
-      );
+      setAssignError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal assign.") : "Gagal assign.");
     } finally {
       setAssigning(false);
     }
   };
 
+  // ── Pembayaran helpers ──
+  const openAddPay = () => {
+    setEditPay(null);
+    setPayJumlah("");
+    setPayTanggal(new Date().toISOString().split("T")[0]);
+    setPayFile(null);
+    setPayError("");
+    setShowPayModal(true);
+  };
+
+  const openEditPay = (pay: PayItem) => {
+    setEditPay(pay);
+    setPayJumlah(String(pay.jumlah));
+    setPayTanggal(pay.tanggal ? pay.tanggal.split("T")[0] : new Date().toISOString().split("T")[0]);
+    setPayFile(null);
+    setPayError("");
+    setShowPayModal(true);
+  };
+
+  const submitPay = async () => {
+    if (!data) return;
+    setPayError("");
+    const nominal = parseFloat(payJumlah.replace(/[^\d]/g, ""));
+    if (!nominal || isNaN(nominal) || nominal <= 0) {
+      setPayError("Jumlah pembayaran tidak valid");
+      return;
+    }
+    setPaySubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("jumlah", String(nominal));
+      fd.append("tanggal_bayar", payTanggal);
+      if (payFile) fd.append("bukti", payFile);
+
+      if (editPay) {
+        await axios.put(`${API}/admin/pembayaran/${editPay.id}/admin`, fd, { headers: authH });
+      } else {
+        await axios.post(`${API}/admin/pendaftaran/${data.id}/pembayaran`, fd, { headers: authH });
+      }
+      setShowPayModal(false);
+      await fetchData();
+    } catch (err: unknown) {
+      setPayError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyimpan pembayaran") : "Gagal menyimpan pembayaran");
+    } finally {
+      setPaySubmitting(false);
+    }
+  };
+
+  const deletePay = async (id: string) => {
+    setDeletingPayId(id);
+    try {
+      await axios.delete(`${API}/admin/pembayaran/${id}/admin`, { headers: authH });
+      await fetchData();
+    } catch {
+      // non-fatal
+    } finally {
+      setDeletingPayId(null);
+    }
+  };
+
+  // ── Dokumen helpers ──
+  const openAddDoc = () => {
+    setEditDoc(null);
+    setDocJenis("paspor");
+    setDocFile(null);
+    setDocError("");
+    setShowDocModal(true);
+  };
+
+  const openEditDoc = (doc: DocItem) => {
+    setEditDoc(doc);
+    setDocJenis(doc.jenis);
+    setDocFile(null);
+    setDocError("");
+    setShowDocModal(true);
+  };
+
+  const submitDoc = async () => {
+    if (!data) return;
+    setDocError("");
+    if (!editDoc && !docFile) { setDocError("File wajib dipilih"); return; }
+    setDocSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("jenis", docJenis);
+      if (docFile) fd.append("file", docFile);
+
+      if (editDoc) {
+        await axios.put(`${API}/admin/dokumen/${editDoc.id}/admin`, fd, { headers: authH });
+      } else {
+        await axios.post(`${API}/admin/pendaftaran/${data.id}/dokumen`, fd, { headers: authH });
+      }
+      setShowDocModal(false);
+      await fetchData();
+    } catch (err: unknown) {
+      setDocError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyimpan dokumen") : "Gagal menyimpan dokumen");
+    } finally {
+      setDocSubmitting(false);
+    }
+  };
+
+  const deleteDoc = async (id: string) => {
+    setDeletingDocId(id);
+    try {
+      await axios.delete(`${API}/admin/dokumen/${id}/admin`, { headers: authH });
+      await fetchData();
+    } catch {
+      // non-fatal
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
+
+  // ── Label pembayaran (DP / Pembayaran 2 / dst.) ──
+  const payLabel = (idx: number) => idx === 0 ? "DP" : `Pembayaran ${idx + 1}`;
+
+  // ── Inline modal styles ──
+  const inlineModal: React.CSSProperties = {
+    position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)",
+    display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
+  };
+  const inlineBox: React.CSSProperties = {
+    background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "440px",
+    padding: "1.5rem", boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+  };
+  const inlineTitle: React.CSSProperties = {
+    fontWeight: 700, fontSize: "1rem", marginBottom: "1.25rem", color: "#1e293b",
+  };
+  const inlineLabel: React.CSSProperties = {
+    display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#475569",
+    marginBottom: "0.3rem", marginTop: "0.875rem",
+  };
+  const inlineInput: React.CSSProperties = {
+    width: "100%", padding: "0.6rem 0.75rem", border: "1.5px solid #e2e8f0",
+    borderRadius: "8px", fontSize: "0.875rem", color: "#1e293b", outline: "none",
+    boxSizing: "border-box",
+  };
+  const inlineActions: React.CSSProperties = {
+    display: "flex", gap: "0.75rem", marginTop: "1.25rem", justifyContent: "flex-end",
+  };
+  const btnCancel: React.CSSProperties = {
+    padding: "0.5rem 1.1rem", borderRadius: "8px", border: "1.5px solid #e2e8f0",
+    background: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, color: "#64748b",
+  };
+  const btnSubmit: React.CSSProperties = {
+    padding: "0.5rem 1.25rem", borderRadius: "8px", border: "none",
+    background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#fff",
+    cursor: "pointer", fontSize: "0.85rem", fontWeight: 700,
+  };
+  const actionBtn = (color: string): React.CSSProperties => ({
+    fontSize: "0.72rem", fontWeight: 600, color, background: "transparent",
+    border: "none", cursor: "pointer", padding: "2px 6px", borderRadius: "6px",
+    display: "inline-flex", alignItems: "center", gap: "3px",
+  });
+  const sectionHeaderRow: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    marginBottom: "0.6rem",
+  };
+  const addBtn: React.CSSProperties = {
+    fontSize: "0.75rem", fontWeight: 700, color: "#4f46e5",
+    background: "#ede9fe", border: "none", borderRadius: "8px",
+    padding: "4px 12px", cursor: "pointer",
+  };
+
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-panel">
-        {/* Header */}
-        <div className="modal-header">
-          <div>
-            <div className="modal-title">📋 Detail Pendaftaran</div>
-            {data && (
-              <div className="modal-subtitle">{data.nomor_pendaftaran}</div>
+    <>
+      {/* ── Modal Tambah/Edit Pembayaran ── */}
+      {showPayModal && (
+        <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !paySubmitting && setShowPayModal(false)}>
+          <div style={inlineBox}>
+            <div style={inlineTitle}>
+              {editPay ? "✏️ Edit Pembayaran" : "➕ Tambah Pembayaran"}
+            </div>
+
+            {payError && (
+              <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: "8px", padding: "0.6rem 0.875rem", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
+                {payError}
+              </div>
             )}
+
+            <label style={inlineLabel}>Jumlah Pembayaran *</label>
+            <input
+              style={inlineInput}
+              type="text"
+              placeholder="Contoh: 5000000"
+              value={payJumlah}
+              onChange={e => setPayJumlah(e.target.value.replace(/[^\d]/g, ""))}
+              disabled={paySubmitting}
+            />
+
+            <label style={inlineLabel}>Tanggal Pembayaran *</label>
+            <input
+              style={inlineInput}
+              type="date"
+              value={payTanggal}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={e => setPayTanggal(e.target.value)}
+              disabled={paySubmitting}
+            />
+
+            <label style={inlineLabel}>Bukti Pembayaran (opsional)</label>
+            <input
+              style={{ ...inlineInput, padding: "0.45rem 0.75rem" }}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={e => setPayFile(e.target.files?.[0] ?? null)}
+              disabled={paySubmitting}
+            />
+            {editPay?.bukti && !payFile && (
+              <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
+                Bukti saat ini:{" "}
+                <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#4f46e5" }}>
+                  Lihat file lama
+                </a>
+              </div>
+            )}
+
+            <div style={inlineActions}>
+              <button style={btnCancel} onClick={() => setShowPayModal(false)} disabled={paySubmitting}>
+                Batal
+              </button>
+              <button style={btnSubmit} onClick={submitPay} disabled={paySubmitting}>
+                {paySubmitting ? "Menyimpan..." : "💾 Simpan"}
+              </button>
+            </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
         </div>
+      )}
 
-        {/* Body */}
-        <div className="modal-body">
-          {loading ? (
-            <div className="modal-loading">
-              <div className="modal-spin" />
-              Memuat detail...
+      {/* ── Modal Upload/Edit Dokumen ── */}
+      {showDocModal && (
+        <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !docSubmitting && setShowDocModal(false)}>
+          <div style={inlineBox}>
+            <div style={inlineTitle}>
+              {editDoc ? "✏️ Edit Dokumen" : "📎 Upload Dokumen"}
             </div>
-          ) : !data ? (
-            <div className="modal-loading" style={{ color: "#ef4444" }}>
-              Gagal memuat data pendaftaran.
+
+            {docError && (
+              <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: "8px", padding: "0.6rem 0.875rem", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
+                {docError}
+              </div>
+            )}
+
+            <label style={inlineLabel}>Jenis Dokumen *</label>
+            <select
+              style={inlineInput}
+              value={docJenis}
+              onChange={e => setDocJenis(e.target.value)}
+              disabled={docSubmitting}
+            >
+              {JENIS_DOKUMEN.map(j => (
+                <option key={j.value} value={j.value}>{j.label}</option>
+              ))}
+            </select>
+
+            <label style={inlineLabel}>
+              {editDoc ? "Ganti File (opsional)" : "File Dokumen *"}
+            </label>
+            <input
+              style={{ ...inlineInput, padding: "0.45rem 0.75rem" }}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={e => setDocFile(e.target.files?.[0] ?? null)}
+              disabled={docSubmitting}
+            />
+            {editDoc?.file_path && !docFile && (
+              <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
+                File saat ini:{" "}
+                <a href={editDoc.file_path} target="_blank" rel="noreferrer" style={{ color: "#4f46e5" }}>
+                  Lihat file lama
+                </a>
+              </div>
+            )}
+
+            <div style={inlineActions}>
+              <button style={btnCancel} onClick={() => setShowDocModal(false)} disabled={docSubmitting}>
+                Batal
+              </button>
+              <button style={btnSubmit} onClick={submitDoc} disabled={docSubmitting}>
+                {docSubmitting ? "Mengupload..." : "📤 Upload"}
+              </button>
             </div>
-          ) : (
-            <>
-              {/* Status bar */}
-              <div className="modal-status-row">
-                <div className="modal-status-item">
-                  <div className="modal-status-label">Status Keseluruhan</div>
-                  <StatusPill value={data.status} />
-                </div>
-                <div className="modal-status-item">
-                  <div className="modal-status-label">Pembayaran</div>
-                  <StatusPill value={data.payment_status} />
-                </div>
-                <div className="modal-status-item">
-                  <div className="modal-status-label">Dokumen</div>
-                  <StatusPill value={data.document_status} />
-                </div>
-              </div>
+          </div>
+        </div>
+      )}
 
-              {/* Info jamaah */}
-              <div className="modal-section-title">👤 Informasi Jamaah</div>
-              <div className="modal-info-grid">
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">Nama Lengkap</div>
-                  <div className="modal-info-val">{data.nama_customer}</div>
-                </div>
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">NIK</div>
-                  <div className="modal-info-val" style={{ fontFamily: "monospace" }}>{data.nik}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Tempat Lahir</div>
-                  <div className="modal-info-val">{data.tempat_lahir}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Tanggal Lahir</div>
-                  <div className="modal-info-val">{data.tanggal_lahir ? fmtDate(data.tanggal_lahir) : "-"}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Jenis Kelamin</div>
-                  <div className="modal-info-val">{data.jenis_kelamin}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">No. HP</div>
-                  <div className="modal-info-val">{data.no_hp}</div>
-                </div>
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">Email</div>
-                  <div className="modal-info-val">{data.email}</div>
-                </div>
-              </div>
-
-              {/* Info alamat */}
-              {(data.alamat_lengkap || data.provinsi || data.kabupaten_kota) && (
-                <>
-                  <div className="modal-section-title">📍 Alamat</div>
-                  <div className="modal-info-grid">
-                    {data.alamat_lengkap && (
-                      <div className="modal-info-item full">
-                        <div className="modal-info-label">Alamat Lengkap</div>
-                        <div className="modal-info-val">{data.alamat_lengkap}</div>
-                      </div>
-                    )}
-                    {data.kelurahan_desa && (
-                      <div className="modal-info-item">
-                        <div className="modal-info-label">Kelurahan/Desa</div>
-                        <div className="modal-info-val">{data.kelurahan_desa}</div>
-                      </div>
-                    )}
-                    {data.kecamatan && (
-                      <div className="modal-info-item">
-                        <div className="modal-info-label">Kecamatan</div>
-                        <div className="modal-info-val">{data.kecamatan}</div>
-                      </div>
-                    )}
-                    {data.kabupaten_kota && (
-                      <div className="modal-info-item">
-                        <div className="modal-info-label">Kabupaten/Kota</div>
-                        <div className="modal-info-val">{data.kabupaten_kota}</div>
-                      </div>
-                    )}
-                    {data.provinsi && (
-                      <div className="modal-info-item">
-                        <div className="modal-info-label">Provinsi</div>
-                        <div className="modal-info-val">{data.provinsi}</div>
-                      </div>
-                    )}
-                    {data.kode_pos && (
-                      <div className="modal-info-item">
-                        <div className="modal-info-label">Kode Pos</div>
-                        <div className="modal-info-val">{data.kode_pos}</div>
-                      </div>
-                    )}
-                  </div>
-                </>
+      {/* ── Main Modal ── */}
+      <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="modal-panel">
+          {/* Header */}
+          <div className="modal-header">
+            <div>
+              <div className="modal-title">📋 Detail Pendaftaran</div>
+              {data && (
+                <div className="modal-subtitle">{data.nomor_pendaftaran}</div>
               )}
+            </div>
+            <button className="modal-close-btn" onClick={onClose}>✕</button>
+          </div>
 
-              {/* Info paket */}
-              <div className="modal-section-title">🕌 Informasi Paket</div>
-              <div className="modal-info-grid">
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">Nama Paket</div>
-                  <div className="modal-info-val">{data.paket}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Harga</div>
-                  <div className="modal-info-val" style={{ color: "#4f46e5", fontWeight: 800 }}>
-                    {fmtRupiah(data.harga)}
+          {/* Body */}
+          <div className="modal-body">
+            {loading ? (
+              <div className="modal-loading">
+                <div className="modal-spin" />
+                Memuat detail...
+              </div>
+            ) : !data ? (
+              <div className="modal-loading" style={{ color: "#ef4444" }}>
+                Gagal memuat data pendaftaran.
+              </div>
+            ) : (
+              <>
+                {/* Status bar */}
+                <div className="modal-status-row">
+                  <div className="modal-status-item">
+                    <div className="modal-status-label">Status Keseluruhan</div>
+                    <StatusPill value={data.status} />
+                  </div>
+                  <div className="modal-status-item">
+                    <div className="modal-status-label">Pembayaran</div>
+                    <StatusPill value={data.payment_status} />
+                  </div>
+                  <div className="modal-status-item">
+                    <div className="modal-status-label">Dokumen</div>
+                    <StatusPill value={data.document_status} />
                   </div>
                 </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Tanggal Berangkat</div>
-                  <div className="modal-info-val">{data.tanggal_berangkat ? fmtDate(data.tanggal_berangkat) : "-"}</div>
-                </div>
-              </div>
 
-              {/* Riwayat Pembayaran */}
-              {payments.length > 0 && (
-                <>
-                  <div className="modal-section-title">💳 Riwayat Pembayaran</div>
-                  {payments.map((pay, i) => (
+                {/* Info jamaah */}
+                <div className="modal-section-title">👤 Informasi Jamaah</div>
+                <div className="modal-info-grid">
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">Nama Lengkap</div>
+                    <div className="modal-info-val">{data.nama_customer}</div>
+                  </div>
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">NIK</div>
+                    <div className="modal-info-val" style={{ fontFamily: "monospace" }}>{data.nik}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Tempat Lahir</div>
+                    <div className="modal-info-val">{data.tempat_lahir}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Tanggal Lahir</div>
+                    <div className="modal-info-val">{data.tanggal_lahir ? fmtDate(data.tanggal_lahir) : "-"}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Jenis Kelamin</div>
+                    <div className="modal-info-val">{data.jenis_kelamin}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">No. HP</div>
+                    <div className="modal-info-val">{data.no_hp}</div>
+                  </div>
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">Email</div>
+                    <div className="modal-info-val">{data.email}</div>
+                  </div>
+                </div>
+
+                {/* Info alamat */}
+                {(data.alamat_lengkap || data.provinsi || data.kabupaten_kota) && (
+                  <>
+                    <div className="modal-section-title">📍 Alamat</div>
+                    <div className="modal-info-grid">
+                      {data.alamat_lengkap && (
+                        <div className="modal-info-item full">
+                          <div className="modal-info-label">Alamat Lengkap</div>
+                          <div className="modal-info-val">{data.alamat_lengkap}</div>
+                        </div>
+                      )}
+                      {data.kelurahan_desa && (
+                        <div className="modal-info-item">
+                          <div className="modal-info-label">Kelurahan/Desa</div>
+                          <div className="modal-info-val">{data.kelurahan_desa}</div>
+                        </div>
+                      )}
+                      {data.kecamatan && (
+                        <div className="modal-info-item">
+                          <div className="modal-info-label">Kecamatan</div>
+                          <div className="modal-info-val">{data.kecamatan}</div>
+                        </div>
+                      )}
+                      {data.kabupaten_kota && (
+                        <div className="modal-info-item">
+                          <div className="modal-info-label">Kabupaten/Kota</div>
+                          <div className="modal-info-val">{data.kabupaten_kota}</div>
+                        </div>
+                      )}
+                      {data.provinsi && (
+                        <div className="modal-info-item">
+                          <div className="modal-info-label">Provinsi</div>
+                          <div className="modal-info-val">{data.provinsi}</div>
+                        </div>
+                      )}
+                      {data.kode_pos && (
+                        <div className="modal-info-item">
+                          <div className="modal-info-label">Kode Pos</div>
+                          <div className="modal-info-val">{data.kode_pos}</div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Info paket */}
+                <div className="modal-section-title">🕌 Informasi Paket</div>
+                <div className="modal-info-grid">
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">Nama Paket</div>
+                    <div className="modal-info-val">{data.paket}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Harga</div>
+                    <div className="modal-info-val" style={{ color: "#4f46e5", fontWeight: 800 }}>
+                      {fmtRupiah(data.harga)}
+                    </div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Tanggal Berangkat</div>
+                    <div className="modal-info-val">{data.tanggal_berangkat ? fmtDate(data.tanggal_berangkat) : "-"}</div>
+                  </div>
+                </div>
+
+                {/* ── Riwayat Pembayaran ── */}
+                <div style={sectionHeaderRow}>
+                  <div className="modal-section-title" style={{ margin: 0 }}>💳 Riwayat Pembayaran</div>
+                  <button style={addBtn} onClick={openAddPay}>+ Tambah Pembayaran</button>
+                </div>
+
+                {payments.length === 0 ? (
+                  <div style={{ fontSize: "0.8rem", color: "#94a3b8", marginBottom: "0.75rem", padding: "0.5rem 0" }}>
+                    Belum ada pembayaran.
+                  </div>
+                ) : (
+                  payments.map((pay, i) => (
                     <div key={pay.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
                         <span style={{ color: "#374151", fontWeight: 600 }}>
-                          {i === 0 ? "DP" : `Pembayaran ${i + 1}`}
+                          {payLabel(i)}
                           {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
                         </span>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -329,104 +653,127 @@ const DetailModal = ({
                           <StatusPill value={pay.status} />
                         </div>
                       </div>
-                      {pay.bukti && (
-                        <div style={{ borderTop: "1px solid #e2e8f0", padding: "0.5rem 0.875rem", display: "flex", alignItems: "center", gap: "0.5rem", background: "#fff" }}>
-                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Bukti:</span>
-                          <a href={pay.bukti} target="_blank" rel="noreferrer"
-                            style={{ fontSize: "0.78rem", color: "#1a6b43", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem" }}
-                          >
-                            🖼️ Lihat Foto Bukti Pembayaran
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      {/* Action row */}
+                      <div style={{ borderTop: "1px solid #e2e8f0", padding: "0.35rem 0.875rem", display: "flex", alignItems: "center", gap: "0.25rem", background: "#fff", flexWrap: "wrap" }}>
+                        {pay.bukti && (
+                          <a href={pay.bukti} target="_blank" rel="noreferrer" style={{ ...actionBtn("#059669"), textDecoration: "none" }}>
+                            👁 Lihat Bukti
                           </a>
-                        </div>
-                      )}
+                        )}
+                        <button style={actionBtn("#4f46e5")} onClick={() => openEditPay(pay)}>
+                          ✏ Edit
+                        </button>
+                        <button
+                          style={actionBtn("#ef4444")}
+                          onClick={() => deletePay(pay.id)}
+                          disabled={deletingPayId === pay.id}
+                        >
+                          {deletingPayId === pay.id ? "⏳" : "🗑 Hapus"}
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                </>
-              )}
+                  ))
+                )}
 
-              {/* Dokumen */}
-              {docs.length > 0 && (
-                <>
-                  <div className="modal-section-title" style={{ marginTop: "0.5rem" }}>📄 Dokumen</div>
-                  {docs.map((dok, i) => (
+                {/* ── Dokumen ── */}
+                <div style={{ ...sectionHeaderRow, marginTop: "0.5rem" }}>
+                  <div className="modal-section-title" style={{ margin: 0 }}>📄 Dokumen</div>
+                  <button style={addBtn} onClick={openAddDoc}>+ Upload Dokumen</button>
+                </div>
+
+                {docs.length === 0 ? (
+                  <div style={{ fontSize: "0.8rem", color: "#94a3b8", marginBottom: "0.75rem", padding: "0.5rem 0" }}>
+                    Belum ada dokumen.
+                  </div>
+                ) : (
+                  docs.map((dok, i) => (
                     <div key={dok.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
                         <span style={{ color: "#374151", textTransform: "capitalize", fontWeight: 600 }}>{dok.jenis || "-"}</span>
                         <StatusPill value={dok.status} />
                       </div>
-                      {dok.file_path && (
-                        <div style={{ borderTop: "1px solid #e2e8f0", padding: "0.5rem 0.875rem", display: "flex", alignItems: "center", gap: "0.5rem", background: "#fff" }}>
-                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>File:</span>
-                          <a href={dok.file_path} target="_blank" rel="noreferrer"
-                            style={{ fontSize: "0.78rem", color: "#1a6b43", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem" }}
-                          >
-                            📎 Lihat File Dokumen
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      {/* Action row */}
+                      <div style={{ borderTop: "1px solid #e2e8f0", padding: "0.35rem 0.875rem", display: "flex", alignItems: "center", gap: "0.25rem", background: "#fff", flexWrap: "wrap" }}>
+                        {dok.file_path && (
+                          <a href={dok.file_path} target="_blank" rel="noreferrer" style={{ ...actionBtn("#059669"), textDecoration: "none" }}>
+                            👁 Lihat File
                           </a>
-                        </div>
-                      )}
+                        )}
+                        <button style={actionBtn("#4f46e5")} onClick={() => openEditDoc(dok)}>
+                          ✏ Edit
+                        </button>
+                        <button
+                          style={actionBtn("#ef4444")}
+                          onClick={() => deleteDoc(dok.id)}
+                          disabled={deletingDocId === dok.id}
+                        >
+                          {deletingDocId === dok.id ? "⏳" : "🗑 Hapus"}
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                </>
-              )}
-
-              {/* Assign PIC */}
-              <div className="modal-assign-section">
-                <div className="modal-section-title">👷 PIC / Admin Penangggung Jawab</div>
-
-                {data.admin_pic ? (
-                  <div className="modal-pic-assigned">
-                    <div className="modal-pic-avatar">
-                      {data.admin_pic.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="modal-pic-name">{data.admin_pic}</div>
-                      <div className="modal-pic-label">Admin PIC yang menangani jamaah ini</div>
-                    </div>
-                    <div className="modal-pic-badge">✓ Assigned</div>
-                  </div>
-                ) : assignSuccess ? (
-                  <div className="modal-assign-success">
-                    ✅ Berhasil! Anda telah menjadi PIC untuk jamaah ini.
-                  </div>
-                ) : (
-                  <div className="modal-assign-empty">
-                    <div className="modal-assign-empty-icon">👤</div>
-                    <div className="modal-assign-empty-text">
-                      Belum ada admin yang mengambil tanggung jawab jamaah ini.
-                    </div>
-                    {assignError && (
-                      <div className="modal-assign-error">{assignError}</div>
-                    )}
-                    <button
-                      className="modal-assign-btn"
-                      onClick={handleAssign}
-                      disabled={assigning}
-                    >
-                      {assigning ? (
-                        <><div className="mini-spin-w" />Memproses...</>
-                      ) : (
-                        <>🙋 Jadikan Saya PIC Jamaah Ini</>
-                      )}
-                    </button>
-                  </div>
+                  ))
                 )}
-              </div>
-            </>
-          )}
-        </div>
 
-        {/* Footer */}
-        <div className="modal-footer">
-          <button className="modal-close-full-btn" onClick={onClose}>
-            Tutup
-          </button>
+                {/* Assign PIC */}
+                <div className="modal-assign-section">
+                  <div className="modal-section-title">👷 PIC / Admin Penangggung Jawab</div>
+
+                  {data.admin_pic ? (
+                    <div className="modal-pic-assigned">
+                      <div className="modal-pic-avatar">
+                        {data.admin_pic.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="modal-pic-name">{data.admin_pic}</div>
+                        <div className="modal-pic-label">Admin PIC yang menangani jamaah ini</div>
+                      </div>
+                      <div className="modal-pic-badge">✓ Assigned</div>
+                    </div>
+                  ) : assignSuccess ? (
+                    <div className="modal-assign-success">
+                      ✅ Berhasil! Anda telah menjadi PIC untuk jamaah ini.
+                    </div>
+                  ) : (
+                    <div className="modal-assign-empty">
+                      <div className="modal-assign-empty-icon">👤</div>
+                      <div className="modal-assign-empty-text">
+                        Belum ada admin yang mengambil tanggung jawab jamaah ini.
+                      </div>
+                      {assignError && (
+                        <div className="modal-assign-error">{assignError}</div>
+                      )}
+                      <button
+                        className="modal-assign-btn"
+                        onClick={handleAssign}
+                        disabled={assigning}
+                      >
+                        {assigning ? (
+                          <><div className="mini-spin-w" />Memproses...</>
+                        ) : (
+                          <>🙋 Jadikan Saya PIC Jamaah Ini</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="modal-footer">
+            <button className="modal-close-full-btn" onClick={onClose}>
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
+
+
+
 
 // ── Main Component ────────────────────────────────────────────────────────────
 

@@ -474,7 +474,7 @@ const Home = () => {
                   <div className="contact-info-icon contact-info-icon-wa">💬</div>
                   <div>
                     <div className="contact-info-label">WhatsApp</div>
-                    <div className="contact-info-val">+62 812-3456-7890</div>
+                    <div className="contact-info-val">+62 823-1888-3430</div>
                   </div>
                 </a>
 
@@ -495,7 +495,7 @@ const Home = () => {
                 </div>
 
                 <a
-                  href="https://instagram.com/bonitaumroh"
+                  href="https://www.instagram.com/bonitaumrahbukittinggi?igsh=MXZnazd0NDRvNm01Mg=="
                   target="_blank"
                   rel="noreferrer"
                   className="contact-info-item"
@@ -503,7 +503,7 @@ const Home = () => {
                   <div className="contact-info-icon contact-info-icon-ig">📸</div>
                   <div>
                     <div className="contact-info-label">Instagram</div>
-                    <div className="contact-info-val">@bonitaumroh</div>
+                    <div className="contact-info-val">bonitaumrahbukittinggi</div>
                   </div>
                 </a>
               </div>
