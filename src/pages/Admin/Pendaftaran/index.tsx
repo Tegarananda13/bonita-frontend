@@ -9,13 +9,16 @@ import "./AdminPendaftaran.css";
 interface PendaftaranItem {
   id: string;
   nomor_pendaftaran: string;
+  nomor_invoice?: string;
   nama_customer: string;
   paket: string;
   payment_status: string;
   document_status: string;
   status: string;
   tanggal_daftar: string;
-  assigned?: boolean; // sudah di-assign ke admin lain
+  total_tagihan?: number;
+  total_pembayaran?: number;
+  assigned?: boolean;
 }
 
 interface DetailPendaftaran {
@@ -36,6 +39,8 @@ interface DetailPendaftaran {
   kode_pos?: string;
   paket: string;
   harga: number;
+  total_tagihan: number;
+  nomor_invoice: string;
   tanggal_berangkat: string;
   payment_status: string;
   document_status: string;
@@ -159,7 +164,9 @@ const DetailModal = ({
         paket: p?.Paket?.NamaPaket ?? p?.Paket?.nama_paket,
         harga: p?.Paket?.Harga ?? p?.Paket?.harga ?? 0,
         tanggal_berangkat: p?.Paket?.TanggalBerangkat ?? p?.Paket?.tanggal_berangkat,
-        payment_status: p?.PaymentStatus ?? p?.payment_status,
+        payment_status: p?.payment_status ?? p?.PaymentStatus ?? p?.Invoice?.StatusPembayaran ?? "",
+        total_tagihan:  p?.total_tagihan ?? p?.Paket?.Harga ?? 0,
+        nomor_invoice:  p?.nomor_invoice ?? "",
         document_status: p?.DocumentStatus ?? p?.document_status,
         status: p?.Status ?? p?.status,
         admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
@@ -777,6 +784,317 @@ const DetailModal = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+// ── Invoice Group Type ──────────────────────────────────────────────────────
+
+interface InvoiceGroup {
+  nomor_invoice: string;
+  paket: string;
+  payment_status: string;
+  total_tagihan: number;
+  total_pembayaran: number;
+  jamaah: PendaftaranItem[];
+  tanggal: string;
+}
+
+// ── Helper: group list by nomor_invoice ─────────────────────────────────────
+
+const groupByInvoice = (list: (PendaftaranItem & { nomor_invoice?: string; total_tagihan?: number; total_pembayaran?: number })[]): InvoiceGroup[] => {
+  const map: Record<string, InvoiceGroup> = {};
+  for (const p of list) {
+    const key = p.nomor_invoice || p.nomor_pendaftaran;
+    if (!map[key]) {
+      map[key] = {
+        nomor_invoice: key,
+        paket: p.paket,
+        payment_status: p.payment_status,
+        total_tagihan: p.total_tagihan ?? 0,
+        total_pembayaran: p.total_pembayaran ?? 0,
+        jamaah: [],
+        tanggal: p.tanggal_daftar,
+      };
+    }
+    map[key].jamaah.push(p);
+  }
+  return Object.values(map).filter(g => g.jamaah.length > 1);
+};
+
+// ── GrupDetailModal ──────────────────────────────────────────────────────────
+
+const GrupDetailModal = ({
+  nomorInvoice,
+  token,
+  allPendaftaran,
+  onClose,
+  onOpenDetail,
+}: {
+  nomorInvoice: string;
+  token: string;
+  allPendaftaran: (PendaftaranItem & { nomor_invoice?: string; total_tagihan?: number; total_pembayaran?: number })[];
+  onClose: () => void;
+  onOpenDetail: (nomor: string) => void;
+}) => {
+  const jamaahInGrup = allPendaftaran.filter(p => (p.nomor_invoice || p.nomor_pendaftaran) === nomorInvoice);
+  const first = jamaahInGrup[0];
+
+  // Ambil pembayaran dari pendaftaran pertama (semua dalam invoice yang sama)
+  const [payments, setPayments] = useState<{ id: string; jumlah: number; status: string; tanggal: string }[]>([]);
+  const [totalTagihan, setTotalTagihan] = useState(first?.total_tagihan ?? 0);
+  const [totalPembayaran, setTotalPembayaran] = useState(first?.total_pembayaran ?? 0);
+  const [loadingPay, setLoadingPay] = useState(true);
+
+  useEffect(() => {
+    if (!first) return;
+    const fetch = async () => {
+      try {
+        const res = await axios.get(`http://localhost:8080/admin/pendaftaran/${first.nomor_pendaftaran}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const p = res.data?.pendaftaran;
+        if (p?.total_tagihan) setTotalTagihan(p.total_tagihan);
+        if (p?.total_pembayaran !== undefined) setTotalPembayaran(p.total_pembayaran);
+        const rawBayar = res.data?.pembayaran ?? [];
+        setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+          id:      String(b.ID ?? b.id ?? ""),
+          jumlah:  Number(b.Jumlah ?? b.jumlah ?? 0),
+          status:  String(b.Status ?? b.status ?? ""),
+          tanggal: String(b.TanggalBayar ?? b.tanggal_bayar ?? ""),
+        })));
+      } catch { /* silent */ }
+      finally { setLoadingPay(false); }
+    };
+    fetch();
+  }, [first, token]);
+
+  const sisaPembayaran = totalTagihan - totalPembayaran;
+  const pct = totalTagihan > 0 ? Math.min((totalPembayaran / totalTagihan) * 100, 100) : 0;
+  const diterima = payments.filter(p => p.status === "diterima");
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-panel" style={{ maxWidth: 620 }}>
+        {/* Header */}
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">👥 Detail Grup — Invoice</div>
+            <div className="modal-subtitle" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>{nomorInvoice}</div>
+          </div>
+          <button type="button" className="modal-close-btn" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-body">
+          {/* Ringkasan Invoice */}
+          <div style={{ background: "linear-gradient(135deg,#0f172a,#1e1b4b)", borderRadius: 14, padding: "1.25rem", marginBottom: "1.25rem", color: "white" }}>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>💳 Ringkasan Invoice</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              {[
+                { label: "Paket", val: first?.paket ?? "-" },
+                { label: "Jumlah Jamaah", val: `${jamaahInGrup.length} Orang` },
+                { label: "Total Tagihan", val: fmtRupiah(totalTagihan) },
+                { label: "Total Dibayar", val: fmtRupiah(totalPembayaran) },
+              ].map(r => (
+                <div key={r.label}>
+                  <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginBottom: "0.2rem" }}>{r.label}</div>
+                  <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#e2e8f0" }}>{r.val}</div>
+                </div>
+              ))}
+            </div>
+            {/* Progress bar */}
+            <div style={{ marginTop: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#94a3b8", marginBottom: "0.4rem" }}>
+                <span>Progress Pembayaran</span>
+                <span>{pct.toFixed(0)}%</span>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 999, height: 8 }}>
+                <div style={{ background: pct >= 100 ? "#34d399" : "#818cf8", height: 8, borderRadius: 999, width: `${pct}%`, transition: "width 0.5s" }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.4rem" }}>
+                <span>Sisa: {fmtRupiah(sisaPembayaran)}</span>
+                <StatusPill value={first?.payment_status ?? ""} />
+              </div>
+            </div>
+          </div>
+
+          {/* Daftar Jamaah */}
+          <div className="modal-section-title">👤 Daftar Jamaah ({jamaahInGrup.length} Orang)</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "1.25rem" }}>
+            {jamaahInGrup.map((j, i) => (
+              <div key={j.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "0.75rem 1rem", gap: "0.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                  <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "0.85rem", flexShrink: 0 }}>
+                    {i + 1}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#1e293b" }}>{j.nama_customer}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#64748b", fontFamily: "monospace" }}>{j.nomor_pendaftaran}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                  <StatusPill value={j.document_status} />
+                  <StatusPill value={j.status} />
+                  <button
+                    type="button"
+                    style={{ padding: "0.3rem 0.75rem", borderRadius: 8, border: "1.5px solid #c7d2fe", background: "#eef2ff", color: "#4f46e5", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+                    onClick={() => onOpenDetail(j.nomor_pendaftaran)}
+                  >
+                    Detail →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Riwayat Pembayaran */}
+          <div className="modal-section-title">💳 Riwayat Pembayaran Invoice</div>
+          {loadingPay ? (
+            <div style={{ textAlign: "center", padding: "1rem", color: "#94a3b8", fontSize: "0.85rem" }}>Memuat pembayaran...</div>
+          ) : diterima.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "1rem", color: "#94a3b8", fontSize: "0.85rem" }}>Belum ada pembayaran diterima.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {diterima.map((p, i) => (
+                <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.65rem 1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8 }}>
+                  <div style={{ fontSize: "0.82rem", color: "#374151" }}>
+                    {i === 0 ? "DP" : `Pembayaran ${i + 1}`} — {p.tanggal ? fmtDate(p.tanggal) : "-"}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#065f46" }}>{fmtRupiah(p.jumlah)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button type="button" className="modal-close-full-btn" onClick={onClose}>Tutup</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── PendaftaranGrupView ─────────────────────────────────────────────────────
+
+const PendaftaranGrupView = ({
+  token: _token,
+  authH: _authH,
+  list,
+  loading,
+  onDetailGrup,
+}: {
+  token: string | null;
+  authH: () => { Authorization: string };
+  list: (PendaftaranItem & { nomor_invoice?: string; total_tagihan?: number; total_pembayaran?: number })[];
+  loading: boolean;
+  onDetailGrup: (nomorInvoice: string) => void;
+}) => {
+  const groups = groupByInvoice(list);
+
+  const countStatus = (s: string) => groups.filter(g => g.payment_status?.toLowerCase() === s).length;
+  const totalInvoice = groups.length;
+  const invoiceDP = countStatus("dp");
+  const invoiceLunas = countStatus("lunas");
+
+  return (
+    <div>
+      {/* Stats */}
+      {!loading && (
+        <div className="pendaftaran-stats-row">
+          {[
+            { icon: "🧾", label: "Total Invoice", value: totalInvoice, cls: "" },
+            { icon: "🔄", label: "Invoice DP",    value: invoiceDP,    cls: "s-proses" },
+            { icon: "✅", label: "Invoice Lunas", value: invoiceLunas,  cls: "s-selesai" },
+            { icon: "👥", label: "Invoice Grup",  value: groups.length, cls: "" },
+          ].map(s => (
+            <div className={`pendaftaran-stat-card ${s.cls}`} key={s.label}>
+              <div className="pendaftaran-stat-icon">{s.icon}</div>
+              <div>
+                <div className="pendaftaran-stat-value">{s.value}</div>
+                <div className="pendaftaran-stat-label">{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tabel */}
+      <div className="pendaftaran-table-card">
+        <table className="pendaftaran-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Kontak Utama</th>
+              <th>Jamaah</th>
+              <th>Paket</th>
+              <th>Total Tagihan</th>
+              <th>Total Dibayar</th>
+              <th>Status Bayar</th>
+              <th>Tanggal</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i}>
+                  <td colSpan={9}>
+                    <div className="table-skel-row">
+                      {Array.from({ length: 6 }).map((__, j) => <div key={j} className="skel" style={{ width: 80 + j * 20, height: 12 }} />)}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : groups.length === 0 ? (
+              <tr>
+                <td colSpan={9}>
+                  <div className="table-empty">
+                    <div className="table-empty-icon">👥</div>
+                    <p>Belum ada pendaftaran grup (lebih dari 1 jamaah per invoice).</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              groups.map(g => (
+                <tr key={g.nomor_invoice}>
+                  <td><span className="nomor-pendaftaran" style={{ fontSize: "0.78rem" }}>{g.nomor_invoice}</span></td>
+                  <td>
+                    <div className="customer-cell">
+                      <div className="customer-avatar">{g.jamaah[0]?.nama_customer?.charAt(0)?.toUpperCase() ?? "?"}</div>
+                      <span className="customer-name">{g.jamaah[0]?.nama_customer}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span style={{ background: "#eef2ff", color: "#4f46e5", borderRadius: 999, padding: "0.2rem 0.65rem", fontSize: "0.78rem", fontWeight: 700 }}>
+                      👥 {g.jamaah.length} Orang
+                    </span>
+                  </td>
+                  <td><span className="paket-name-small">{g.paket}</span></td>
+                  <td><span style={{ fontWeight: 700, color: "#1e293b" }}>{fmtRupiah(g.total_tagihan)}</span></td>
+                  <td><span style={{ color: "#059669", fontWeight: 600 }}>{fmtRupiah(g.total_pembayaran)}</span></td>
+                  <td><StatusPill value={g.payment_status} /></td>
+                  <td><span className="date-cell">{fmtDate(g.tanggal)}</span></td>
+                  <td>
+                    <button
+                      className="detail-btn"
+                      onClick={() => onDetailGrup(g.nomor_invoice)}
+                    >
+                      Detail Grup
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ── AdminPendaftaran ──────────────────────────────────────────────────────────
+
+
 const AdminPendaftaran = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -786,7 +1104,8 @@ const AdminPendaftaran = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("semua");
-  const [activeView, setActiveView] = useState<"semua" | "milik-saya">("semua");
+  const [activeView, setActiveView] = useState<"semua" | "grup" | "milik-saya">("semua");
+  const [grupDetailInvoice, setGrupDetailInvoice] = useState<string | null>(null);
   const [detailNomor, setDetailNomor] = useState<string | null>(null);
   const [jamaahSayaKey, setJamaahSayaKey] = useState(0);
 
@@ -866,6 +1185,13 @@ const AdminPendaftaran = () => {
         >
           📋 Semua Pendaftaran
           <span className="view-tab-count">{list.length}</span>
+        </button>
+        <button
+          className={`view-tab ${activeView === "grup" ? "active" : ""}`}
+          onClick={() => setActiveView("grup")}
+        >
+          👥 Pendaftaran Grup
+          <span className="view-tab-count">{groupByInvoice(list).length}</span>
         </button>
         <button
           className={`view-tab ${activeView === "milik-saya" ? "active" : ""}`}
@@ -1026,9 +1352,32 @@ const AdminPendaftaran = () => {
             </table>
           </div>
         </>
+      ) : activeView === "grup" ? (
+        // ── Tab "Pendaftaran Grup" ──
+        <PendaftaranGrupView
+          token={token}
+          authH={authH}
+          list={list}
+          loading={loading}
+          onDetailGrup={(nomorInvoice) => setGrupDetailInvoice(nomorInvoice)}
+        />
       ) : (
         // ── Tab "Jamaah Saya" ──
         <JamaahSayaView token={token} authH={authH} refreshKey={jamaahSayaKey} />
+      )}
+
+      {/* ── Grup Detail Modal ── */}
+      {grupDetailInvoice && (
+        <GrupDetailModal
+          nomorInvoice={grupDetailInvoice}
+          token={token ?? ""}
+          allPendaftaran={list}
+          onClose={() => setGrupDetailInvoice(null)}
+          onOpenDetail={(nomor) => {
+            setGrupDetailInvoice(null);
+            setDetailNomor(nomor);
+          }}
+        />
       )}
 
       {/* ── Detail Modal ── */}
@@ -1177,6 +1526,8 @@ const PICDetailModal = ({
           harga:            dp?.Paket?.Harga     ?? dp?.Paket?.harga ?? 0,
           tanggal_berangkat: dp?.Paket?.TanggalBerangkat ?? dp?.Paket?.tanggal_berangkat,
           payment_status:   dp?.PaymentStatus   ?? dp?.payment_status,
+          total_tagihan:    dp?.TotalTagihan    ?? dp?.total_tagihan ?? 0,
+          nomor_invoice:    dp?.NomorInvoice    ?? dp?.nomor_invoice ?? "",
           document_status:  dp?.DocumentStatus  ?? dp?.document_status,
           status:           dp?.Status          ?? dp?.status,
           admin_pic:        dp?.User?.Nama       ?? dp?.User?.nama ?? null,

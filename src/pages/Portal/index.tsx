@@ -313,6 +313,7 @@ const TabPembayaran = ({
   const [riwayat, setRiwayat] = useState<PembayaranItem[]>([]);
   const [totalDibayar, setTotalDibayar] = useState(0);
   const [hargaPaket, setHargaPaket] = useState(0);
+  const [totalTagihan, setTotalTagihan] = useState(0);
   const [statusBayar, setStatusBayar] = useState("belum");
   const [nomorInvoice, setNomorInvoice] = useState("");
   const [loading, setLoading] = useState(true);
@@ -337,6 +338,8 @@ const TabPembayaran = ({
       setRiwayat(res.data?.riwayat ?? []);
       setTotalDibayar(res.data?.total_dibayar ?? 0);
       if (res.data?.harga_paket) setHargaPaket(res.data.harga_paket);
+      // Gunakan total_tagihan dari Invoice (untuk grup: harga × jumlah jamaah)
+      if (res.data?.total_tagihan) setTotalTagihan(res.data.total_tagihan);
       if (res.data?.payment_status) setStatusBayar(res.data.payment_status);
       if (res.data?.nomor_invoice) setNomorInvoice(res.data.nomor_invoice);
     } catch {
@@ -348,14 +351,17 @@ const TabPembayaran = ({
 
   useEffect(() => { fetchPembayaran(); }, [fetchPembayaran]);
 
-  const hargaEfektif = hargaPaket > 0 ? hargaPaket : harga;
+  // Gunakan total_tagihan Invoice jika tersedia, fallback ke harga paket
+  const hargaEfektif = totalTagihan > 0 ? totalTagihan : hargaPaket > 0 ? hargaPaket : harga;
   const statusEfektif = statusBayar !== "belum" ? statusBayar : paymentStatus;
   const sisaBayar = hargaEfektif - totalDibayar;
   const pct = hargaEfektif > 0 ? Math.min((totalDibayar / hargaEfektif) * 100, 100) : 0;
+  // isLunas berdasarkan status Invoice atau perbandingan jumlah
   const isLunas =
     statusEfektif?.toLowerCase() === "lunas" ||
     (hargaEfektif > 0 && totalDibayar > 0 && totalDibayar >= hargaEfektif);
   const isSelesai = isLunas && documentStatus?.toLowerCase() === "lengkap";
+
 
   const handleBuktiChange = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
