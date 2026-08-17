@@ -12,6 +12,14 @@ interface PembayaranItem {
   tanggal_pembayaran: string;
 }
 
+interface DetailDataType {
+  bukti?: string;
+  jumlah?: number;
+  paket?: string;
+  nomorInvoice?: string;
+  jamaah: { nama: string; nik: string }[];
+}
+
 const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -24,7 +32,7 @@ const AdminPembayaran = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [detailModal, setDetailModal] = useState<string | null>(null);
-  const [detailData, setDetailData] = useState<{bukti?: string; jumlah?: number; nama?: string; paket?: string} | null>(null);
+  const [detailData, setDetailData] = useState<DetailDataType | null>(null);
 
   const authH = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -46,19 +54,34 @@ const AdminPembayaran = () => {
 
   const fetchDetail = async (id: string) => {
     setDetailModal(id);
+    setDetailData(null);
     try {
       const res = await axios.get(`http://localhost:8080/admin/pembayaran/${id}`, {
         headers: authH(),
       });
       const p = res.data?.pembayaran;
+
+      // Ambil daftar jamaah dari Invoice.Pendaftaran[]
+      const pendaftaranArr: Record<string, unknown>[] = p?.Invoice?.Pendaftaran ?? [];
+      const jamaahList = pendaftaranArr.map((pd) => ({
+        nama: String((pd.Nama as string) ?? "-"),
+        nik:  String((pd.NIK  as string) ?? "-"),
+      }));
+
+      // Nama paket dari Pendaftaran pertama
+      const paket =
+        (p?.Invoice?.NamaPaket as string) ||
+        "-";
+
       setDetailData({
-        bukti: p?.BuktiPembayaran ?? p?.bukti_pembayaran,
-        jumlah: p?.Jumlah ?? p?.jumlah,
-        nama: p?.Pendaftaran?.Customer?.Nama ?? p?.Pendaftaran?.Customer?.nama,
-        paket: p?.Pendaftaran?.Paket?.NamaPaket ?? p?.Pendaftaran?.Paket?.nama_paket,
+        bukti:        p?.BuktiPembayaran ?? p?.bukti_pembayaran,
+        jumlah:       p?.Jumlah ?? p?.jumlah,
+        paket,
+        nomorInvoice: p?.Invoice?.NomorInvoice ?? "-",
+        jamaah:       jamaahList,
       });
     } catch {
-      setDetailData(null);
+      setDetailData({ jamaah: [] });
     }
   };
 
@@ -219,25 +242,85 @@ const AdminPembayaran = () => {
             </div>
 
             <div className="verify-modal-body">
-              {detailData ? (
+              {!detailData ? (
+                <div style={{ textAlign: "center", padding: "1.5rem", color: "#94a3b8" }}>
+                  Memuat detail...
+                </div>
+              ) : (
                 <>
+                  {/* Invoice & Paket */}
                   <div className="verify-detail-grid">
                     <div className="verify-detail-item">
-                      <div className="verify-detail-label">Jamaah</div>
-                      <div className="verify-detail-val">{detailData.nama ?? "-"}</div>
+                      <div className="verify-detail-label">Invoice</div>
+                      <div className="verify-detail-val" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
+                        {detailData.nomorInvoice ?? "-"}
+                      </div>
                     </div>
                     <div className="verify-detail-item">
                       <div className="verify-detail-label">Paket</div>
                       <div className="verify-detail-val">{detailData.paket ?? "-"}</div>
                     </div>
+                    <div className="verify-detail-item">
+                      <div className="verify-detail-label">Jumlah Jamaah</div>
+                      <div className="verify-detail-val">
+                        <span style={{
+                          background: "#ede9fe", color: "#6d28d9",
+                          padding: "2px 10px", borderRadius: 999,
+                          fontSize: "0.85rem", fontWeight: 700,
+                        }}>
+                          👥 {detailData.jamaah.length} Orang
+                        </span>
+                      </div>
+                    </div>
                     <div className="verify-detail-item full">
-                      <div className="verify-detail-label">Jumlah</div>
+                      <div className="verify-detail-label">Jumlah Pembayaran</div>
                       <div className="verify-detail-val" style={{ fontSize: "1.25rem", fontWeight: 800, color: "#4f46e5" }}>
                         {fmtRupiah(detailData.jumlah ?? 0)}
                       </div>
                     </div>
                   </div>
 
+                  {/* Daftar Jamaah */}
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div className="verify-detail-label" style={{ marginBottom: "0.5rem" }}>Daftar Jamaah</div>
+                    {detailData.jamaah.length === 0 ? (
+                      <div style={{ fontSize: "0.85rem", color: "#94a3b8", padding: "0.5rem 0" }}>
+                        Tidak ada data jamaah
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                        {detailData.jamaah.map((j, idx) => (
+                          <div key={idx} style={{
+                            display: "flex", alignItems: "center", gap: "0.75rem",
+                            background: "#f8fafc", borderRadius: 10,
+                            padding: "0.5rem 0.875rem",
+                            border: "1px solid #e8edf5",
+                          }}>
+                            <span style={{
+                              background: "#ede9fe", color: "#6d28d9",
+                              width: 22, height: 22, borderRadius: "50%",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: "0.7rem", fontWeight: 700, flexShrink: 0,
+                            }}>
+                              {idx + 1}
+                            </span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1e293b" }}>
+                                {j.nama}
+                              </div>
+                              {j.nik && j.nik !== "-" && (
+                                <div style={{ fontSize: "0.75rem", color: "#64748b", fontFamily: "monospace" }}>
+                                  NIK: {j.nik}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bukti Pembayaran */}
                   {detailData.bukti ? (
                     <div className="verify-bukti-section">
                       <div className="verify-bukti-label">Bukti Pembayaran</div>
@@ -259,10 +342,6 @@ const AdminPembayaran = () => {
                     </div>
                   )}
                 </>
-              ) : (
-                <div style={{ textAlign: "center", padding: "1.5rem", color: "#94a3b8" }}>
-                  Memuat detail...
-                </div>
               )}
             </div>
 

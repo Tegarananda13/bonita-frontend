@@ -29,6 +29,7 @@ interface DashboardData {
   payment_status: string;
   document_status: string;
   status: string;
+  batas_waktu_dp?: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -56,6 +57,7 @@ const fmtDate = (d: string) =>
 const getStatusClass = (v: string) => {
   const map: Record<string, string> = {
     proses: "sval-proses", selesai: "sval-selesai", batal: "sval-batal",
+    kadaluarsa: "sval-kadaluarsa",
     belum: "sval-belum", pending: "sval-pending", lunas: "sval-lunas",
     dp: "sval-dp", diterima: "sval-verified", ditolak: "sval-ditolak",
     lengkap: "sval-lengkap", revisi: "sval-revisi",
@@ -66,6 +68,7 @@ const getStatusClass = (v: string) => {
 const getStatusLabel = (v: string) => {
   const map: Record<string, string> = {
     proses: "Proses", selesai: "Selesai", batal: "Batal",
+    kadaluarsa: "Kadaluarsa",
     belum: "Belum", pending: "Menunggu", lunas: "Lunas",
     dp: "DP", diterima: "Diterima", ditolak: "Ditolak",
     lengkap: "Lengkap", revisi: "Perlu Revisi",
@@ -910,27 +913,24 @@ const Portal = () => {
     setLoadingDash(true);
     try {
       // GET /customer/pembayaran untuk ambil info paket via pendaftaran
-      const [dashRes, bayarRes, dokRes] = await Promise.all([
+      const [dashRes] = await Promise.all([
   axios.get(`${API}/customer/dashboard`, {
     headers: { Authorization: `Bearer ${t}` },
   }),
-
-  axios.get(`${API}/customer/pembayaran`, {
-    headers: { Authorization: `Bearer ${t}` },
-  }),
-
-  axios.get(`${API}/customer/dokumen`, {
-    headers: { Authorization: `Bearer ${t}` },
-  }),
 ]);
-      // Ambil info pendaftaran dari response pembayaran (paket harga)
-      // Karena tidak ada endpoint GET /customer/profile, kita cek dari localStorage nomor
-      const savedStr = localStorage.getItem(STORAGE_KEY);
-      const saved = savedStr ? JSON.parse(savedStr) : {};
-
       setDashData(dashRes.data);
-    } catch {
-      // jika error 401, session expired
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403)) {
+        // Session expired atau tidak valid — logout otomatis
+        localStorage.removeItem(STORAGE_KEY);
+        setToken("");
+        setNomor("");
+        setStep("input-nomor");
+        setError(err.response?.data?.error ?? "Sesi Anda telah berakhir. Silakan login kembali.");
+      } else if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      }
+      // else: network error, biarkan loading selesai tanpa data
     } finally {
       setLoadingDash(false);
     }
@@ -1135,13 +1135,25 @@ const Portal = () => {
   const paymentStatus = dashData?.payment_status ?? "belum";
   const documentStatus = dashData?.document_status ?? "belum";
   const displayNama = dashData?.nama ?? "Jamaah";
+  const pendaftaranStatus = dashData?.status ?? "";
+  const batasWaktuDP = dashData?.batas_waktu_dp ?? null;
 
-  // Hitung jumlah pending pembayaran (untuk badge tab)
-  const pendingPaymentCount = 0; // fetched di child component
+  // Apakah perlu tampilkan timer DP?
+  // Tampil jika: status proses + belum ada DP yang valid (payment_status === "belum")
+  const showDPTimer = pendaftaranStatus === "proses" && paymentStatus === "belum" && !!batasWaktuDP;
+  const isKadaluarsa = pendaftaranStatus === "kadaluarsa";
 
-  console.log("saved =", saved);
-  console.log("dashData =", dashData);
-  console.log("harga =", harga);
+  // Format batas waktu DP untuk tampilan
+  const batasDPFormatted = batasWaktuDP
+    ? new Date(batasWaktuDP).toLocaleString("id-ID", {
+        day: "2-digit", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+        timeZone: "Asia/Jakarta",
+      }) + " WIB"
+    : "";
+
+  // Cek apakah sudah kadaluarsa berdasarkan waktu (meski status belum diupdate backend)
+  const sudahLewatDeadline = batasWaktuDP ? new Date(batasWaktuDP) < new Date() : false;
 
   return (
     <div className="portal-page">
@@ -1151,21 +1163,25 @@ const Portal = () => {
           <h1>Portal Jamaah</h1>
         </div>
 
-        <div className="portal-card">
-          {/* Dashboard Header */}
-          <div className="portal-dash-header portal-header-relative">
-            <button className="portal-dash-logout" onClick={handleLogout}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              Keluar
-            </button>
-            <div className="portal-dash-greeting">Selamat datang,</div>
-            <div className="portal-dash-name">{displayNama}</div>
-            <div className="portal-dash-nomor">📋 {nomor}</div>
-          </div>
+          <div className="portal-card">
+            {/* Error display (misal: session bermasalah) */}
+            {error && (
+              <div className="portal-error" style={{ margin: "1rem 1.75rem 0" }}>{error}</div>
+            )}
+            {/* Dashboard Header */}
+            <div className="portal-dash-header portal-header-relative">
+              <button className="portal-dash-logout" onClick={handleLogout}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Keluar
+              </button>
+              <div className="portal-dash-greeting">Selamat datang,</div>
+              <div className="portal-dash-name">{displayNama}</div>
+              <div className="portal-dash-nomor">📋 {nomor}</div>
+            </div>
 
           {/* Status bar */}
           {!loadingDash && (
@@ -1182,6 +1198,56 @@ const Portal = () => {
                   <div className={`portal-status-val ${getStatusClass(documentStatus)}`}>
                     {getStatusLabel(documentStatus)}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DP Deadline Timer Banner */}
+          {!loadingDash && showDPTimer && !sudahLewatDeadline && (
+            <div style={{
+              margin: "0 1.75rem 0",
+              padding: "0.875rem 1.125rem",
+              background: "linear-gradient(135deg, #fffbeb, #fef3c7)",
+              border: "1.5px solid #fcd34d",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.75rem",
+              marginTop: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>⏰</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: "0.875rem", color: "#92400e", marginBottom: 2 }}>
+                  Batas Waktu Pembayaran DP
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "#b45309" }}>
+                  Selesaikan pembayaran DP paling lambat:
+                  <strong> {batasDPFormatted}</strong>
+                </div>
+                <div style={{ fontSize: "0.75rem", color: "#b45309", marginTop: 4 }}>
+                  Jika tidak membayar DP sebelum batas waktu, pendaftaran akan otomatis kadaluarsa.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner Kadaluarsa */}
+          {!loadingDash && isKadaluarsa && (
+            <div style={{
+              margin: "0.75rem 1.75rem 0",
+              padding: "1rem 1.125rem",
+              background: "linear-gradient(135deg, #f9fafb, #f3f4f6)",
+              border: "1.5px solid #d1d5db",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>⚠️</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: "0.875rem", color: "#374151", marginBottom: 2 }}>
+                  Pendaftaran Kadaluarsa
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+                  Pendaftaran ini sudah kadaluarsa karena pembayaran DP tidak dilakukan dalam batas waktu.
+                  Silakan <a href="/daftar" style={{ color: "#4f46e5", fontWeight: 600 }}>daftar ulang</a> jika masih ingin mengikuti paket umroh.
                 </div>
               </div>
             </div>
@@ -1237,7 +1303,7 @@ const Portal = () => {
       </div>
 
       {/* Unused variable suppressor */}
-      {pendingPaymentCount > 0 && null}
+     
     </div>
   );
 };

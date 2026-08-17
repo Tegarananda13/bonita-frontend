@@ -18,6 +18,8 @@ interface PendaftaranItem {
   tanggal_daftar: string;
   total_tagihan?: number;
   total_pembayaran?: number;
+  registered_by_label?: string;
+  registration_source?: string;
   assigned?: boolean;
 }
 
@@ -46,6 +48,9 @@ interface DetailPendaftaran {
   document_status: string;
   status: string;
   admin_pic?: string;
+  registration_source?: string;
+  registered_by?: string;
+  registered_by_label?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,6 +64,7 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   proses:              { label: "Proses",          cls: "status-proses" },
   selesai:             { label: "Selesai",          cls: "status-selesai" },
   batal:               { label: "Batal",            cls: "status-batal" },
+  kadaluarsa:          { label: "Kadaluarsa",       cls: "status-kadaluarsa" },
   menunggu:            { label: "Menunggu",         cls: "status-menunggu" },
   lunas:               { label: "Lunas",            cls: "status-lunas" },
   belum:               { label: "Belum",            cls: "status-belum" },
@@ -170,6 +176,9 @@ const DetailModal = ({
         document_status: p?.DocumentStatus ?? p?.document_status,
         status: p?.Status ?? p?.status,
         admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
+        registration_source: p?.registration_source ?? "customer",
+        registered_by:       p?.registered_by ?? "Self",
+        registered_by_label: p?.registered_by_label ?? "👤 Customer",
       });
       const rawBayar = res.data?.pembayaran ?? [];
       setPayments(rawBayar.map((b: Record<string, unknown>) => ({
@@ -763,6 +772,32 @@ const DetailModal = ({
                     </div>
                   )}
                 </div>
+
+                {/* Informasi Pendaftaran */}
+                <div style={{ marginTop: "1.25rem" }}>
+                  <div className="modal-section-title">📋 Informasi Pendaftaran</div>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item">
+                      <div className="modal-info-label">Asal Pendaftaran</div>
+                      <div className="modal-info-val" style={{ textTransform: "capitalize" }}>
+                        {data.registration_source === "admin" ? "Admin"
+                          : data.registration_source === "chatbot" ? "AI Chatbot"
+                          : "Customer"}
+                      </div>
+                    </div>
+                    <div className="modal-info-item">
+                      <div className="modal-info-label">Didaftarkan Oleh</div>
+                      <div className="modal-info-val" style={{
+                        fontWeight: 700,
+                        color: data.registration_source === "admin" ? "#7c3aed"
+                          : data.registration_source === "chatbot" ? "#0369a1"
+                          : "#374151",
+                      }}>
+                        {data.registered_by_label ?? "👤 Customer"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -1207,11 +1242,12 @@ const AdminPendaftaran = () => {
           {!loading && (
             <div className="pendaftaran-stats-row">
               {[
-                { icon: "📋", label: "Total",          value: list.length,                        cls: "",        filter: "semua"            },
-                { icon: "⏳", label: "Proses",         value: countByStatus("proses"),             cls: "s-proses", filter: "proses"           },
-                { icon: "✈️", label: "Siap Berangkat", value: countByStatus("siap_berangkat"),    cls: "s-siap",  filter: "siap_berangkat"   },
-                { icon: "✅", label: "Selesai",        value: countByStatus("selesai"),            cls: "s-selesai", filter: "selesai"         },
-                { icon: "❌", label: "Batal",          value: countByStatus("batal"),              cls: "s-batal", filter: "batal"            },
+                { icon: "📋", label: "Total",          value: list.length,                        cls: "",              filter: "semua"          },
+                { icon: "⏳", label: "Proses",         value: countByStatus("proses"),             cls: "s-proses",      filter: "proses"         },
+                { icon: "✈️", label: "Siap Berangkat", value: countByStatus("siap_berangkat"),    cls: "s-siap",        filter: "siap_berangkat" },
+                { icon: "✅", label: "Selesai",        value: countByStatus("selesai"),            cls: "s-selesai",     filter: "selesai"        },
+                { icon: "❌", label: "Batal",          value: countByStatus("batal"),              cls: "s-batal",       filter: "batal"          },
+                { icon: "⚠️", label: "Kadaluarsa",     value: countByStatus("kadaluarsa"),         cls: "s-kadaluarsa",  filter: "kadaluarsa"     },
               ].map((s) => (
                 <div
                   className={`pendaftaran-stat-card ${s.cls}`}
@@ -1254,6 +1290,7 @@ const AdminPendaftaran = () => {
               <option value="menunggu_pembayaran">Menunggu Bayar</option>
               <option value="menunggu_dokumen">Menunggu Dokumen</option>
               <option value="batal">Batal</option>
+              <option value="kadaluarsa">Kadaluarsa</option>
             </select>
             {!loading && (
               <span className="result-count">{filtered.length} pendaftaran</span>
@@ -1267,6 +1304,7 @@ const AdminPendaftaran = () => {
                 <tr>
                   <th>No. Pendaftaran</th>
                   <th>Jamaah</th>
+                  <th>Didaftarkan Oleh</th>
                   <th>Paket</th>
                   <th>Status</th>
                   <th>Pembayaran</th>
@@ -1279,7 +1317,7 @@ const AdminPendaftaran = () => {
                 {loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i}>
-                      <td colSpan={8}>
+                      <td colSpan={9}>
                         <div className="table-skel-row">
                           <div className="skel" style={{ width: 120, height: 12 }} />
                           <div className="skel" style={{ width: 100, height: 12 }} />
@@ -1295,7 +1333,7 @@ const AdminPendaftaran = () => {
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       <div className="table-empty">
                         <div className="table-empty-icon">📋</div>
                         <p>{search || filterStatus !== "semua" ? "Tidak ada data yang cocok." : "Belum ada pendaftaran."}</p>
@@ -1324,6 +1362,14 @@ const AdminPendaftaran = () => {
                           </div>
                           <span className="customer-name">{p.nama_customer}</span>
                         </div>
+                      </td>
+                      <td>
+                        <span style={{
+                          fontSize: "0.8rem", fontWeight: 600,
+                          color: p.registration_source === "admin" ? "#7c3aed" : p.registration_source === "chatbot" ? "#0369a1" : "#374151",
+                        }}>
+                          {p.registered_by_label ?? "👤 Customer"}
+                        </span>
                       </td>
                       <td>
                         <span className="paket-name-small">{p.paket}</span>
@@ -1388,8 +1434,12 @@ const AdminPendaftaran = () => {
           onClose={() => setDetailNomor(null)}
           onAssigned={() => {
             fetchData();
-            setJamaahSayaKey((k) => k + 1); // trigger JamaahSayaView refresh
-            setActiveView("milik-saya"); // pindah ke tab jamaah saya
+            setDetailNomor(null); // tutup modal dulu
+            // delay singkat agar backend selesai commit sebelum JamaahSaya fetch
+            setTimeout(() => {
+              setJamaahSayaKey((k) => k + 1);
+              setActiveView("milik-saya");
+            }, 400);
           }}
         />
       )}
@@ -1558,8 +1608,7 @@ const PICDetailModal = ({
     fetchDetail();
   }, [p.nomor_pendaftaran, token]);
 
-  const isSiapBerangkat = p.status?.toLowerCase() === "siap_berangkat";
-  const isSelesai       = p.status?.toLowerCase() === "selesai";
+  const isSelesai = p.status?.toLowerCase() === "selesai";
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -1718,22 +1767,6 @@ const PICDetailModal = ({
                 </>
               )}
 
-              {/* Tandai Selesai */}
-              {isSiapBerangkat && (
-                <div style={{ marginTop: "1.25rem", paddingTop: "1rem", borderTop: "1px solid #f1f5f9" }}>
-                  <button
-                    type="button"
-                    onClick={() => onSelesai(p.id, p.nama_customer)}
-                    style={{ width: "100%", padding: "0.8rem", borderRadius: "10px", background: "linear-gradient(135deg, #059669, #047857)", color: "#fff", fontWeight: 700, fontSize: "0.9rem", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", boxShadow: "0 4px 12px rgba(5,150,105,0.3)" }}
-                  >
-                    ✅ Tandai Selesai
-                  </button>
-                  <p style={{ fontSize: "0.75rem", color: "#94a3b8", textAlign: "center", marginTop: "0.5rem" }}>
-                    Klik jika jamaah telah kembali dari perjalanan umroh.
-                  </p>
-                </div>
-              )}
-
               {isSelesai && (
                 <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#d1fae5", border: "1px solid #6ee7b7", borderRadius: "10px", fontSize: "0.85rem", color: "#065f46", fontWeight: 600, textAlign: "center" }}>
                   ✔ Perjalanan umroh jamaah ini telah selesai
@@ -1764,16 +1797,17 @@ const JamaahSayaView = ({
 }) => {
   const [list, setList] = useState<PendaftaranItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [picTab, setPicTab] = useState<"aktif" | "selesai">("aktif");
+  const [picTab, setPicTab] = useState<"aktif" | "siap" | "selesai">("aktif");
+  const [filterPaket, setFilterPaket] = useState<string>("");
   const [selectedJamaah, setSelectedJamaah] = useState<PendaftaranItem | null>(null);
-  const [konfirmasiTarget, setKonfirmasiTarget] = useState<{ id: string; name: string } | null>(null);
-  const [tandaiLoading, setTandaiLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
+  // suppress unused warning
+  void showToast;
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -1791,31 +1825,16 @@ const JamaahSayaView = ({
 
   useEffect(() => { fetchList(); }, [fetchList, refreshKey]);
 
-  const aktifList = list.filter((p) => p.status?.toLowerCase() !== "selesai");
-  const selesaiList = list.filter((p) => p.status?.toLowerCase() === "selesai");
-  const displayList = picTab === "aktif" ? aktifList : selesaiList;
+  // Semua nama paket unik untuk dropdown filter
+  const paketOptions = Array.from(new Set(list.map((p) => p.paket).filter(Boolean)));
 
-  const handleTandaiSelesai = async () => {
-    if (!konfirmasiTarget) return;
-    setTandaiLoading(true);
-    try {
-      await axios.put(
-        `http://localhost:8080/admin/pendaftaran/${konfirmasiTarget.id}/selesai`,
-        {},
-        { headers: authH() }
-      );
-      showToast("Jamaah berhasil ditandai selesai.", "success");
-      setKonfirmasiTarget(null);
-      fetchList(); // refresh
-    } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data?.error ?? "Gagal menandai selesai.")
-        : "Gagal menandai selesai.";
-      showToast(msg, "error");
-    } finally {
-      setTandaiLoading(false);
-    }
-  };
+  const baseFilter = (items: PendaftaranItem[]) =>
+    filterPaket ? items.filter((p) => p.paket === filterPaket) : items;
+
+  const aktifList    = baseFilter(list.filter((p) => p.status?.toLowerCase() === "proses"));
+  const siapList     = baseFilter(list.filter((p) => p.status?.toLowerCase() === "siap_berangkat"));
+  const selesaiList  = baseFilter(list.filter((p) => p.status?.toLowerCase() === "selesai"));
+  const displayList  = picTab === "aktif" ? aktifList : picTab === "siap" ? siapList : selesaiList;
 
   return (
     <div>
@@ -1833,7 +1852,34 @@ const JamaahSayaView = ({
         <div className="my-jamaah-count">{list.length} jamaah</div>
       </div>
 
-      {/* Tabs Aktif / Selesai */}
+      {/* Filter Paket */}
+      {paketOptions.length > 0 && (
+        <div style={{ marginBottom: "1rem" }}>
+          <select
+            value={filterPaket}
+            onChange={(e) => setFilterPaket(e.target.value)}
+            style={{
+              padding: "0.5rem 0.875rem",
+              borderRadius: 10,
+              border: "1.5px solid #e2e8f0",
+              background: "#f8fafc",
+              fontSize: "0.875rem",
+              color: "#1e293b",
+              fontFamily: "inherit",
+              cursor: "pointer",
+              outline: "none",
+              minWidth: 200,
+            }}
+          >
+            <option value="">Semua Paket</option>
+            {paketOptions.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Tabs Aktif / Siap Berangkat / Selesai */}
       <div style={{
         display: "flex", gap: "0.5rem",
         marginBottom: "1.25rem",
@@ -1843,9 +1889,13 @@ const JamaahSayaView = ({
         border: "1px solid #e8edf5",
         width: "fit-content",
       }}>
-        {(["aktif", "selesai"] as const).map((tab) => {
-          const count = tab === "aktif" ? aktifList.length : selesaiList.length;
+        {(["aktif", "siap", "selesai"] as const).map((tab) => {
+          const count = tab === "aktif" ? aktifList.length : tab === "siap" ? siapList.length : selesaiList.length;
           const isActive = picTab === tab;
+          const label = tab === "aktif" ? "🟢 Aktif" : tab === "siap" ? "🟡 Siap Berangkat" : "✅ Selesai";
+          const activeColor = tab === "selesai" ? "#059669" : tab === "siap" ? "#d97706" : "#1e293b";
+          const badgeBg = tab === "selesai" ? "#d1fae5" : tab === "siap" ? "#fef3c7" : "#eff6ff";
+          const badgeColor = tab === "selesai" ? "#065f46" : tab === "siap" ? "#92400e" : "#3b82f6";
           return (
             <button
               key={tab}
@@ -1858,16 +1908,16 @@ const JamaahSayaView = ({
                 fontSize: "0.875rem",
                 cursor: "pointer",
                 background: isActive ? "#fff" : "transparent",
-                color: isActive ? (tab === "selesai" ? "#059669" : "#1e293b") : "#94a3b8",
+                color: isActive ? activeColor : "#94a3b8",
                 boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
                 transition: "all 0.2s",
                 display: "flex", alignItems: "center", gap: "0.4rem",
               }}
             >
-              {tab === "aktif" ? "🟢 Aktif" : "✅ Selesai"}
+              {label}
               <span style={{
-                background: isActive ? (tab === "selesai" ? "#d1fae5" : "#eff6ff") : "#f1f5f9",
-                color: isActive ? (tab === "selesai" ? "#065f46" : "#3b82f6") : "#94a3b8",
+                background: isActive ? badgeBg : "#f1f5f9",
+                color: isActive ? badgeColor : "#94a3b8",
                 padding: "0.1rem 0.5rem", borderRadius: "999px",
                 fontSize: "0.72rem", fontWeight: 700,
               }}>
@@ -1896,14 +1946,16 @@ const JamaahSayaView = ({
       ) : displayList.length === 0 ? (
         <div className="my-jamaah-empty">
           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-            {picTab === "selesai" ? "🎉" : "👥"}
+            {picTab === "selesai" ? "🎉" : picTab === "siap" ? "🛫" : "👥"}
           </div>
           <div style={{ fontWeight: 700, color: "#1e293b", marginBottom: "0.4rem", fontSize: "1rem" }}>
-            {picTab === "selesai" ? "Belum Ada Jamaah Selesai" : "Belum Ada Jamaah Aktif"}
+            {picTab === "selesai" ? "Belum Ada Jamaah Selesai" : picTab === "siap" ? "Belum Ada Jamaah Siap Berangkat" : "Belum Ada Jamaah Aktif"}
           </div>
           <p style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.6 }}>
             {picTab === "selesai"
               ? "Jamaah yang sudah selesai melaksanakan umroh akan muncul di sini."
+              : picTab === "siap"
+              ? "Jamaah yang sudah siap berangkat akan muncul di sini."
               : "Anda belum menjadi PIC untuk jamaah manapun.\nBuka tab \"Semua Pendaftaran\" dan klik \"Detail & Assign\" untuk mengambil tanggung jawab jamaah."}
           </p>
         </div>
@@ -1950,7 +2002,7 @@ const JamaahSayaView = ({
                 </div>
                 {/* Hint tap */}
                 <div style={{ textAlign: "center", fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
-                  Klik untuk detail {p.status?.toLowerCase() === "siap_berangkat" ? "& tandai selesai" : ""}
+                  Klik untuk detail
                 </div>
               </div>
             );
@@ -1964,20 +2016,7 @@ const JamaahSayaView = ({
           p={selectedJamaah}
           token={token}
           onClose={() => setSelectedJamaah(null)}
-          onSelesai={(id, name) => {
-            setSelectedJamaah(null);
-            setKonfirmasiTarget({ id, name });
-          }}
-        />
-      )}
-
-      {/* Modal Konfirmasi */}
-      {konfirmasiTarget && (
-        <KonfirmasiSelesaiModal
-          jamaahName={konfirmasiTarget.name}
-          onBatal={() => setKonfirmasiTarget(null)}
-          onYa={handleTandaiSelesai}
-          loading={tandaiLoading}
+          onSelesai={() => { /* no-op: selesai kini via FinishPaket */ }}
         />
       )}
 

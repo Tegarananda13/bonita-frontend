@@ -319,6 +319,20 @@
 
 .action-btn-delete:hover { background: #fee2e2; }
 
+.action-btn-activate {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.action-btn-activate:hover { background: #dcfce7; }
+
+.action-btn-finish {
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.action-btn-finish:hover { background: #e0f2fe; }
+
 /* ── Loading / Empty ── */
 .table-loading-row td {
   padding: 3rem;
@@ -873,6 +887,38 @@
 
 .confirm-delete-btn:hover:not(:disabled) { background: #dc2626; }
 .confirm-delete-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.confirm-activate-btn {
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: all 0.15s;
+}
+
+.confirm-activate-btn:hover:not(:disabled) { background: #15803d; }
+.confirm-activate-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.confirm-finish-btn {
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  background: #0369a1;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: all 0.15s;
+}
+
+.confirm-finish-btn:hover:not(:disabled) { background: #075985; }
+.confirm-finish-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
 /* ── Skeleton ── */
 .table-skel-row {

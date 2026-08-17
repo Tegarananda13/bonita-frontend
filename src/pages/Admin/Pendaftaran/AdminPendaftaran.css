@@ -105,10 +105,11 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.pendaftaran-stat-card.s-proses  { border-color: #c7d2fe; }
-.pendaftaran-stat-card.s-selesai { border-color: #a7f3d0; }
-.pendaftaran-stat-card.s-batal   { border-color: #fca5a5; }
-.pendaftaran-stat-card.s-siap    { border-color: #7dd3fc; }
+.pendaftaran-stat-card.s-proses     { border-color: #c7d2fe; }
+.pendaftaran-stat-card.s-selesai    { border-color: #a7f3d0; }
+.pendaftaran-stat-card.s-batal      { border-color: #fca5a5; }
+.pendaftaran-stat-card.s-siap       { border-color: #7dd3fc; }
+.pendaftaran-stat-card.s-kadaluarsa { border-color: #d1d5db; }
 
 .pendaftaran-stat-icon { font-size: 1.4rem; flex-shrink: 0; }
 
@@ -293,17 +294,18 @@
   white-space: nowrap;
 }
 
-.status-proses   { background: #eef2ff; color: #4f46e5; }
-.status-selesai  { background: #ecfdf5; color: #059669; }
-.status-batal    { background: #fef2f2; color: #dc2626; }
-.status-menunggu { background: #fffbeb; color: #d97706; }
-.status-lunas    { background: #ecfdf5; color: #059669; }
-.status-belum    { background: #f1f5f9; color: #64748b; }
-.status-pending  { background: #fffbeb; color: #d97706; }
-.status-dp       { background: #fdf4ff; color: #9333ea; }
-.status-verified { background: #ecfdf5; color: #059669; }
-.status-ditolak  { background: #fef2f2; color: #dc2626; }
-.status-siap     { background: #f0f9ff; color: #0369a1; font-weight: 700; }
+.status-proses      { background: #eef2ff; color: #4f46e5; }
+.status-selesai     { background: #ecfdf5; color: #059669; }
+.status-batal       { background: #fef2f2; color: #dc2626; }
+.status-kadaluarsa  { background: #f1f5f9; color: #64748b; border: 1px solid #d1d5db; }
+.status-menunggu    { background: #fffbeb; color: #d97706; }
+.status-lunas       { background: #ecfdf5; color: #059669; }
+.status-belum       { background: #f1f5f9; color: #64748b; }
+.status-pending     { background: #fffbeb; color: #d97706; }
+.status-dp          { background: #fdf4ff; color: #9333ea; }
+.status-verified    { background: #ecfdf5; color: #059669; }
+.status-ditolak     { background: #fef2f2; color: #dc2626; }
+.status-siap        { background: #f0f9ff; color: #0369a1; font-weight: 700; }
 
 /* Detail button */
 .detail-btn {

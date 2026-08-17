@@ -389,16 +389,17 @@
   border-radius: 999px;
 }
 
-.sval-proses   { background: #f0fdf4; color: #1a6b43; }
-.sval-selesai  { background: #ecfdf5; color: #059669; }
-.sval-belum    { background: #f1f5f9; color: #64748b; }
-.sval-pending  { background: #fffbeb; color: #d97706; }
-.sval-lunas    { background: #ecfdf5; color: #059669; }
-.sval-dp       { background: #eff6ff; color: #2563eb; }
-.sval-verified { background: #ecfdf5; color: #059669; }
-.sval-ditolak  { background: #fef2f2; color: #dc2626; }
-.sval-lengkap  { background: #ecfdf5; color: #059669; }
-.sval-revisi   { background: #fff7ed; color: #ea580c; }
+.sval-proses      { background: #f0fdf4; color: #1a6b43; }
+.sval-selesai     { background: #ecfdf5; color: #059669; }
+.sval-belum       { background: #f1f5f9; color: #64748b; }
+.sval-pending     { background: #fffbeb; color: #d97706; }
+.sval-lunas       { background: #ecfdf5; color: #059669; }
+.sval-dp          { background: #eff6ff; color: #2563eb; }
+.sval-verified    { background: #ecfdf5; color: #059669; }
+.sval-ditolak     { background: #fef2f2; color: #dc2626; }
+.sval-lengkap     { background: #ecfdf5; color: #059669; }
+.sval-revisi      { background: #fff7ed; color: #ea580c; }
+.sval-kadaluarsa  { background: #f1f5f9; color: #64748b; border: 1px solid #d1d5db; }
 
 /* ── Pembayaran Section ── */
 .section-title {

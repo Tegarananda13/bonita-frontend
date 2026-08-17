@@ -21,6 +21,8 @@ interface PaketAdmin {
   KuotaMax: number;
   KuotaTerpakai: number;
   BatasPendaftaran: number;
+  IsActive: boolean;
+  IsFinished: boolean;
   Fasilitas: Fasilitas[];
 }
 interface PaketFormData {
@@ -253,19 +255,65 @@ const PaketDrawer = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // ── Fasilitas lokal (hanya saat Create) ──
+  // ── Fasilitas ──
+  // Create mode: penampungan lokal sebelum submit
   const [fasilitasInput, setFasilitasInput] = useState<{ nama: string; deskripsi: string }[]>([]);
+  // Edit mode: list live dari DB, bisa tambah/hapus langsung
+  const [fasilitasEdit, setFasilitasEdit] = useState<Fasilitas[]>(
+    isEdit ? (editData!.Fasilitas ?? []) : []
+  );
   const [fasNama, setFasNama] = useState("");
   const [fasDeskripsi, setFasDeskripsi] = useState("");
   const [fasError, setFasError] = useState("");
+  const [fasLoading, setFasLoading] = useState(false);
 
-  const handleAddFasilitas = () => {
+  const handleAddFasilitas = async () => {
     if (!fasNama.trim()) { setFasError("Nama fasilitas wajib diisi."); return; }
-    setFasilitasInput((prev) => [...prev, { nama: fasNama.trim(), deskripsi: fasDeskripsi.trim() }]);
-    setFasNama(""); setFasDeskripsi(""); setFasError("");
+    setFasError("");
+    if (isEdit) {
+      // Edit mode: langsung kirim ke API
+      try {
+        setFasLoading(true);
+        const res = await axios.post(
+          `http://localhost:8080/admin/paket/${editData!.ID}/fasilitas`,
+          { nama_fasilitas: fasNama.trim(), deskripsi: fasDeskripsi.trim() },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const newFas = res.data?.data;
+        if (newFas) {
+          setFasilitasEdit((prev) => [...prev, newFas]);
+        } else {
+          // fallback: reload
+          const r = await axios.get(
+            `http://localhost:8080/admin/paket/${editData!.ID}/fasilitas`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setFasilitasEdit(r.data?.data ?? []);
+        }
+        setFasNama(""); setFasDeskripsi("");
+      } catch { setFasError("Gagal menambahkan fasilitas."); }
+      finally { setFasLoading(false); }
+    } else {
+      // Create mode: simpan lokal
+      setFasilitasInput((prev) => [...prev, { nama: fasNama.trim(), deskripsi: fasDeskripsi.trim() }]);
+      setFasNama(""); setFasDeskripsi("");
+    }
   };
-  const handleRemoveFasilitas = (i: number) => {
-    setFasilitasInput((prev) => prev.filter((_, idx) => idx !== i));
+  const handleRemoveFasilitas = async (id: string | null, index: number) => {
+    if (isEdit && id) {
+      // Edit mode: hapus dari API
+      try {
+        setFasLoading(true);
+        await axios.delete(`http://localhost:8080/admin/fasilitas/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFasilitasEdit((prev) => prev.filter((f) => f.ID !== id));
+      } catch { alert("Gagal menghapus fasilitas."); }
+      finally { setFasLoading(false); }
+    } else {
+      // Create mode: hapus dari local state
+      setFasilitasInput((prev) => prev.filter((_, i) => i !== index));
+    }
   };
   const handleField = (k: keyof PaketFormData) => (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -494,51 +542,80 @@ const PaketDrawer = ({
               />
             </div>
 
-            {/* Fasilitas (hanya saat Create) */}
-            {!isEdit && (
-              <div className="form-field">
-                <label className="form-label">
-                  Fasilitas Paket
+            {/* Fasilitas */}
+            <div className="form-field">
+              <label className="form-label">
+                Fasilitas Paket
+                {!isEdit && (
                   <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: "0.75rem", marginLeft: "0.4rem" }}>
                     (opsional, bisa ditambah setelah paket dibuat)
                   </span>
-                </label>
+                )}
+              </label>
 
-                {/* Input tambah fasilitas */}
-                <div className="fasilitas-inline-add">
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="Nama fasilitas (cth. Makan 3x Sehari)"
-                    value={fasNama}
-                    onChange={(e) => setFasNama(e.target.value)}
-                    disabled={submitting}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddFasilitas(); } }}
-                  />
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="Keterangan singkat (opsional)"
-                    value={fasDeskripsi}
-                    onChange={(e) => setFasDeskripsi(e.target.value)}
-                    disabled={submitting}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddFasilitas(); } }}
-                  />
-                  {fasError && (
-                    <div style={{ fontSize: "0.78rem", color: "#dc2626" }}>{fasError}</div>
-                  )}
-                  <button
-                    type="button"
-                    className="fasilitas-inline-btn"
-                    onClick={handleAddFasilitas}
-                    disabled={submitting}
-                  >
-                    + Tambah Fasilitas
-                  </button>
-                </div>
+              {/* Input tambah fasilitas */}
+              <div className="fasilitas-inline-add">
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="Nama fasilitas (cth. Makan 3x Sehari)"
+                  value={fasNama}
+                  onChange={(e) => setFasNama(e.target.value)}
+                  disabled={submitting || fasLoading}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddFasilitas(); } }}
+                />
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder="Keterangan singkat (opsional)"
+                  value={fasDeskripsi}
+                  onChange={(e) => setFasDeskripsi(e.target.value)}
+                  disabled={submitting || fasLoading}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddFasilitas(); } }}
+                />
+                {fasError && (
+                  <div style={{ fontSize: "0.78rem", color: "#dc2626" }}>{fasError}</div>
+                )}
+                <button
+                  type="button"
+                  className="fasilitas-inline-btn"
+                  onClick={handleAddFasilitas}
+                  disabled={submitting || fasLoading}
+                >
+                  {fasLoading ? "Memproses..." : "+ Tambah Fasilitas"}
+                </button>
+              </div>
 
-                {/* Daftar fasilitas yang sudah ditambahkan */}
-                {fasilitasInput.length > 0 && (
+              {/* Daftar fasilitas */}
+              {isEdit ? (
+                fasilitasEdit.length > 0 && (
+                  <div className="fasilitas-inline-list">
+                    {fasilitasEdit.map((f) => (
+                      <div key={f.ID} className="fasilitas-inline-item">
+                        <div className="fasilitas-check-icon">✓</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "#1e293b" }}>{f.NamaFasilitas}</div>
+                          {f.Deskripsi && (
+                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{f.Deskripsi}</div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="fasilitas-delete-btn"
+                          onClick={() => handleRemoveFasilitas(f.ID, 0)}
+                          disabled={submitting || fasLoading}
+                          title="Hapus"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M18 6 6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                fasilitasInput.length > 0 && (
                   <div className="fasilitas-inline-list">
                     {fasilitasInput.map((f, i) => (
                       <div key={i} className="fasilitas-inline-item">
@@ -552,7 +629,7 @@ const PaketDrawer = ({
                         <button
                           type="button"
                           className="fasilitas-delete-btn"
-                          onClick={() => handleRemoveFasilitas(i)}
+                          onClick={() => handleRemoveFasilitas(null, i)}
                           disabled={submitting}
                           title="Hapus"
                         >
@@ -563,9 +640,9 @@ const PaketDrawer = ({
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
+                )
+              )}
+            </div>
           </div>
           <div className="drawer-footer">
             <button type="button" className="btn-cancel" onClick={onClose} disabled={submitting}>
@@ -594,11 +671,12 @@ const AdminPaket = () => {
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PaketAdmin | null>(null);
-  // Fasilitas state
-  const [fasilitasPaket, setFasilitasPaket] = useState<PaketAdmin | null>(null);
-  // Delete confirm
-  const [deleteTarget, setDeleteTarget] = useState<PaketAdmin | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  // Toggle status confirm
+  const [toggleTarget, setToggleTarget] = useState<PaketAdmin | null>(null);
+  const [toggleLoading, setToggleLoading] = useState(false);
+  // Finish paket confirm
+  const [finishTarget, setFinishTarget] = useState<PaketAdmin | null>(null);
+  const [finishLoading, setFinishLoading] = useState(false);
   const authH = useCallback(
     () => ({ Authorization: `Bearer ${token}` }),
     [token]
@@ -620,23 +698,47 @@ const AdminPaket = () => {
   useEffect(() => {
     fetchPaket();
   }, [fetchPaket]);
-  // ── Delete ──
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
+  // ── Toggle Status ──
+  const handleToggleStatus = async () => {
+    if (!toggleTarget) return;
     try {
-      setDeleteLoading(true);
-      await axios.delete(`http://localhost:8080/admin/paket/${deleteTarget.ID}`, {
-        headers: authH(),
-      });
-      setPaketList((p) => p.filter((x) => x.ID !== deleteTarget.ID));
-      setDeleteTarget(null);
+      setToggleLoading(true);
+      const newStatus = !toggleTarget.IsActive;
+      await axios.patch(
+        `http://localhost:8080/admin/paket/${toggleTarget.ID}/status`,
+        { is_active: newStatus },
+        { headers: authH() }
+      );
+      setPaketList((prev) =>
+        prev.map((p) => p.ID === toggleTarget.ID ? { ...p, IsActive: newStatus } : p)
+      );
+      setToggleTarget(null);
     } catch (err: unknown) {
-      alert(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menghapus.") : "Gagal menghapus.");
+      alert(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal mengubah status.") : "Gagal mengubah status.");
     } finally {
-      setDeleteLoading(false);
+      setToggleLoading(false);
     }
   };
-  // ── Filtered ──
+  // ── Finish Paket ──
+  const handleFinishPaket = async () => {
+    if (!finishTarget) return;
+    try {
+      setFinishLoading(true);
+      await axios.patch(
+        `http://localhost:8080/admin/paket/${finishTarget.ID}/finish`,
+        { is_finished: true },
+        { headers: authH() }
+      );
+      setPaketList((prev) =>
+        prev.map((p) => p.ID === finishTarget.ID ? { ...p, IsFinished: true } : p)
+      );
+      setFinishTarget(null);
+    } catch (err: unknown) {
+      alert(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyelesaikan paket.") : "Gagal menyelesaikan paket.");
+    } finally {
+      setFinishLoading(false);
+    }
+  };
   const filtered = paketList.filter((p) =>
     p.NamaPaket?.toLowerCase().includes(search.toLowerCase())
   );
@@ -724,6 +826,8 @@ const AdminPaket = () => {
               <th>Harga</th>
               <th>Berangkat</th>
               <th>Kuota</th>
+              <th>Status</th>
+              <th>Perjalanan</th>
               <th>Fasilitas</th>
               <th>Aksi</th>
             </tr>
@@ -748,7 +852,7 @@ const AdminPaket = () => {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={8}>
                   <div className="table-empty">
                     <div className="table-empty-icon">📦</div>
                     <p>{search ? "Paket tidak ditemukan." : "Belum ada paket."}</p>
@@ -800,6 +904,46 @@ const AdminPaket = () => {
                         <span style={{ opacity: 0.6, fontWeight: 500 }}>/{p.KuotaMax}</span>
                       </span>
                     </td>
+                    {/* Status Aktif/Nonaktif */}
+                    <td>
+                      {p.IsActive ? (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          background: "#dcfce7", color: "#166534",
+                          borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
+                        }}>
+                          🟢 Aktif
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          background: "#fee2e2", color: "#991b1b",
+                          borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
+                        }}>
+                          🔴 Nonaktif
+                        </span>
+                      )}
+                    </td>
+                    {/* Status Perjalanan */}
+                    <td>
+                      {p.IsFinished ? (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          background: "#f1f5f9", color: "#475569",
+                          borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
+                        }}>
+                          ⚫ Selesai
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          background: "#dcfce7", color: "#166534",
+                          borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
+                        }}>
+                          🟢 Berjalan
+                        </span>
+                      )}
+                    </td>
                     {/* Fasilitas count */}
                     <td>
                       <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
@@ -821,16 +965,6 @@ const AdminPaket = () => {
                           Detail
                         </button>
                         <button
-                          className="action-btn action-btn-fasilitas"
-                          onClick={() => setFasilitasPaket(p)}
-                          title="Kelola fasilitas"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-                          </svg>
-                          Fasilitas
-                        </button>
-                        <button
                           className="action-btn action-btn-edit"
                           onClick={() => { setEditTarget(p); setDrawerOpen(true); }}
                           title="Edit paket"
@@ -841,17 +975,49 @@ const AdminPaket = () => {
                           </svg>
                           Edit
                         </button>
+                        {/* Selesaikan Paket / Badge Selesai */}
+                        {p.IsFinished ? (
+                          <span style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            background: "#f1f5f9", color: "#475569",
+                            borderRadius: 20, padding: "4px 10px", fontSize: "0.75rem", fontWeight: 700,
+                            border: "1px solid #e2e8f0",
+                          }}>
+                            ⚫ Paket Selesai
+                          </span>
+                        ) : (
+                          <button
+                            className="action-btn action-btn-finish"
+                            onClick={() => setFinishTarget(p)}
+                            title="Selesaikan paket ini"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Selesaikan
+                          </button>
+                        )}
                         <button
-                          className="action-btn action-btn-delete"
-                          onClick={() => setDeleteTarget(p)}
-                          title="Hapus paket"
+                          className={p.IsActive ? "action-btn action-btn-delete" : "action-btn action-btn-activate"}
+                          onClick={() => setToggleTarget(p)}
+                          title={p.IsActive ? "Nonaktifkan paket" : "Aktifkan paket"}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                            <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                          </svg>
-                          Hapus
+                          {p.IsActive ? (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                              </svg>
+                              Nonaktifkan
+                            </>
+                          ) : (
+                            <>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                              Aktifkan
+                            </>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -871,43 +1037,71 @@ const AdminPaket = () => {
           onSaved={fetchPaket}
         />
       )}
-      {/* ── Fasilitas Panel ── */}
-      {fasilitasPaket && (
-        <FasilitasPanel
-          paket={fasilitasPaket}
-          token={token!}
-          onClose={() => setFasilitasPaket(null)}
-        />
-      )}
-      {/* ── Delete Confirm ── */}
-      {deleteTarget && (
+      {/* ── Toggle Status Confirm ── */}
+      {toggleTarget && (
         <div
           className="confirm-overlay"
-          onClick={(e) => e.target === e.currentTarget && !deleteLoading && setDeleteTarget(null)}
+          onClick={(e) => e.target === e.currentTarget && !toggleLoading && setToggleTarget(null)}
         >
           <div className="confirm-box">
-            <div className="confirm-icon">🗑️</div>
-            <h3>Hapus Paket?</h3>
+            <div className="confirm-icon">{toggleTarget.IsActive ? "🔴" : "🟢"}</div>
+            <h3>{toggleTarget.IsActive ? "Nonaktifkan Paket?" : "Aktifkan Paket?"}</h3>
             <p>
-              Paket <strong>{deleteTarget.NamaPaket}</strong> akan dihapus permanen.
-              {(deleteTarget.KuotaTerpakai ?? 0) > 0 && (
-                <> Paket ini memiliki <strong>{deleteTarget.KuotaTerpakai} jamaah</strong> — penghapusan mungkin ditolak backend.</>
-              )}
+              Paket <strong>{toggleTarget.NamaPaket}</strong> akan diubah menjadi{" "}
+              <strong>{toggleTarget.IsActive ? "Nonaktif" : "Aktif"}</strong>.
+              {toggleTarget.IsActive && (
+                <> Customer tidak akan dapat melihat atau mendaftar ke paket ini.</>)
+              }
             </p>
             <div className="confirm-actions">
               <button
                 className="confirm-cancel"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteLoading}
+                onClick={() => setToggleTarget(null)}
+                disabled={toggleLoading}
               >
                 Batal
               </button>
               <button
-                className="confirm-delete-btn"
-                onClick={handleDelete}
-                disabled={deleteLoading}
+                className={toggleTarget.IsActive ? "confirm-delete-btn" : "confirm-activate-btn"}
+                onClick={handleToggleStatus}
+                disabled={toggleLoading}
               >
-                {deleteLoading ? "Menghapus..." : "Ya, Hapus"}
+                {toggleLoading
+                  ? "Memproses..."
+                  : toggleTarget.IsActive ? "Ya, Nonaktifkan" : "Ya, Aktifkan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Finish Paket Confirm ── */}
+      {finishTarget && (
+        <div
+          className="confirm-overlay"
+          onClick={(e) => e.target === e.currentTarget && !finishLoading && setFinishTarget(null)}
+        >
+          <div className="confirm-box">
+            <div className="confirm-icon">⚫</div>
+            <h3>Selesaikan Paket?</h3>
+            <p>
+              Seluruh jamaah pada paket <strong>{finishTarget.NamaPaket}</strong> akan
+              otomatis berubah menjadi status <strong>Selesai</strong>.{" "}
+              Perubahan ini tidak dapat dibatalkan.
+            </p>
+            <div className="confirm-actions">
+              <button
+                className="confirm-cancel"
+                onClick={() => setFinishTarget(null)}
+                disabled={finishLoading}
+              >
+                Batal
+              </button>
+              <button
+                className="confirm-finish-btn"
+                onClick={handleFinishPaket}
+                disabled={finishLoading}
+              >
+                {finishLoading ? "Memproses..." : "Selesaikan Paket"}
               </button>
             </div>
           </div>

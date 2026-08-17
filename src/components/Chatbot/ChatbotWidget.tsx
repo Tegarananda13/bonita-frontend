@@ -21,8 +21,9 @@ const SS_STEP           = 'bonita_chat_step';
 const SS_PENDAFTARAN_ID = 'bonita_chat_pendaftaran_id';
 const SS_NOMOR_UMR      = 'bonita_chat_nomor_umr';
 const SS_KATEGORI       = 'bonita_chat_kategori';
+const SS_REG_DATA       = 'bonita_chat_reg_data';
 
-type FlowState = '' | 'pengaduan';
+type FlowState = '' | 'pengaduan' | 'registrasi';
 type StepState = '' | 'ask_nomor' | 'ask_kategori' | string; // ask_isi_<kategori> | done | error
 
 // ── Quick reply suggestions ────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ type StepState = '' | 'ask_nomor' | 'ask_kategori' | string; // ask_isi_<kategor
 const QUICK_REPLIES = [
   'Apa saja paket umroh yang tersedia?',
   'Berapa harga paket umroh?',
-  'Bagaimana cara mendaftar?',
+  'Saya ingin daftar umroh',
   'Apa saja dokumen yang diperlukan?',
   'Saya ingin membuat pengaduan',
 ];
@@ -127,19 +128,26 @@ const ChatbotWidget = () => {
     setIsLoading(true);
 
     try {
-      // Baca state flow dari sessionStorage
+      // Baca state dari sessionStorage
       const flow          = ssGet(SS_FLOW) as FlowState;
       const step          = ssGet(SS_STEP) as StepState;
       const pendaftaranId = ssGet(SS_PENDAFTARAN_ID);
       const kategori      = ssGet(SS_KATEGORI);
+      const regDataRaw    = ssGet(SS_REG_DATA);
 
-      const payload: Record<string, string> = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: Record<string, any> = {
         pertanyaan:     text.trim(),
         flow:           flow,
         step:           step,
         pendaftaran_id: pendaftaranId,
         kategori:       kategori,
       };
+
+      // Sertakan reg_data jika sedang dalam flow registrasi
+      if (flow === 'registrasi' && regDataRaw) {
+        try { payload.reg_data = JSON.parse(regDataRaw); } catch { /* ignore */ }
+      }
 
       const res = await axios.post('http://localhost:8080/chatbot', payload);
       const data = res.data?.data ?? {};
@@ -159,10 +167,20 @@ const ChatbotWidget = () => {
           const kat = nextStep.replace('ask_isi_', '');
           ssSet(SS_KATEGORI, kat);
         }
+      } else if (nextFlow === 'registrasi') {
+        ssSet(SS_FLOW, 'registrasi');
+        ssSet(SS_STEP, nextStep);
+        // Simpan reg_data agar state jamaah tidak hilang saat request berikutnya
+        if (data.reg_data) {
+          ssSet(SS_REG_DATA, JSON.stringify(data.reg_data));
+        } else if (nextStep === 'selesai' || nextStep === 'batal' || nextStep === 'error') {
+          sessionStorage.removeItem(SS_REG_DATA);
+        }
       } else {
         // flow selesai atau normal → clear
         if (nextStep === 'done' || nextStep === 'error' || nextFlow === '') {
           ssClear();
+          sessionStorage.removeItem(SS_REG_DATA);
         }
       }
 

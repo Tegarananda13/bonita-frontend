@@ -278,6 +278,7 @@ const TambahJamaah = () => {
         "http://localhost:8080/pendaftaran",
         {
           paket_id: paketId,
+          registration_source: "admin",
           jamaah: jamaahList.map(j => ({
             nik: j.nik.trim(), nama: j.nama.trim(),
             tempat_lahir: j.tempat_lahir.trim(), tanggal_lahir: j.tanggal_lahir,
@@ -286,7 +287,8 @@ const TambahJamaah = () => {
             kabupaten_kota: j.kabupaten_kota.trim(), kecamatan: j.kecamatan.trim(),
             kelurahan_desa: j.kelurahan_desa.trim(), kode_pos: j.kode_pos.trim(),
           })),
-        }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setResult(res.data as SubmitResult);
     } catch (err: unknown) {
