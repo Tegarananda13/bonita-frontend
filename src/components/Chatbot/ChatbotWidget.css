@@ -186,6 +186,20 @@
   align-items: flex-end;
   gap: 0.5rem;
   animation: msgIn 0.25s ease;
+  min-width: 0;
+}
+
+/* Wrapper div untuk bubble + tombol kategori */
+.message-body {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.message-row.user .message-body {
+  align-items: flex-end;
 }
 
 @keyframes msgIn {
@@ -213,10 +227,12 @@
 /* Bubble */
 .message-bubble {
   max-width: 78%;
+  min-width: 40px;
   padding: 0.65rem 0.875rem;
   border-radius: 14px;
   position: relative;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .message-bubble.bot {

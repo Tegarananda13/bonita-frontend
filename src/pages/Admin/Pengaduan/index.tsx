@@ -110,13 +110,17 @@ const DetailModal = ({
     if (!data || newStatus === data.status) return;
     setSaving(true); setMsg("");
     try {
-      await axios.patch(
+      const res = await axios.patch(
         `http://localhost:8080/admin/pengaduan/${pengaduanId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setData(prev => prev ? { ...prev, status: newStatus } : prev);
-      setMsg("✅ Status berhasil diperbarui.");
+      const emailSent = res.data?.email_sent === true;
+      setMsg(emailSent
+        ? "✅ Status berhasil diperbarui. Email notifikasi terkirim ke customer."
+        : "✅ Status berhasil diperbarui."
+      );
       onStatusChanged();
     } catch {
       setMsg("❌ Gagal mengubah status.");

@@ -159,13 +159,19 @@ const ChatbotWidget = () => {
 
       // Update sessionStorage
       if (nextFlow === 'pengaduan') {
-        ssSet(SS_FLOW, 'pengaduan');
-        ssSet(SS_STEP, nextStep);
-        if (nextPendId) ssSet(SS_PENDAFTARAN_ID, nextPendId);
-        // Simpan kategori dari step ask_isi_<kategori>
-        if (nextStep.startsWith('ask_isi_')) {
-          const kat = nextStep.replace('ask_isi_', '');
-          ssSet(SS_KATEGORI, kat);
+        if (nextStep === 'done' || nextStep === 'error') {
+          // Pengaduan selesai/error → clear state agar pesan berikutnya bisa jadi intent baru
+          ssClear();
+          sessionStorage.removeItem(SS_REG_DATA);
+        } else {
+          ssSet(SS_FLOW, 'pengaduan');
+          ssSet(SS_STEP, nextStep);
+          if (nextPendId) ssSet(SS_PENDAFTARAN_ID, nextPendId);
+          // Simpan kategori dari step ask_isi_<kategori>
+          if (nextStep.startsWith('ask_isi_')) {
+            const kat = nextStep.replace('ask_isi_', '');
+            ssSet(SS_KATEGORI, kat);
+          }
         }
       } else if (nextFlow === 'registrasi') {
         ssSet(SS_FLOW, 'registrasi');
@@ -252,7 +258,7 @@ const ChatbotWidget = () => {
               {msg.sender === 'bot' && (
                 <div className="bot-avatar-sm">🤖</div>
               )}
-              <div>
+              <div className="message-body">
                 <div className={`message-bubble ${msg.sender}`}>
                   <p>{renderText(msg.text)}</p>
                   <div className="message-time">

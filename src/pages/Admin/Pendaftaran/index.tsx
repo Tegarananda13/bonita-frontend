@@ -7,7 +7,6 @@ import "./AdminPendaftaran.css";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface PendaftaranItem {
-  id: string;
   nomor_pendaftaran: string;
   nomor_invoice?: string;
   nama_customer: string;
@@ -24,7 +23,6 @@ interface PendaftaranItem {
 }
 
 interface DetailPendaftaran {
-  id: string;
   nomor_pendaftaran: string;
   nama_customer: string;
   nik: string;
@@ -129,6 +127,7 @@ const DetailModal = ({
   const [payFile, setPayFile] = useState<File | null>(null);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [payError, setPayError] = useState("");
+  const [paySuccess, setPaySuccess] = useState("");
 
   // ── Modal Upload/Edit Dokumen ──
   const [showDocModal, setShowDocModal] = useState(false);
@@ -137,6 +136,7 @@ const DetailModal = ({
   const [docFile, setDocFile] = useState<File | null>(null);
   const [docSubmitting, setDocSubmitting] = useState(false);
   const [docError, setDocError] = useState("");
+  const [docSuccess, setDocSuccess] = useState("");
 
   // ── Konfirmasi hapus ──
   const [deletingPayId, setDeletingPayId] = useState<string | null>(null);
@@ -152,7 +152,6 @@ const DetailModal = ({
       });
       const p = res.data?.pendaftaran;
       setData({
-        id: p?.ID ?? p?.id,
         nomor_pendaftaran: p?.NomorPendaftaran ?? p?.nomor_pendaftaran,
         nama_customer: p?.Customer?.Nama ?? p?.Customer?.nama,
         nik:           p?.Customer?.NIK  ?? p?.Customer?.nik  ?? "-",
@@ -210,7 +209,7 @@ const DetailModal = ({
     setAssignError("");
     try {
       setAssigning(true);
-      await axios.put(`${API}/admin/pendaftaran/${data.id}/assign`, {}, { headers: authH });
+      await axios.put(`${API}/admin/pendaftaran/${data.nomor_pendaftaran}/assign`, {}, { headers: authH });
       setAssignSuccess(true);
       onAssigned();
     } catch (err: unknown) {
@@ -221,6 +220,11 @@ const DetailModal = ({
   };
 
   // ── Pembayaran helpers ──
+  const fmtPayInput = (raw: string) => {
+    const digits = raw.replace(/[^\d]/g, "");
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   const openAddPay = () => {
     setEditPay(null);
     setPayJumlah("");
@@ -232,7 +236,7 @@ const DetailModal = ({
 
   const openEditPay = (pay: PayItem) => {
     setEditPay(pay);
-    setPayJumlah(String(pay.jumlah));
+    setPayJumlah(fmtPayInput(String(Math.round(pay.jumlah))));
     setPayTanggal(pay.tanggal ? pay.tanggal.split("T")[0] : new Date().toISOString().split("T")[0]);
     setPayFile(null);
     setPayError("");
@@ -257,10 +261,13 @@ const DetailModal = ({
       if (editPay) {
         await axios.put(`${API}/admin/pembayaran/${editPay.id}/admin`, fd, { headers: authH });
       } else {
-        await axios.post(`${API}/admin/pendaftaran/${data.id}/pembayaran`, fd, { headers: authH });
+        await axios.post(`${API}/admin/pendaftaran/${data.nomor_pendaftaran}/pembayaran`, fd, { headers: authH });
       }
       setShowPayModal(false);
       await fetchData();
+      const label = editPay ? "Pembayaran berhasil diperbarui" : "Pembayaran berhasil ditambahkan";
+      setPaySuccess(label);
+      setTimeout(() => setPaySuccess(""), 3500);
     } catch (err: unknown) {
       setPayError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyimpan pembayaran") : "Gagal menyimpan pembayaran");
     } finally {
@@ -310,10 +317,13 @@ const DetailModal = ({
       if (editDoc) {
         await axios.put(`${API}/admin/dokumen/${editDoc.id}/admin`, fd, { headers: authH });
       } else {
-        await axios.post(`${API}/admin/pendaftaran/${data.id}/dokumen`, fd, { headers: authH });
+        await axios.post(`${API}/admin/pendaftaran/${data.nomor_pendaftaran}/dokumen`, fd, { headers: authH });
       }
       setShowDocModal(false);
       await fetchData();
+      const label = editDoc ? "Dokumen berhasil diperbarui" : "Dokumen berhasil diupload";
+      setDocSuccess(label);
+      setTimeout(() => setDocSuccess(""), 3500);
     } catch (err: unknown) {
       setDocError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyimpan dokumen") : "Gagal menyimpan dokumen");
     } finally {
@@ -336,38 +346,49 @@ const DetailModal = ({
   // ── Label pembayaran (DP / Pembayaran 2 / dst.) ──
   const payLabel = (idx: number) => idx === 0 ? "DP" : `Pembayaran ${idx + 1}`;
 
-  // ── Inline modal styles ──
+  // ── Inline modal styles (premium redesign) ──
   const inlineModal: React.CSSProperties = {
-    position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.55)",
+    position: "fixed", inset: 0, zIndex: 9999,
+    background: "rgba(15, 23, 42, 0.65)",
+    backdropFilter: "blur(8px)",
     display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
+    animation: "fadeIn 0.18s ease",
   };
   const inlineBox: React.CSSProperties = {
-    background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "440px",
-    padding: "1.5rem", boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-  };
-  const inlineTitle: React.CSSProperties = {
-    fontWeight: 700, fontSize: "1rem", marginBottom: "1.25rem", color: "#1e293b",
+    background: "#ffffff",
+    borderRadius: "20px",
+    width: "100%",
+    maxWidth: "460px",
+    boxShadow: "0 25px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)",
+    overflow: "hidden",
+    animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)",
   };
   const inlineLabel: React.CSSProperties = {
-    display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#475569",
-    marginBottom: "0.3rem", marginTop: "0.875rem",
+    display: "block", fontSize: "0.77rem", fontWeight: 700, color: "#64748b",
+    marginBottom: "0.35rem", marginTop: "1rem", letterSpacing: "0.04em", textTransform: "uppercase",
   };
   const inlineInput: React.CSSProperties = {
-    width: "100%", padding: "0.6rem 0.75rem", border: "1.5px solid #e2e8f0",
-    borderRadius: "8px", fontSize: "0.875rem", color: "#1e293b", outline: "none",
-    boxSizing: "border-box",
+    width: "100%", padding: "0.65rem 0.875rem",
+    border: "2px solid #e2e8f0",
+    borderRadius: "10px", fontSize: "0.9rem", color: "#1e293b", outline: "none",
+    boxSizing: "border-box", transition: "border-color 0.15s",
+    background: "#f8fafc",
   };
   const inlineActions: React.CSSProperties = {
-    display: "flex", gap: "0.75rem", marginTop: "1.25rem", justifyContent: "flex-end",
+    display: "flex", gap: "0.75rem", padding: "1rem 1.5rem 1.5rem", justifyContent: "flex-end",
+    borderTop: "1px solid #f1f5f9",
   };
   const btnCancel: React.CSSProperties = {
-    padding: "0.5rem 1.1rem", borderRadius: "8px", border: "1.5px solid #e2e8f0",
+    padding: "0.55rem 1.25rem", borderRadius: "10px", border: "2px solid #e2e8f0",
     background: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, color: "#64748b",
+    transition: "all 0.15s",
   };
   const btnSubmit: React.CSSProperties = {
-    padding: "0.5rem 1.25rem", borderRadius: "8px", border: "none",
-    background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#fff",
-    cursor: "pointer", fontSize: "0.85rem", fontWeight: 700,
+    padding: "0.55rem 1.5rem", borderRadius: "10px", border: "none",
+    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+    color: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700,
+    boxShadow: "0 4px 15px rgba(79,70,229,0.4)",
+    transition: "all 0.15s",
   };
   const actionBtn = (color: string): React.CSSProperties => ({
     fontSize: "0.72rem", fontWeight: 600, color, background: "transparent",
@@ -386,63 +407,186 @@ const DetailModal = ({
 
   return (
     <>
+     {/* ── Toast Notifikasi Berhasil — Pembayaran ── */}
+      {paySuccess && (
+        <div style={{
+          position: "fixed", bottom: "2rem", right: "2rem", zIndex: 99999,
+          background: "linear-gradient(135deg, #059669, #10b981)",
+          color: "#fff", borderRadius: "14px", padding: "0.875rem 1.25rem",
+          boxShadow: "0 8px 30px rgba(16,185,129,0.45)",
+          display: "flex", alignItems: "center", gap: "0.75rem",
+          fontSize: "0.88rem", fontWeight: 600, minWidth: "260px",
+          animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+        }}>
+          <span style={{ fontSize: "1.3rem" }}>✅</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>Berhasil!</div>
+            <div style={{ opacity: 0.9, fontSize: "0.82rem", marginTop: "2px" }}>{paySuccess}</div>
+          </div>
+          <button onClick={() => setPaySuccess("")} style={{
+            marginLeft: "auto", background: "rgba(255,255,255,0.25)", border: "none",
+            borderRadius: "8px", color: "#fff", cursor: "pointer", padding: "4px 8px",
+            fontSize: "1rem", fontWeight: 700, lineHeight: 1,
+          }}>×</button>
+        </div>
+      )}
+
+      {/* ── Toast Notifikasi Berhasil — Dokumen ── */}
+      {docSuccess && (
+        <div style={{
+          position: "fixed", bottom: "2rem", right: "2rem", zIndex: 99999,
+          background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+          color: "#fff", borderRadius: "14px", padding: "0.875rem 1.25rem",
+          boxShadow: "0 8px 30px rgba(124,58,237,0.45)",
+          display: "flex", alignItems: "center", gap: "0.75rem",
+          fontSize: "0.88rem", fontWeight: 600, minWidth: "260px",
+          animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+        }}>
+          <span style={{ fontSize: "1.3rem" }}>📎</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>Berhasil!</div>
+            <div style={{ opacity: 0.9, fontSize: "0.82rem", marginTop: "2px" }}>{docSuccess}</div>
+          </div>
+          <button onClick={() => setDocSuccess("")} style={{
+            marginLeft: "auto", background: "rgba(255,255,255,0.25)", border: "none",
+            borderRadius: "8px", color: "#fff", cursor: "pointer", padding: "4px 8px",
+            fontSize: "1rem", fontWeight: 700, lineHeight: 1,
+          }}>×</button>
+        </div>
+      )}
+
       {/* ── Modal Tambah/Edit Pembayaran ── */}
       {showPayModal && (
         <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !paySubmitting && setShowPayModal(false)}>
           <div style={inlineBox}>
-            <div style={inlineTitle}>
-              {editPay ? "✏️ Edit Pembayaran" : "➕ Tambah Pembayaran"}
+            {/* Header gradient */}
+            <div style={{
+              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+              padding: "1.25rem 1.5rem",
+              display: "flex", alignItems: "center", gap: "0.75rem",
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: "12px",
+                background: "rgba(255,255,255,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.2rem",
+              }}>
+                {editPay ? "✏️" : "💳"}
+              </div>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>
+                  {editPay ? "Edit Pembayaran" : "Tambah Pembayaran"}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.78rem", marginTop: "2px" }}>
+                  {data?.nomor_pendaftaran}
+                </div>
+              </div>
             </div>
 
-            {payError && (
-              <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: "8px", padding: "0.6rem 0.875rem", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-                {payError}
+            {/* Body */}
+            <div style={{ padding: "1.25rem 1.5rem" }}>
+              {payError && (
+                <div style={{
+                  background: "#fef2f2", color: "#dc2626", borderRadius: "10px",
+                  padding: "0.65rem 1rem", fontSize: "0.82rem", marginBottom: "0.75rem",
+                  border: "1.5px solid #fecaca", display: "flex", alignItems: "center", gap: "0.5rem",
+                }}>
+                  <span>⚠️</span> {payError}
+                </div>
+              )}
+
+              {/* Jumlah */}
+              <label style={inlineLabel}>Jumlah Pembayaran *</label>
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)",
+                  color: "#94a3b8", fontWeight: 700, fontSize: "0.85rem", pointerEvents: "none",
+                }}>Rp</span>
+                <input
+                  style={{ ...inlineInput, paddingLeft: "2.5rem", fontWeight: 600, fontSize: "1rem", color: "#1e293b" }}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={payJumlah}
+                  onChange={e => setPayJumlah(fmtPayInput(e.target.value))}
+                  disabled={paySubmitting}
+                />
               </div>
-            )}
+              {payJumlah && (
+                <div style={{ fontSize: "0.75rem", color: "#6366f1", marginTop: "4px", fontWeight: 600 }}>
+                  {(() => {
+                    const num = parseInt(payJumlah.replace(/[^\d]/g, ""), 10);
+                    return isNaN(num) ? "" : `Rp ${num.toLocaleString("id-ID")}`;
+                  })()}
+                </div>
+              )}
 
-            <label style={inlineLabel}>Jumlah Pembayaran *</label>
-            <input
-              style={inlineInput}
-              type="text"
-              placeholder="Contoh: 5000000"
-              value={payJumlah}
-              onChange={e => setPayJumlah(e.target.value.replace(/[^\d]/g, ""))}
-              disabled={paySubmitting}
-            />
+              {/* Tanggal */}
+              <label style={inlineLabel}>Tanggal Pembayaran *</label>
+              <input
+                style={inlineInput}
+                type="date"
+                value={payTanggal}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={e => setPayTanggal(e.target.value)}
+                disabled={paySubmitting}
+              />
 
-            <label style={inlineLabel}>Tanggal Pembayaran *</label>
-            <input
-              style={inlineInput}
-              type="date"
-              value={payTanggal}
-              max={new Date().toISOString().split("T")[0]}
-              onChange={e => setPayTanggal(e.target.value)}
-              disabled={paySubmitting}
-            />
-
-            <label style={inlineLabel}>Bukti Pembayaran (opsional)</label>
-            <input
-              style={{ ...inlineInput, padding: "0.45rem 0.75rem" }}
-              type="file"
-              accept="image/*,.pdf"
-              onChange={e => setPayFile(e.target.files?.[0] ?? null)}
-              disabled={paySubmitting}
-            />
-            {editPay?.bukti && !payFile && (
-              <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
-                Bukti saat ini:{" "}
-                <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#4f46e5" }}>
-                  Lihat file lama
-                </a>
+              {/* File Upload */}
+              <label style={inlineLabel}>Bukti Pembayaran {editPay ? "(opsional — ganti jika perlu)" : "(opsional)"}</label>
+              <div style={{
+                border: "2px dashed #c7d2fe",
+                borderRadius: "10px",
+                padding: "0.875rem",
+                background: payFile ? "#f0fdf4" : "#f8fafc",
+                textAlign: "center",
+                transition: "all 0.2s",
+                cursor: "pointer",
+              }}>
+                <input
+                  id="pay-file-input"
+                  type="file"
+                  accept="image/*,.pdf"
+                  style={{ display: "none" }}
+                  onChange={e => setPayFile(e.target.files?.[0] ?? null)}
+                  disabled={paySubmitting}
+                />
+                <label htmlFor="pay-file-input" style={{ cursor: "pointer", display: "block" }}>
+                  {payFile ? (
+                    <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
+                      ✅ {payFile.name}
+                      <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
+                        {(payFile.size / 1024).toFixed(0)} KB — klik untuk ganti
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
+                      <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>📁</div>
+                      <div style={{ fontWeight: 600, color: "#6366f1" }}>Pilih file</div>
+                      <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
+                    </div>
+                  )}
+                </label>
               </div>
-            )}
+              {editPay?.bukti && !payFile && (
+                <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "5px", textAlign: "center" }}>
+                  Saat ini:{" "}
+                  <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 600 }}>Lihat bukti lama</a>
+                </div>
+              )}
+            </div>
 
             <div style={inlineActions}>
               <button style={btnCancel} onClick={() => setShowPayModal(false)} disabled={paySubmitting}>
                 Batal
               </button>
-              <button style={btnSubmit} onClick={submitPay} disabled={paySubmitting}>
-                {paySubmitting ? "Menyimpan..." : "💾 Simpan"}
+              <button style={{ ...btnSubmit, opacity: paySubmitting ? 0.7 : 1 }} onClick={submitPay} disabled={paySubmitting}>
+                {paySubmitting ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ animation: "spin 0.7s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    Menyimpan...
+                  </span>
+                ) : "💾 Simpan"}
               </button>
             </div>
           </div>
@@ -453,53 +597,133 @@ const DetailModal = ({
       {showDocModal && (
         <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !docSubmitting && setShowDocModal(false)}>
           <div style={inlineBox}>
-            <div style={inlineTitle}>
-              {editDoc ? "✏️ Edit Dokumen" : "📎 Upload Dokumen"}
+            {/* Header gradient */}
+            <div style={{
+              background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+              padding: "1.25rem 1.5rem",
+              display: "flex", alignItems: "center", gap: "0.75rem",
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: "12px",
+                background: "rgba(255,255,255,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.2rem",
+              }}>
+                {editDoc ? "✏️" : "📎"}
+              </div>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>
+                  {editDoc ? "Edit Dokumen" : "Upload Dokumen"}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.78rem", marginTop: "2px" }}>
+                  {data?.nomor_pendaftaran}
+                </div>
+              </div>
             </div>
 
-            {docError && (
-              <div style={{ background: "#fef2f2", color: "#dc2626", borderRadius: "8px", padding: "0.6rem 0.875rem", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-                {docError}
-              </div>
-            )}
+            {/* Body */}
+            <div style={{ padding: "1.25rem 1.5rem" }}>
+              {docError && (
+                <div style={{
+                  background: "#fef2f2", color: "#dc2626", borderRadius: "10px",
+                  padding: "0.65rem 1rem", fontSize: "0.82rem", marginBottom: "0.75rem",
+                  border: "1.5px solid #fecaca", display: "flex", alignItems: "center", gap: "0.5rem",
+                }}>
+                  <span>⚠️</span> {docError}
+                </div>
+              )}
 
-            <label style={inlineLabel}>Jenis Dokumen *</label>
-            <select
-              style={inlineInput}
-              value={docJenis}
-              onChange={e => setDocJenis(e.target.value)}
-              disabled={docSubmitting}
-            >
-              {JENIS_DOKUMEN.map(j => (
-                <option key={j.value} value={j.value}>{j.label}</option>
-              ))}
-            </select>
-
-            <label style={inlineLabel}>
-              {editDoc ? "Ganti File (opsional)" : "File Dokumen *"}
-            </label>
-            <input
-              style={{ ...inlineInput, padding: "0.45rem 0.75rem" }}
-              type="file"
-              accept="image/*,.pdf"
-              onChange={e => setDocFile(e.target.files?.[0] ?? null)}
-              disabled={docSubmitting}
-            />
-            {editDoc?.file_path && !docFile && (
-              <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
-                File saat ini:{" "}
-                <a href={editDoc.file_path} target="_blank" rel="noreferrer" style={{ color: "#4f46e5" }}>
-                  Lihat file lama
-                </a>
+              {/* Jenis Dokumen */}
+              <label style={inlineLabel}>Jenis Dokumen *</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                {JENIS_DOKUMEN.map(j => (
+                  <button
+                    key={j.value}
+                    onClick={() => !docSubmitting && setDocJenis(j.value)}
+                    disabled={docSubmitting}
+                    style={{
+                      padding: "0.6rem 0.75rem",
+                      borderRadius: "10px",
+                      border: docJenis === j.value ? "2px solid #2563eb" : "2px solid #e2e8f0",
+                      background: docJenis === j.value ? "#eff6ff" : "#f8fafc",
+                      color: docJenis === j.value ? "#1d4ed8" : "#64748b",
+                      fontWeight: docJenis === j.value ? 700 : 500,
+                      fontSize: "0.82rem",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      textAlign: "left",
+                    }}
+                  >
+                    {docJenis === j.value ? "✓ " : ""}{j.label}
+                  </button>
+                ))}
               </div>
-            )}
+
+              {/* File Upload */}
+              <label style={{ ...inlineLabel, marginTop: "1.25rem" }}>
+                {editDoc ? "Ganti File (opsional)" : "File Dokumen *"}
+              </label>
+              <div style={{
+                border: "2px dashed #bae6fd",
+                borderRadius: "10px",
+                padding: "1rem",
+                background: docFile ? "#f0fdf4" : "#f0f9ff",
+                textAlign: "center",
+                transition: "all 0.2s",
+              }}>
+                <input
+                  id="doc-file-input"
+                  type="file"
+                  accept="image/*,.pdf"
+                  style={{ display: "none" }}
+                  onChange={e => setDocFile(e.target.files?.[0] ?? null)}
+                  disabled={docSubmitting}
+                />
+                <label htmlFor="doc-file-input" style={{ cursor: "pointer", display: "block" }}>
+                  {docFile ? (
+                    <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
+                      ✅ {docFile.name}
+                      <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
+                        {(docFile.size / 1024).toFixed(0)} KB — klik untuk ganti
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
+                      <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>📄</div>
+                      <div style={{ fontWeight: 600, color: "#2563eb" }}>Pilih file</div>
+                      <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
+                    </div>
+                  )}
+                </label>
+              </div>
+              {editDoc?.file_path && !docFile && (
+                <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "5px", textAlign: "center" }}>
+                  Saat ini:{" "}
+                  <a href={editDoc.file_path} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600 }}>Lihat file lama</a>
+                </div>
+              )}
+            </div>
 
             <div style={inlineActions}>
               <button style={btnCancel} onClick={() => setShowDocModal(false)} disabled={docSubmitting}>
                 Batal
               </button>
-              <button style={btnSubmit} onClick={submitDoc} disabled={docSubmitting}>
-                {docSubmitting ? "Mengupload..." : "📤 Upload"}
+              <button
+                style={{
+                  ...btnSubmit,
+                  background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+                  boxShadow: "0 4px 15px rgba(37,99,235,0.4)",
+                  opacity: docSubmitting ? 0.7 : 1,
+                }}
+                onClick={submitDoc}
+                disabled={docSubmitting}
+              >
+                {docSubmitting ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ animation: "spin 0.7s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    Mengupload...
+                  </span>
+                ) : "📤 Upload"}
               </button>
             </div>
           </div>
@@ -953,7 +1177,7 @@ const GrupDetailModal = ({
           <div className="modal-section-title">👤 Daftar Jamaah ({jamaahInGrup.length} Orang)</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "1.25rem" }}>
             {jamaahInGrup.map((j, i) => (
-              <div key={j.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "0.75rem 1rem", gap: "0.75rem" }}>
+              <div key={j.nomor_pendaftaran} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "0.75rem 1rem", gap: "0.75rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
                   <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "0.85rem", flexShrink: 0 }}>
                     {i + 1}
@@ -1351,7 +1575,7 @@ const AdminPendaftaran = () => {
                   </tr>
                 ) : (
                   filtered.map((p) => (
-                    <tr key={p.id}>
+                    <tr key={p.nomor_pendaftaran}>
                       <td>
                         <span className="nomor-pendaftaran">{p.nomor_pendaftaran}</span>
                       </td>
@@ -1563,7 +1787,6 @@ const PICDetailModal = ({
         );
         const dp = res.data?.pendaftaran;
         setData({
-          id:               dp?.ID ?? dp?.id,
           nomor_pendaftaran: dp?.NomorPendaftaran ?? dp?.nomor_pendaftaran,
           nama_customer:    dp?.Customer?.Nama   ?? dp?.Customer?.nama,
           nik:              dp?.Customer?.NIK    ?? dp?.Customer?.nik  ?? "-",
@@ -1965,7 +2188,7 @@ const JamaahSayaView = ({
             const isSelesai = p.status?.toLowerCase() === "selesai";
             return (
               <div
-                key={p.id}
+                key={p.nomor_pendaftaran}
                 className={`my-jamaah-card ${isSelesai ? "my-jamaah-card-selesai" : ""}`}
                 style={{ cursor: "pointer" }}
                 onClick={() => setSelectedJamaah(p)}
