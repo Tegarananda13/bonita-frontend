@@ -18,6 +18,7 @@ import AdminPendaftaran from './pages/Admin/Pendaftaran';
 import AdminPembayaran from './pages/Admin/Pembayaran';
 import AdminDokumen from './pages/Admin/Dokumen';
 import ManajemenAdmin from './pages/Admin/ManajemenAdmin';
+import Laporan from './pages/Admin/Laporan';
 import ProtectedRoute from './pages/Admin/components/ProtectedRoute';
 import TambahJamaah from './pages/Admin/TambahJamaah';
 import AdminPengaduan from './pages/Admin/Pengaduan';
@@ -78,6 +79,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['owner']}>
                 <ManajemenAdmin />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="laporan"
+            element={
+              <ProtectedRoute allowedRoles={['owner']}>
+                <Laporan />
               </ProtectedRoute>
             }
           />
