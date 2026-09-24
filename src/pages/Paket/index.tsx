@@ -5,9 +5,17 @@ import "./Paket.css";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+interface FotoFasilitasItem {
+  id: string;
+  url: string;
+  urutan?: number;
+}
+
 interface FasilitasItem {
+  id?: string;
   nama_fasilitas: string;
   deskripsi: string;
+  foto_fasilitas?: FotoFasilitasItem[];
 }
 
 interface PaketItem {
@@ -237,17 +245,39 @@ const PaketModal = ({
                     <span className="fasilitas-count">{detail.fasilitas.length}</span>
                   </div>
                   <div className="modal-fasilitas-list">
-                    {detail.fasilitas.map((f, i) => (
-                      <div className="fasilitas-item" key={i}>
-                        <div className="fasilitas-check">✓</div>
-                        <div>
-                          <div className="fasilitas-item-name">{f.nama_fasilitas}</div>
-                          {f.deskripsi && (
-                            <div className="fasilitas-item-desc">{f.deskripsi}</div>
-                          )}
+                    {detail.fasilitas.map((f, i) => {
+                      const fotos = f.foto_fasilitas ?? [];
+                      return (
+                        <div className="fasilitas-item" key={i}>
+                          <div className="fasilitas-check">✓</div>
+                          <div style={{ flex: 1 }}>
+                            <div className="fasilitas-item-name">{f.nama_fasilitas}</div>
+                            {f.deskripsi && (
+                              <div className="fasilitas-item-desc">{f.deskripsi}</div>
+                            )}
+                            {fotos.length > 0 && (
+                              <div style={{ display: "flex", gap: "6px", marginTop: "8px", flexWrap: "wrap" }}>
+                                {fotos.map((ff) => (
+                                  <img
+                                    key={ff.id}
+                                    src={ff.url}
+                                    alt={f.nama_fasilitas}
+                                    style={{
+                                      width: 48,
+                                      height: 48,
+                                      objectFit: "cover",
+                                      borderRadius: 6,
+                                      border: "1px solid #e2e8f0",
+                                    }}
+                                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               ) : (
@@ -274,7 +304,6 @@ const Paket = () => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("berangkat");
   const [filterKuota, setFilterKuota] = useState<"all" | "available">("all");
-  const [selectedPaketId, setSelectedPaketId] = useState<string | null>(null);
 
   const getPaket = async () => {
     try {
@@ -410,10 +439,11 @@ const Paket = () => {
             {filtered.map((item) => {
               const kuota = getKuotaInfo(item.sisa_kuota, item.kuota_max);
               return (
-                <div
+                <Link
+                  to={`/paket/${item.id}`}
                   className="paket-card"
                   key={item.id}
-                  onClick={() => setSelectedPaketId(item.id)}
+                  style={{ textDecoration: "none", display: "block" }}
                 >
                   <div className="paket-card-image-wrap">
                     <img
@@ -468,28 +498,21 @@ const Paket = () => {
                         <span className="price-label">Mulai dari</span>
                         <span className="price-value">{formatRupiah(item.harga)}</span>
                       </div>
-                      <button className="paket-cta-btn">
+                      <span className="paket-cta-btn">
                         Lihat Detail
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <path d="m9 18 6-6-6-6" />
                         </svg>
-                      </button>
+                      </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
         )}
       </div>
 
-      {/* ── Modal ── */}
-      {selectedPaketId && (
-        <PaketModal
-          paketId={selectedPaketId}
-          onClose={() => setSelectedPaketId(null)}
-        />
-      )}
     </div>
   );
 };

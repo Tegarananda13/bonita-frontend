@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import MainLayout from './components/Layout/MainLayout';
 import Home from './pages/Home';
 import Paket from './pages/Paket';
+import PaketDetail from './pages/PaketDetail';
 import Daftar from './pages/Daftar';
 import Portal from './pages/Portal';
 
@@ -37,6 +38,7 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
           <Route path="paket" element={<Paket />} />
+          <Route path="paket/:id" element={<PaketDetail />} />
           <Route path="daftar" element={<Daftar />} />
           <Route path="portal/*" element={<Portal />} />
         </Route>

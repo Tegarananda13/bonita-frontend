@@ -1032,3 +1032,203 @@
 .jenis-badge.jenis-plus-dubai    { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
 .jenis-badge.jenis-ramadhan      { background: #faf5ff; color: #7c3aed; border-color: #ddd6fe; }
 .jenis-badge.jenis-syawal        { background: #ecfdf5; color: #047857; border-color: #6ee7b7; }
+
+/* ── Multi-Foto Paket Gallery (Drawer) ── */
+.multi-foto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.6rem;
+}
+
+.multi-foto-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  aspect-ratio: 1;
+  background: #f8fafc;
+  transition: border-color 0.15s;
+}
+
+.multi-foto-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.multi-foto-item.foto-utama {
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.multi-foto-item.foto-new {
+  border-style: dashed;
+  border-color: #93c5fd;
+}
+
+.foto-utama-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.foto-new-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(59,130,246,0.85);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.multi-foto-actions {
+  position: absolute;
+  top: 0; right: 0;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+}
+
+.multi-foto-item:hover .multi-foto-actions {
+  display: flex;
+}
+
+.foto-act-btn {
+  width: 22px; height: 22px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  backdrop-filter: blur(4px);
+  transition: transform 0.1s, opacity 0.1s;
+}
+.foto-act-btn:active { transform: scale(0.92); }
+
+.foto-act-utama {
+  background: rgba(16,185,129,0.9);
+  color: #fff;
+}
+.foto-act-del {
+  background: rgba(239,68,68,0.9);
+  color: #fff;
+}
+
+.btn-add-foto {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.45rem 0.9rem;
+  background: #f0fdf4;
+  border: 1.5px dashed #10b981;
+  border-radius: 8px;
+  color: #1a6b43;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-add-foto:hover {
+  background: #dcfce7;
+  border-color: #059669;
+}
+
+/* ── Fasilitas item with foto support ── */
+.fas-with-foto {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+
+.fasilitas-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.fas-foto-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.fas-foto-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.fas-foto-thumb {
+  position: relative;
+  width: 52px; height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.fas-foto-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.fas-foto-del {
+  position: absolute;
+  top: 1px; right: 1px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: rgba(239,68,68,0.85);
+  color: #fff;
+  border: none;
+  font-size: 0.55rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.fas-foto-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0.3rem 0.6rem;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.fas-foto-add-btn:hover {
+  background: #f0fdf4;
+  border-color: #10b981;
+  color: #1a6b43;
+}
