@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import "./AdminPembayaran.css";
 
 interface PembayaranItem {
@@ -26,11 +27,10 @@ const fmtDate = (d: string) =>
 
 const AdminPembayaran = () => {
   const { token } = useAuth();
+  const { showToast } = useToast();
   const [list, setList] = useState<PembayaranItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [detailModal, setDetailModal] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<DetailDataType | null>(null);
 
@@ -42,7 +42,9 @@ const AdminPembayaran = () => {
       const res = await axios.get("http://localhost:8080/admin/pembayaran/pending", {
         headers: authH(),
       });
-      setList(res.data?.data ?? []);
+      const items: PembayaranItem[] = res.data?.data ?? [];
+      items.sort((a, b) => new Date(b.tanggal_pembayaran).getTime() - new Date(a.tanggal_pembayaran).getTime());
+      setList(items);
     } catch {
       setList([]);
     } finally {
@@ -86,20 +88,26 @@ const AdminPembayaran = () => {
   };
 
   const handleVerify = async (id: string, status: "diterima" | "ditolak") => {
-    setError("");
-    setSuccess("");
     try {
       setVerifying(id + status);
       await axios.put(`http://localhost:8080/admin/pembayaran/${id}/verifikasi`, { status }, {
         headers: authH(),
       });
-      setSuccess(`Pembayaran berhasil di${status === "diterima" ? "terima" : "tolak"}.`);
       setDetailModal(null);
       setDetailData(null);
-      fetchList();
-      setTimeout(() => setSuccess(""), 3000);
+      await fetchList();
+      if (status === "diterima") {
+        showToast("success", "Pembayaran berhasil diverifikasi.");
+      } else {
+        showToast("success", "Pembayaran berhasil ditolak.");
+      }
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal memverifikasi.") : "Gagal memverifikasi.");
+      const errMsg = axios.isAxiosError(err) ? (err.response?.data?.error ?? null) : null;
+      if (status === "diterima") {
+        showToast("error", errMsg || "Pembayaran gagal diverifikasi.");
+      } else {
+        showToast("error", errMsg || "Pembayaran gagal ditolak.");
+      }
     } finally {
       setVerifying(null);
     }
@@ -121,13 +129,6 @@ const AdminPembayaran = () => {
           </button>
         </div>
       </div>
-
-      {success && (
-        <div className="alert-success">✓ {success}</div>
-      )}
-      {error && (
-        <div className="alert-error">✕ {error}</div>
-      )}
 
       {/* Stats */}
       {!loading && (

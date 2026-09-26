@@ -1,0 +1,108 @@
+/* ── Toast Notification System ────────────────────────────────────────── */
+.bonita-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 99999;
+  color: #fff;
+  border-radius: 14px;
+  padding: 0.875rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  min-width: 280px;
+  max-width: 440px;
+  box-sizing: border-box;
+  animation: bonitaToastSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  user-select: none;
+}
+
+.bonita-toast-success {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.45);
+}
+
+.bonita-toast-error {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.45);
+}
+
+.bonita-toast-info {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.45);
+}
+
+.bonita-toast-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bonita-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bonita-toast-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.bonita-toast-msg {
+  opacity: 0.95;
+  font-size: 0.82rem;
+  margin-top: 2px;
+  line-height: 1.35;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.bonita-toast-close {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.bonita-toast-close:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.bonita-toast-close:active {
+  transform: scale(0.95);
+}
+
+@keyframes bonitaToastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive adjustment for mobile screens */
+@media (max-width: 640px) {
+  .bonita-toast {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    min-width: auto;
+    max-width: calc(100% - 2rem);
+  }
+}

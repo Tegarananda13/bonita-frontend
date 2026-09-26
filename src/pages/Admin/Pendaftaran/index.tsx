@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import "./AdminPendaftaran.css";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -98,7 +99,7 @@ const JENIS_DOKUMEN = [
 ];
 
 type PayItem = { id: string; jumlah: number; status: string; tanggal: string; bukti: string };
-type DocItem = { id: string; jenis: string; status: string; file_path: string };
+type DocItem = { id: string; jenis: string; status: string; file_path: string; created_at?: string };
 
 const DetailModal = ({
   nomor,
@@ -118,6 +119,7 @@ const DetailModal = ({
   const [assignSuccess, setAssignSuccess] = useState(false);
   const [payments, setPayments] = useState<PayItem[]>([]);
   const [docs, setDocs] = useState<DocItem[]>([]);
+  const { showToast } = useToast();
 
   // ── Modal Tambah/Edit Pembayaran ──
   const [showPayModal, setShowPayModal] = useState(false);
@@ -127,7 +129,6 @@ const DetailModal = ({
   const [payFile, setPayFile] = useState<File | null>(null);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [payError, setPayError] = useState("");
-  const [paySuccess, setPaySuccess] = useState("");
 
   // ── Modal Upload/Edit Dokumen ──
   const [showDocModal, setShowDocModal] = useState(false);
@@ -136,7 +137,6 @@ const DetailModal = ({
   const [docFile, setDocFile] = useState<File | null>(null);
   const [docSubmitting, setDocSubmitting] = useState(false);
   const [docError, setDocError] = useState("");
-  const [docSuccess, setDocSuccess] = useState("");
 
   // ── Konfirmasi hapus ──
   const [deletingPayId, setDeletingPayId] = useState<string | null>(null);
@@ -180,20 +180,29 @@ const DetailModal = ({
         registered_by_label: p?.registered_by_label ?? "👤 Customer",
       });
       const rawBayar = res.data?.pembayaran ?? [];
-      setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+      const mappedBayar: PayItem[] = rawBayar.map((b: Record<string, unknown>) => ({
         id:      String(b.ID      ?? b.id      ?? ""),
         jumlah:  (b.Jumlah  ?? b.jumlah  ?? 0) as number,
         status:  (b.Status  ?? b.status  ?? "") as string,
         tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
         bukti:   String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
-      })));
+      }));
+      mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+      setPayments(mappedBayar);
+
       const rawDok = res.data?.dokumen ?? [];
-      setDocs(rawDok.map((d: Record<string, unknown>) => ({
+      const mappedDocs: DocItem[] = rawDok.map((d: Record<string, unknown>) => ({
         id:        String(d.ID ?? d.id ?? ""),
         jenis:     String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
         status:    (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
         file_path: String(d.FilePath ?? d.file_path ?? ""),
-      })));
+        created_at: String(d.CreatedAt ?? d.created_at ?? ""),
+      }));
+      mappedDocs.sort((a, b) => {
+        if (!a.created_at && !b.created_at) return 0;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      });
+      setDocs(mappedDocs);
     } catch {
       setData(null);
     } finally {
@@ -249,6 +258,7 @@ const DetailModal = ({
     const nominal = parseFloat(payJumlah.replace(/[^\d]/g, ""));
     if (!nominal || isNaN(nominal) || nominal <= 0) {
       setPayError("Jumlah pembayaran tidak valid");
+      showToast("error", "Jumlah pembayaran tidak valid.");
       return;
     }
     setPaySubmitting(true);
@@ -265,11 +275,11 @@ const DetailModal = ({
       }
       setShowPayModal(false);
       await fetchData();
-      const label = editPay ? "Pembayaran berhasil diperbarui" : "Pembayaran berhasil ditambahkan";
-      setPaySuccess(label);
-      setTimeout(() => setPaySuccess(""), 3500);
+      showToast("success", "Bukti pembayaran berhasil disimpan.");
     } catch (err: unknown) {
-      setPayError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyimpan pembayaran") : "Gagal menyimpan pembayaran");
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Bukti pembayaran gagal disimpan.") : "Bukti pembayaran gagal disimpan.";
+      setPayError(msg);
+      showToast("error", msg);
     } finally {
       setPaySubmitting(false);
     }
@@ -280,8 +290,10 @@ const DetailModal = ({
     try {
       await axios.delete(`${API}/admin/pembayaran/${id}/admin`, { headers: authH });
       await fetchData();
-    } catch {
-      // non-fatal
+      showToast("success", "Pembayaran berhasil dihapus.");
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Pembayaran gagal dihapus.") : "Pembayaran gagal dihapus.";
+      showToast("error", msg);
     } finally {
       setDeletingPayId(null);
     }
@@ -307,7 +319,11 @@ const DetailModal = ({
   const submitDoc = async () => {
     if (!data) return;
     setDocError("");
-    if (!editDoc && !docFile) { setDocError("File wajib dipilih"); return; }
+    if (!editDoc && !docFile) {
+      setDocError("File wajib dipilih");
+      showToast("error", "File dokumen wajib dipilih.");
+      return;
+    }
     setDocSubmitting(true);
     try {
       const fd = new FormData();
@@ -321,11 +337,11 @@ const DetailModal = ({
       }
       setShowDocModal(false);
       await fetchData();
-      const label = editDoc ? "Dokumen berhasil diperbarui" : "Dokumen berhasil diupload";
-      setDocSuccess(label);
-      setTimeout(() => setDocSuccess(""), 3500);
+      showToast("success", "Dokumen berhasil diupload.");
     } catch (err: unknown) {
-      setDocError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyimpan dokumen") : "Gagal menyimpan dokumen");
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Dokumen gagal diupload.") : "Dokumen gagal diupload.";
+      setDocError(msg);
+      showToast("error", msg);
     } finally {
       setDocSubmitting(false);
     }
@@ -336,15 +352,20 @@ const DetailModal = ({
     try {
       await axios.delete(`${API}/admin/dokumen/${id}/admin`, { headers: authH });
       await fetchData();
-    } catch {
-      // non-fatal
+      showToast("success", "Dokumen berhasil dihapus.");
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Dokumen gagal dihapus.") : "Dokumen gagal dihapus.";
+      showToast("error", msg);
     } finally {
       setDeletingDocId(null);
     }
   };
 
   // ── Label pembayaran (DP / Pembayaran 2 / dst.) ──
-  const payLabel = (idx: number) => idx === 0 ? "DP" : `Pembayaran ${idx + 1}`;
+  const payLabel = (idx: number) => {
+    const num = payments.length - idx;
+    return num === 1 ? "DP" : `Pembayaran ${num}`;
+  };
 
   // ── Inline modal styles (premium redesign) ──
   const inlineModal: React.CSSProperties = {
@@ -407,54 +428,6 @@ const DetailModal = ({
 
   return (
     <>
-     {/* ── Toast Notifikasi Berhasil — Pembayaran ── */}
-      {paySuccess && (
-        <div style={{
-          position: "fixed", bottom: "2rem", right: "2rem", zIndex: 99999,
-          background: "linear-gradient(135deg, #059669, #10b981)",
-          color: "#fff", borderRadius: "14px", padding: "0.875rem 1.25rem",
-          boxShadow: "0 8px 30px rgba(16,185,129,0.45)",
-          display: "flex", alignItems: "center", gap: "0.75rem",
-          fontSize: "0.88rem", fontWeight: 600, minWidth: "260px",
-          animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-        }}>
-          <span style={{ fontSize: "1.3rem" }}>✅</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>Berhasil!</div>
-            <div style={{ opacity: 0.9, fontSize: "0.82rem", marginTop: "2px" }}>{paySuccess}</div>
-          </div>
-          <button onClick={() => setPaySuccess("")} style={{
-            marginLeft: "auto", background: "rgba(255,255,255,0.25)", border: "none",
-            borderRadius: "8px", color: "#fff", cursor: "pointer", padding: "4px 8px",
-            fontSize: "1rem", fontWeight: 700, lineHeight: 1,
-          }}>×</button>
-        </div>
-      )}
-
-      {/* ── Toast Notifikasi Berhasil — Dokumen ── */}
-      {docSuccess && (
-        <div style={{
-          position: "fixed", bottom: "2rem", right: "2rem", zIndex: 99999,
-          background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-          color: "#fff", borderRadius: "14px", padding: "0.875rem 1.25rem",
-          boxShadow: "0 8px 30px rgba(124,58,237,0.45)",
-          display: "flex", alignItems: "center", gap: "0.75rem",
-          fontSize: "0.88rem", fontWeight: 600, minWidth: "260px",
-          animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-        }}>
-          <span style={{ fontSize: "1.3rem" }}>📎</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>Berhasil!</div>
-            <div style={{ opacity: 0.9, fontSize: "0.82rem", marginTop: "2px" }}>{docSuccess}</div>
-          </div>
-          <button onClick={() => setDocSuccess("")} style={{
-            marginLeft: "auto", background: "rgba(255,255,255,0.25)", border: "none",
-            borderRadius: "8px", color: "#fff", cursor: "pointer", padding: "4px 8px",
-            fontSize: "1rem", fontWeight: 700, lineHeight: 1,
-          }}>×</button>
-        </div>
-      )}
-
       {/* ── Modal Tambah/Edit Pembayaran ── */}
       {showPayModal && (
         <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !paySubmitting && setShowPayModal(false)}>
@@ -929,7 +902,10 @@ const DetailModal = ({
                   docs.map((dok, i) => (
                     <div key={dok.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
-                        <span style={{ color: "#374151", textTransform: "capitalize", fontWeight: 600 }}>{dok.jenis || "-"}</span>
+                        <span style={{ color: "#374151", textTransform: "capitalize", fontWeight: 600 }}>
+                          {dok.jenis || "-"}
+                          {dok.created_at ? <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 400, marginLeft: "0.5rem" }}>({fmtDate(dok.created_at)})</span> : null}
+                        </span>
                         <StatusPill value={dok.status} />
                       </div>
                       {/* Action row */}
@@ -1112,12 +1088,14 @@ const GrupDetailModal = ({
         if (p?.total_tagihan) setTotalTagihan(p.total_tagihan);
         if (p?.total_pembayaran !== undefined) setTotalPembayaran(p.total_pembayaran);
         const rawBayar = res.data?.pembayaran ?? [];
-        setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+        const mappedBayar = rawBayar.map((b: Record<string, unknown>) => ({
           id:      String(b.ID ?? b.id ?? ""),
           jumlah:  Number(b.Jumlah ?? b.jumlah ?? 0),
           status:  String(b.Status ?? b.status ?? ""),
           tanggal: String(b.TanggalBayar ?? b.tanggal_bayar ?? ""),
-        })));
+        }));
+        mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+        setPayments(mappedBayar);
       } catch { /* silent */ }
       finally { setLoadingPay(false); }
     };
@@ -1210,14 +1188,17 @@ const GrupDetailModal = ({
             <div style={{ textAlign: "center", padding: "1rem", color: "#94a3b8", fontSize: "0.85rem" }}>Belum ada pembayaran diterima.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {diterima.map((p, i) => (
-                <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.65rem 1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8 }}>
-                  <div style={{ fontSize: "0.82rem", color: "#374151" }}>
-                    {i === 0 ? "DP" : `Pembayaran ${i + 1}`} — {p.tanggal ? fmtDate(p.tanggal) : "-"}
+              {diterima.map((p, i) => {
+                const num = diterima.length - i;
+                return (
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.65rem 1rem", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.82rem", color: "#374151" }}>
+                      {num === 1 ? "DP" : `Pembayaran ${num}`} — {p.tanggal ? fmtDate(p.tanggal) : "-"}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#065f46" }}>{fmtRupiah(p.jumlah)}</div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#065f46" }}>{fmtRupiah(p.jumlah)}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1776,7 +1757,7 @@ const PICDetailModal = ({
   const [data, setData] = useState<DetailPendaftaran | null>(null);
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<{ id: string; jumlah: number; status: string; tanggal: string; bukti: string }[]>([]);
-  const [docs, setDocs] = useState<{ id: string; jenis: string; status: string; file_path: string }[]>([]);
+  const [docs, setDocs] = useState<{ id: string; jenis: string; status: string; file_path: string; created_at?: string }[]>([]);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -1807,21 +1788,29 @@ const PICDetailModal = ({
         });
         // Pembayaran: Go model → field PascalCase
         const rawBayar = res.data?.pembayaran ?? [];
-        setPayments(rawBayar.map((b: Record<string, unknown>) => ({
+        const mappedBayar = rawBayar.map((b: Record<string, unknown>) => ({
           id:      String(b.ID      ?? b.id      ?? ""),
           jumlah:  (b.Jumlah  ?? b.jumlah  ?? 0) as number,
           status:  (b.Status  ?? b.status  ?? "") as string,
           tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
           bukti:   String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
-        })));
+        }));
+        mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+        setPayments(mappedBayar);
         // Dokumen: Go model → field PascalCase
         const rawDok = res.data?.dokumen ?? [];
-        setDocs(rawDok.map((d: Record<string, unknown>) => ({
+        const mappedDocs = rawDok.map((d: Record<string, unknown>) => ({
           id:        String(d.ID ?? d.id ?? ""),
           jenis:     String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
           status:    (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
           file_path: String(d.FilePath ?? d.file_path ?? ""),
-        })));
+          created_at: String(d.CreatedAt ?? d.created_at ?? ""),
+        }));
+        mappedDocs.sort((a, b) => {
+          if (!a.created_at && !b.created_at) return 0;
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        });
+        setDocs(mappedDocs);
       } catch {
         /* silent */
       } finally {
@@ -1934,7 +1923,7 @@ const PICDetailModal = ({
                     <div key={pay.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
                         <span style={{ color: "#374151", fontWeight: 600 }}>
-                          {i === 0 ? "DP" : `Pembayaran ${i + 1}`}
+                          {payments.length - i === 1 ? "DP" : `Pembayaran ${payments.length - i}`}
                           {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
                         </span>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -1968,7 +1957,10 @@ const PICDetailModal = ({
                   {docs.map((dok, i) => (
                     <div key={dok.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
-                        <span style={{ color: "#374151", textTransform: "capitalize", fontWeight: 600 }}>{dok.jenis || "-"}</span>
+                        <span style={{ color: "#374151", textTransform: "capitalize", fontWeight: 600 }}>
+                          {dok.jenis || "-"}
+                          {dok.created_at ? <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 400, marginLeft: "0.5rem" }}>({fmtDate(dok.created_at)})</span> : null}
+                        </span>
                         <StatusPill value={dok.status} />
                       </div>
                       {dok.file_path && (

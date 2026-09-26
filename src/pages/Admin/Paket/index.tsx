@@ -1262,12 +1262,6 @@ const AdminPaket = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PaketAdmin | null>(null);
   const [loadingEditId, setLoadingEditId] = useState<string | null>(null);
-  // Toggle status confirm
-  const [toggleTarget, setToggleTarget] = useState<PaketAdmin | null>(null);
-  const [toggleLoading, setToggleLoading] = useState(false);
-  // Finish paket confirm
-  const [finishTarget, setFinishTarget] = useState<PaketAdmin | null>(null);
-  const [finishLoading, setFinishLoading] = useState(false);
   const authH = useCallback(
     () => ({ Authorization: `Bearer ${token}` }),
     [token]
@@ -1328,47 +1322,6 @@ const AdminPaket = () => {
       setDrawerOpen(true);
     } finally {
       setLoadingEditId(null);
-    }
-  };
-  // ── Toggle Status ──
-  const handleToggleStatus = async () => {
-    if (!toggleTarget) return;
-    try {
-      setToggleLoading(true);
-      const newStatus = !toggleTarget.IsActive;
-      await axios.patch(
-        `http://localhost:8080/admin/paket/${toggleTarget.ID}/status`,
-        { is_active: newStatus },
-        { headers: authH() }
-      );
-      setPaketList((prev) =>
-        prev.map((p) => p.ID === toggleTarget.ID ? { ...p, IsActive: newStatus } : p)
-      );
-      setToggleTarget(null);
-    } catch (err: unknown) {
-      alert(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal mengubah status.") : "Gagal mengubah status.");
-    } finally {
-      setToggleLoading(false);
-    }
-  };
-  // ── Finish Paket ──
-  const handleFinishPaket = async () => {
-    if (!finishTarget) return;
-    try {
-      setFinishLoading(true);
-      await axios.patch(
-        `http://localhost:8080/admin/paket/${finishTarget.ID}/finish`,
-        { is_finished: true },
-        { headers: authH() }
-      );
-      setPaketList((prev) =>
-        prev.map((p) => p.ID === finishTarget.ID ? { ...p, IsFinished: true } : p)
-      );
-      setFinishTarget(null);
-    } catch (err: unknown) {
-      alert(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal menyelesaikan paket.") : "Gagal menyelesaikan paket.");
-    } finally {
-      setFinishLoading(false);
     }
   };
   const filtered = paketList.filter((p) =>
@@ -1552,7 +1505,7 @@ const AdminPaket = () => {
                           background: "#fee2e2", color: "#991b1b",
                           borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
                         }}>
-                          🔴 Nonaktif
+                          🔴 Tidak Aktif
                         </span>
                       )}
                     </td>
@@ -1612,50 +1565,6 @@ const AdminPaket = () => {
                           )}
                           Edit
                         </button>
-                        {/* Selesaikan Paket / Badge Selesai */}
-                        {p.IsFinished ? (
-                          <span style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            background: "#f1f5f9", color: "#475569",
-                            borderRadius: 20, padding: "4px 10px", fontSize: "0.75rem", fontWeight: 700,
-                            border: "1px solid #e2e8f0",
-                          }}>
-                            ⚫ Paket Selesai
-                          </span>
-                        ) : (
-                          <button
-                            className="action-btn action-btn-finish"
-                            onClick={() => setFinishTarget(p)}
-                            title="Selesaikan paket ini"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="20 6 9 17 4 12"/>
-                            </svg>
-                            Selesaikan
-                          </button>
-                        )}
-                        <button
-                          className={p.IsActive ? "action-btn action-btn-delete" : "action-btn action-btn-activate"}
-                          onClick={() => setToggleTarget(p)}
-                          title={p.IsActive ? "Nonaktifkan paket" : "Aktifkan paket"}
-                        >
-                          {p.IsActive ? (
-                            <>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                              </svg>
-                              Nonaktifkan
-                            </>
-                          ) : (
-                            <>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <polyline points="20 6 9 17 4 12"/>
-                              </svg>
-                              Aktifkan
-                            </>
-                          )}
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1673,76 +1582,6 @@ const AdminPaket = () => {
           onClose={() => { setDrawerOpen(false); setEditTarget(null); }}
           onSaved={fetchPaket}
         />
-      )}
-      {/* ── Toggle Status Confirm ── */}
-      {toggleTarget && (
-        <div
-          className="confirm-overlay"
-          onClick={(e) => e.target === e.currentTarget && !toggleLoading && setToggleTarget(null)}
-        >
-          <div className="confirm-box">
-            <div className="confirm-icon">{toggleTarget.IsActive ? "🔴" : "🟢"}</div>
-            <h3>{toggleTarget.IsActive ? "Nonaktifkan Paket?" : "Aktifkan Paket?"}</h3>
-            <p>
-              Paket <strong>{toggleTarget.NamaPaket}</strong> akan diubah menjadi{" "}
-              <strong>{toggleTarget.IsActive ? "Nonaktif" : "Aktif"}</strong>.
-              {toggleTarget.IsActive && (
-                <> Customer tidak akan dapat melihat atau mendaftar ke paket ini.</>)
-              }
-            </p>
-            <div className="confirm-actions">
-              <button
-                className="confirm-cancel"
-                onClick={() => setToggleTarget(null)}
-                disabled={toggleLoading}
-              >
-                Batal
-              </button>
-              <button
-                className={toggleTarget.IsActive ? "confirm-delete-btn" : "confirm-activate-btn"}
-                onClick={handleToggleStatus}
-                disabled={toggleLoading}
-              >
-                {toggleLoading
-                  ? "Memproses..."
-                  : toggleTarget.IsActive ? "Ya, Nonaktifkan" : "Ya, Aktifkan"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ── Finish Paket Confirm ── */}
-      {finishTarget && (
-        <div
-          className="confirm-overlay"
-          onClick={(e) => e.target === e.currentTarget && !finishLoading && setFinishTarget(null)}
-        >
-          <div className="confirm-box">
-            <div className="confirm-icon">⚫</div>
-            <h3>Selesaikan Paket?</h3>
-            <p>
-              Seluruh jamaah pada paket <strong>{finishTarget.NamaPaket}</strong> akan
-              otomatis berubah menjadi status <strong>Selesai</strong>.{" "}
-              Perubahan ini tidak dapat dibatalkan.
-            </p>
-            <div className="confirm-actions">
-              <button
-                className="confirm-cancel"
-                onClick={() => setFinishTarget(null)}
-                disabled={finishLoading}
-              >
-                Batal
-              </button>
-              <button
-                className="confirm-finish-btn"
-                onClick={handleFinishPaket}
-                disabled={finishLoading}
-              >
-                {finishLoading ? "Memproses..." : "Selesaikan Paket"}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

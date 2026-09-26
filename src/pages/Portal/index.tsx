@@ -21,21 +21,79 @@ interface DokumenItem {
   uploaded_at: string;
 }
 
+interface CustomerData {
+  nik: string;
+  nama: string;
+  tempat_lahir?: string;
+  tanggal_lahir?: string;
+  jenis_kelamin?: string;
+  no_hp?: string;
+  email?: string;
+  alamat_lengkap?: string;
+  provinsi?: string;
+  kabupaten_kota?: string;
+  kecamatan?: string;
+  kelurahan_desa?: string;
+  kode_pos?: string;
+}
+
+interface PaketUmrohData {
+  id?: string;
+  nama_paket: string;
+  jenis_paket?: string;
+  foto_paket?: string;
+  harga: number;
+  tanggal_berangkat?: string;
+  durasi?: number;
+  deskripsi?: string;
+}
+
+interface PendaftaranData {
+  nomor_pendaftaran: string;
+  tanggal_daftar?: string;
+  status: string;
+  payment_status: string;
+  document_status: string;
+  batas_waktu_dp?: string;
+  total_orang?: number;
+}
+
+interface InvoiceData {
+  nomor_invoice: string;
+  tanggal_invoice?: string;
+  status_pembayaran: string;
+  total_orang?: number;
+  total_tagihan: number;
+  total_pembayaran: number;
+  sisa_tagihan: number;
+}
+
 interface DashboardData {
   nama: string;
   nomor: string;
   paket: string;
   harga: number;
+  total_tagihan?: number;
+  total_pembayaran?: number;
+  sisa_tagihan?: number;
+  total_orang?: number;
+  nomor_invoice?: string;
   payment_status: string;
   document_status: string;
   status: string;
   batas_waktu_dp?: string;
+  tanggal_daftar?: string;
+  customer?: CustomerData;
+  paket_umroh?: PaketUmrohData;
+  pendaftaran?: PendaftaranData;
+  invoice?: InvoiceData;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const API = "http://localhost:8080";
 const STORAGE_KEY = "customer_session";
+const FALLBACK_PAKET_IMG = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=800&q=80";
 
 const DOK_TYPES = [
   { key: "paspor",         label: "Paspor",          icon: "🛂",  wajib: true  },
@@ -51,8 +109,12 @@ const DOK_TYPES = [
 
 const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDate = (d?: string | null) => {
+  if (!d || d.startsWith("0001-01-01")) return "-";
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+};
 
 const getStatusClass = (v: string) => {
   const map: Record<string, string> = {
@@ -307,11 +369,13 @@ const TabPembayaran = ({
   harga,
   paymentStatus,
   documentStatus,
+  onOpenInvoice,
 }: {
   token: string;
   harga: number;
   paymentStatus: string;
   documentStatus: string;
+  onOpenInvoice?: () => void;
 }) => {
   const [riwayat, setRiwayat] = useState<PembayaranItem[]>([]);
   const [totalDibayar, setTotalDibayar] = useState(0);
@@ -441,6 +505,19 @@ const TabPembayaran = ({
       )}
 
       {/* Progress bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
+        <div className="section-title" style={{ margin: 0 }}>Progress Pembayaran</div>
+        {onOpenInvoice && (
+          <button
+            type="button"
+            className="portal-btn-invoice-inline"
+            onClick={onOpenInvoice}
+            title="Lihat Rincian Tagihan & Invoice"
+          >
+            🧾 Lihat Invoice
+          </button>
+        )}
+      </div>
       <div className="bayar-progress-wrap">
         <div className="bayar-progress-nums">
           <div>
@@ -860,10 +937,504 @@ const TabDokumen = ({ token }: { token: string }) => {
   );
 };
 
+// ── Invoice Modal ─────────────────────────────────────────────────────────────
+
+interface InvoiceModalProps {
+  dashData: DashboardData | null;
+  token: string;
+  onClose: () => void;
+}
+
+const InvoiceModal = ({ dashData, token, onClose }: InvoiceModalProps) => {
+  const [downloading, setDownloading] = useState(false);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  const customer = dashData?.customer;
+  const paket = dashData?.paket_umroh;
+  const pendaftaran = dashData?.pendaftaran;
+  const invoice = dashData?.invoice;
+
+  const namaJamaah = customer?.nama || dashData?.nama || "-";
+  const nik = customer?.nik || "-";
+  const noHp = customer?.no_hp || "-";
+  const email = customer?.email || "-";
+  const alamat = customer?.alamat_lengkap || "-";
+
+  const namaPaket = paket?.nama_paket || dashData?.paket || "-";
+  const jenisPaket = paket?.jenis_paket || "Reguler";
+  const tanggalBerangkat = paket?.tanggal_berangkat;
+  const durasi = paket?.durasi ? `${paket.durasi} Hari` : "-";
+
+  const nomorInvoice = invoice?.nomor_invoice || dashData?.nomor_invoice || `INV-${dashData?.nomor || ""}`;
+  const tanggalInvoice = invoice?.tanggal_invoice || pendaftaran?.tanggal_daftar || dashData?.tanggal_daftar;
+  const paymentStatus = invoice?.status_pembayaran || dashData?.payment_status || "belum";
+
+  const totalTagihan = invoice?.total_tagihan ?? dashData?.total_tagihan ?? dashData?.harga ?? 0;
+  const totalPembayaran = invoice?.total_pembayaran ?? dashData?.total_pembayaran ?? 0;
+  const sisaTagihan = invoice?.sisa_tagihan ?? dashData?.sisa_tagihan ?? Math.max(0, totalTagihan - totalPembayaran);
+
+  const handlePrintOfficial = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`${API}/customer/invoice`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Gagal mengambil invoice resmi");
+      const html = await res.text();
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `invoice-${nomorInvoice}.html`;
+        a.click();
+      }
+    } catch {
+      alert("Gagal membuka dokumen invoice resmi. Coba lagi.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div
+      className="invoice-modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="invoice-modal-card">
+        {/* Modal Header */}
+        <div className="invoice-modal-header">
+          <div className="invoice-modal-header-left">
+            <div className="invoice-modal-badge-icon">🧾</div>
+            <div>
+              <div className="invoice-modal-title">Invoice Pendaftaran</div>
+              <div className="invoice-modal-subtitle">
+                Tagihan resmi pendaftaran ibadah umroh
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="invoice-modal-close"
+            onClick={onClose}
+            aria-label="Tutup"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="invoice-modal-body">
+          {/* Metadata Banner */}
+          <div className="invoice-meta-banner">
+            <div className="invoice-meta-item">
+              <span className="invoice-meta-label">Nomor Invoice</span>
+              <span className="invoice-meta-val monospace">{nomorInvoice}</span>
+            </div>
+            <div className="invoice-meta-item">
+              <span className="invoice-meta-label">Tanggal Terbit</span>
+              <span className="invoice-meta-val">{fmtDate(tanggalInvoice)}</span>
+            </div>
+            <div className="invoice-meta-item">
+              <span className="invoice-meta-label">Status Pembayaran</span>
+              <div>
+                <span className={`portal-status-val ${getStatusClass(paymentStatus)}`}>
+                  {getStatusLabel(paymentStatus)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Data Jamaah */}
+          <div className="invoice-section">
+            <div className="invoice-section-title">
+              <span>👤</span> Informasi Jamaah
+            </div>
+            <div className="invoice-grid-2">
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Nama Lengkap</span>
+                <span className="invoice-data-val bold">{namaJamaah}</span>
+              </div>
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">NIK</span>
+                <span className="invoice-data-val monospace">{nik}</span>
+              </div>
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Nomor WhatsApp / HP</span>
+                <span className="invoice-data-val">{noHp}</span>
+              </div>
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Email</span>
+                <span className="invoice-data-val">{email}</span>
+              </div>
+              <div className="invoice-data-item invoice-col-full">
+                <span className="invoice-data-label">Alamat Lengkap</span>
+                <span className="invoice-data-val">{alamat}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Data Paket */}
+          <div className="invoice-section">
+            <div className="invoice-section-title">
+              <span>🕋</span> Informasi Paket Umroh
+            </div>
+            <div className="invoice-grid-2">
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Nama Paket</span>
+                <span className="invoice-data-val bold">{namaPaket}</span>
+              </div>
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Jenis Paket</span>
+                <span className="invoice-data-val">{jenisPaket}</span>
+              </div>
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Tanggal Keberangkatan</span>
+                <span className="invoice-data-val">{fmtDate(tanggalBerangkat)}</span>
+              </div>
+              <div className="invoice-data-item">
+                <span className="invoice-data-label">Durasi Perjalanan</span>
+                <span className="invoice-data-val">{durasi}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Rincian Tagihan */}
+          <div className="invoice-section">
+            <div className="invoice-section-title">
+              <span>💰</span> Rincian Tagihan
+            </div>
+            <div className="invoice-bill-box">
+              <div className="invoice-bill-row">
+                <span className="invoice-bill-label">Harga Paket / Total Tagihan</span>
+                <span className="invoice-bill-val">{fmtRupiah(totalTagihan)}</span>
+              </div>
+              <div className="invoice-bill-row">
+                <span className="invoice-bill-label">Total Pembayaran Diterima</span>
+                <span className="invoice-bill-val green">
+                  - {fmtRupiah(totalPembayaran)}
+                </span>
+              </div>
+              <div className="invoice-bill-divider" />
+              <div className="invoice-bill-row invoice-bill-total">
+                <span className="invoice-bill-label">Sisa Tagihan</span>
+                <span className={`invoice-bill-val ${sisaTagihan === 0 ? "lunas-text" : "sisa-text"}`}>
+                  {fmtRupiah(sisaTagihan)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="invoice-modal-footer">
+          <button
+            type="button"
+            className="invoice-btn-print"
+            onClick={handlePrintOfficial}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <><div className="mini-spin" /> Membuka Dokumen...</>
+            ) : (
+              <>🖨️ Cetak / Buka Dokumen Resmi</>
+            )}
+          </button>
+          <button
+            type="button"
+            className="invoice-btn-close"
+            onClick={onClose}
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Tab Data Jamaah ───────────────────────────────────────────────────────────
+
+interface TabDataJamaahProps {
+  dashData: DashboardData | null;
+  onOpenInvoice: () => void;
+}
+
+const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
+  const customer = dashData?.customer;
+  const paket = dashData?.paket_umroh;
+  const pendaftaran = dashData?.pendaftaran;
+
+  const nomorPendaftaran = pendaftaran?.nomor_pendaftaran || dashData?.nomor || "-";
+  const tanggalDaftar = pendaftaran?.tanggal_daftar || dashData?.tanggal_daftar;
+  const statusPendaftaran = pendaftaran?.status || dashData?.status || "proses";
+  const paymentStatus = pendaftaran?.payment_status || dashData?.payment_status || "belum";
+  const documentStatus = pendaftaran?.document_status || dashData?.document_status || "belum";
+
+  // Data Jamaah
+  const nama = customer?.nama || dashData?.nama || "-";
+  const nik = customer?.nik || "-";
+  const tempatLahir = customer?.tempat_lahir || "";
+  const tanggalLahir = customer?.tanggal_lahir ? fmtDate(customer.tanggal_lahir) : "";
+  const tempatTglLahir = tempatLahir && tanggalLahir
+    ? `${tempatLahir}, ${tanggalLahir}`
+    : tempatLahir || tanggalLahir || "-";
+  const jenisKelamin = customer?.jenis_kelamin || "-";
+  const noHp = customer?.no_hp || "-";
+  const email = customer?.email || "-";
+  const alamat = customer?.alamat_lengkap || "-";
+  const provinsi = customer?.provinsi || "";
+  const kabupatenKota = customer?.kabupaten_kota || "";
+  const kecamatan = customer?.kecamatan || "";
+  const kelurahanDesa = customer?.kelurahan_desa || "";
+  const kodePos = customer?.kode_pos || "";
+
+  // Data Paket
+  const namaPaket = paket?.nama_paket || dashData?.paket || "Paket Umroh";
+  const jenisPaket = paket?.jenis_paket || "Reguler";
+  const hargaPaket = paket?.harga || dashData?.harga || 0;
+  const tglBerangkat = paket?.tanggal_berangkat;
+  const durasi = paket?.durasi ? `${paket.durasi} Hari` : "-";
+  const deskripsi = paket?.deskripsi || "";
+  const fotoPaket = paket?.foto_paket || FALLBACK_PAKET_IMG;
+
+  // Data Grup & Total Harga
+  const rawTotalOrang = dashData?.invoice?.total_orang ?? dashData?.pendaftaran?.total_orang ?? dashData?.total_orang;
+  const jumlahJamaah = typeof rawTotalOrang === "number" && rawTotalOrang > 0 ? rawTotalOrang : 1;
+  const totalHargaPaket = hargaPaket * jumlahJamaah;
+  const labelHargaPaket = namaPaket.toLowerCase().startsWith("paket")
+    ? `Harga ${namaPaket}`
+    : `Harga paket ${namaPaket}`;
+
+  const [copied, setCopied] = useState(false);
+  const handleCopyNomor = () => {
+    if (nomorPendaftaran && nomorPendaftaran !== "-") {
+      navigator.clipboard.writeText(nomorPendaftaran);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="tab-jamaah-container">
+      {/* ── 1. Ringkasan Pendaftaran ── */}
+      <div className="portal-section-card">
+        <div className="portal-card-header-bar">
+          <div className="portal-card-title">
+            <span className="portal-card-icon">📋</span>
+            <span>Ringkasan Pendaftaran</span>
+          </div>
+          <button
+            type="button"
+            className="portal-btn-invoice-action"
+            onClick={onOpenInvoice}
+          >
+            🧾 Lihat Invoice
+          </button>
+        </div>
+
+        <div className="portal-pendaftaran-grid">
+          <div className="pendaftaran-info-box">
+            <span className="pendaftaran-info-label">Nomor Pendaftaran</span>
+            <div className="pendaftaran-nomor-wrap">
+              <span className="pendaftaran-nomor-val">{nomorPendaftaran}</span>
+              <button
+                type="button"
+                className="pendaftaran-copy-btn"
+                onClick={handleCopyNomor}
+                title="Salin Nomor"
+              >
+                {copied ? "✓ Tersalin" : "📋 Salin"}
+              </button>
+            </div>
+          </div>
+
+          <div className="pendaftaran-info-box">
+            <span className="pendaftaran-info-label">Tanggal Pendaftaran</span>
+            <span className="pendaftaran-info-val bold">{fmtDate(tanggalDaftar)}</span>
+          </div>
+
+          <div className="pendaftaran-info-box">
+            <span className="pendaftaran-info-label">Status Pendaftaran</span>
+            <div>
+              <span className={`portal-status-val ${getStatusClass(statusPendaftaran)}`}>
+                {getStatusLabel(statusPendaftaran)}
+              </span>
+            </div>
+          </div>
+
+          <div className="pendaftaran-info-box">
+            <span className="pendaftaran-info-label">Status Pembayaran</span>
+            <div>
+              <span className={`portal-status-val ${getStatusClass(paymentStatus)}`}>
+                {getStatusLabel(paymentStatus)}
+              </span>
+            </div>
+          </div>
+
+          <div className="pendaftaran-info-box">
+            <span className="pendaftaran-info-label">Status Dokumen</span>
+            <div>
+              <span className={`portal-status-val ${getStatusClass(documentStatus)}`}>
+                {getStatusLabel(documentStatus)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. Paket Umroh yang Diambil ── */}
+      <div className="portal-section-card">
+        <div className="portal-card-header-bar">
+          <div className="portal-card-title">
+            <span className="portal-card-icon">🕋</span>
+            <span>Paket Umroh yang Diambil</span>
+          </div>
+        </div>
+
+        <div className="paket-portal-card">
+          <div className="paket-portal-img-wrap">
+            <img
+              src={fotoPaket}
+              alt={namaPaket}
+              className="paket-portal-img"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = FALLBACK_PAKET_IMG;
+              }}
+            />
+            {jenisPaket && (
+              <span className="paket-portal-tag">{jenisPaket}</span>
+            )}
+          </div>
+
+          <div className="paket-portal-body">
+            <div className="paket-portal-title">{namaPaket}</div>
+
+            <div className="paket-portal-price-section">
+              <div className="paket-portal-price-total">{fmtRupiah(totalHargaPaket)}</div>
+              <div className="paket-portal-group-note">Total untuk {jumlahJamaah} jamaah</div>
+              <div className="paket-portal-price-unit-block">
+                <div className="paket-portal-price-per-person">{fmtRupiah(hargaPaket)} / jamaah</div>
+                <div className="paket-portal-price-pkg-name">{labelHargaPaket}</div>
+              </div>
+            </div>
+
+            <div className="paket-portal-specs">
+              <div className="paket-portal-spec-item">
+                <span className="paket-spec-icon">📅</span>
+                <div>
+                  <div className="paket-spec-label">Keberangkatan</div>
+                  <div className="paket-spec-val">{fmtDate(tglBerangkat)}</div>
+                </div>
+              </div>
+
+              <div className="paket-portal-spec-item">
+                <span className="paket-spec-icon">⏳</span>
+                <div>
+                  <div className="paket-spec-label">Durasi</div>
+                  <div className="paket-spec-val">{durasi}</div>
+                </div>
+              </div>
+            </div>
+
+            {deskripsi && (
+              <div className="paket-portal-desc">{deskripsi}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. Data Diri Jamaah ── */}
+      <div className="portal-section-card">
+        <div className="portal-card-header-bar">
+          <div className="portal-card-title">
+            <span className="portal-card-icon">👤</span>
+            <span>Data Diri Jamaah</span>
+          </div>
+        </div>
+
+        <div className="jamaah-grid">
+          <div className="jamaah-item">
+            <span className="jamaah-item-label">Nama Lengkap</span>
+            <span className="jamaah-item-val bold">{nama}</span>
+          </div>
+
+          <div className="jamaah-item">
+            <span className="jamaah-item-label">NIK (Nomor Induk Kependudukan)</span>
+            <span className="jamaah-item-val monospace">{nik}</span>
+          </div>
+
+          <div className="jamaah-item">
+            <span className="jamaah-item-label">Tempat & Tanggal Lahir</span>
+            <span className="jamaah-item-val">{tempatTglLahir}</span>
+          </div>
+
+          <div className="jamaah-item">
+            <span className="jamaah-item-label">Jenis Kelamin</span>
+            <span className="jamaah-item-val">{jenisKelamin}</span>
+          </div>
+
+          <div className="jamaah-item">
+            <span className="jamaah-item-label">Nomor WhatsApp / HP</span>
+            <span className="jamaah-item-val">{noHp}</span>
+          </div>
+
+          <div className="jamaah-item">
+            <span className="jamaah-item-label">Alamat Email</span>
+            <span className="jamaah-item-val">{email}</span>
+          </div>
+
+          <div className="jamaah-item jamaah-col-span-2">
+            <span className="jamaah-item-label">Alamat Lengkap</span>
+            <span className="jamaah-item-val">{alamat}</span>
+          </div>
+
+          {(kelurahanDesa || kecamatan || kabupatenKota || provinsi || kodePos) && (
+            <div className="jamaah-address-breakdown jamaah-col-span-2">
+              <div className="address-chip">
+                <span className="address-chip-label">Kelurahan / Desa:</span>
+                <span className="address-chip-val">{kelurahanDesa || "-"}</span>
+              </div>
+              <div className="address-chip">
+                <span className="address-chip-label">Kecamatan:</span>
+                <span className="address-chip-val">{kecamatan || "-"}</span>
+              </div>
+              <div className="address-chip">
+                <span className="address-chip-label">Kabupaten / Kota:</span>
+                <span className="address-chip-val">{kabupatenKota || "-"}</span>
+              </div>
+              <div className="address-chip">
+                <span className="address-chip-label">Provinsi:</span>
+                <span className="address-chip-val">{provinsi || "-"}</span>
+              </div>
+              {kodePos && (
+                <div className="address-chip">
+                  <span className="address-chip-label">Kode Pos:</span>
+                  <span className="address-chip-val">{kodePos}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Portal Component ─────────────────────────────────────────────────────
 
 type Step = "input-nomor" | "input-otp" | "dashboard";
-type TabType = "pembayaran" | "dokumen";
+type TabType = "data-jamaah" | "pembayaran" | "dokumen";
 
 const Portal = () => {
   const [searchParams] = useSearchParams();
@@ -898,7 +1469,8 @@ const Portal = () => {
   const [error, setError] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [activeTab, setActiveTab] = useState<TabType>("pembayaran");
+  const [activeTab, setActiveTab] = useState<TabType>("data-jamaah");
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [loadingDash, setLoadingDash] = useState(false);
 
   // ── Countdown for resend ──
@@ -1180,7 +1752,17 @@ const Portal = () => {
               </button>
               <div className="portal-dash-greeting">Selamat datang,</div>
               <div className="portal-dash-name">{displayNama}</div>
-              <div className="portal-dash-nomor">📋 {nomor}</div>
+              <div className="portal-dash-header-row">
+                <div className="portal-dash-nomor">📋 {nomor}</div>
+                <button
+                  type="button"
+                  className="portal-dash-btn-invoice"
+                  onClick={() => setShowInvoiceModal(true)}
+                  title="Lihat Invoice Tagihan"
+                >
+                  🧾 Lihat Invoice
+                </button>
+              </div>
             </div>
 
           {/* Status bar */}
@@ -1256,6 +1838,12 @@ const Portal = () => {
           {/* Tabs */}
           <div className="portal-tabs">
             <button
+              className={`portal-tab ${activeTab === "data-jamaah" ? "active" : ""}`}
+              onClick={() => setActiveTab("data-jamaah")}
+            >
+              👤 Data Jamaah
+            </button>
+            <button
               className={`portal-tab ${activeTab === "pembayaran" ? "active" : ""}`}
               onClick={() => setActiveTab("pembayaran")}
             >
@@ -1276,12 +1864,18 @@ const Portal = () => {
                 <div className="mini-spin-dark" style={{ margin: "0 auto 0.75rem" }} />
                 Memuat data...
               </div>
+            ) : activeTab === "data-jamaah" ? (
+              <TabDataJamaah
+                dashData={dashData}
+                onOpenInvoice={() => setShowInvoiceModal(true)}
+              />
             ) : activeTab === "pembayaran" ? (
               <TabPembayaran
                 token={token}
                 harga={harga}
                 paymentStatus={paymentStatus}
                 documentStatus={documentStatus}
+                onOpenInvoice={() => setShowInvoiceModal(true)}
               />
             ) : (
               <TabDokumen token={token} />
@@ -1301,6 +1895,14 @@ const Portal = () => {
           </div>
         )}
       </div>
+
+      {showInvoiceModal && (
+        <InvoiceModal
+          dashData={dashData}
+          token={token}
+          onClose={() => setShowInvoiceModal(false)}
+        />
+      )}
 
       {/* Unused variable suppressor */}
      

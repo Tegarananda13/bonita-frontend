@@ -21,7 +21,11 @@ interface PaketInfo {
   kuota_terpakai: number;
   sisa_kuota: number;
   jumlah_fasilitas: number;
-  is_aktif: boolean;
+  is_aktif?: boolean;
+  is_active?: boolean;
+  is_finished?: boolean;
+  IsActive?: boolean;
+  IsFinished?: boolean;
 }
 
 interface Statistik {
@@ -98,6 +102,15 @@ const AdminPaketDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Modal actions
+  const [toggleConfirm, setToggleConfirm] = useState(false);
+  const [toggleLoading, setToggleLoading] = useState(false);
+  const [toggleError, setToggleError] = useState("");
+
+  const [finishConfirm, setFinishConfirm] = useState(false);
+  const [finishLoading, setFinishLoading] = useState(false);
+  const [finishError, setFinishError] = useState("");
+
   const fetchDetail = useCallback(async () => {
     try {
       setLoading(true);
@@ -116,6 +129,63 @@ const AdminPaketDetail = () => {
   }, [id, token]);
 
   useEffect(() => { fetchDetail(); }, [fetchDetail]);
+
+  const isFinished = paket
+    ? (paket.is_finished !== undefined
+        ? Boolean(paket.is_finished)
+        : Boolean(paket.IsFinished))
+    : false;
+
+  const isActive = paket
+    ? (paket.is_active !== undefined
+        ? Boolean(paket.is_active)
+        : (paket.IsActive !== undefined ? Boolean(paket.IsActive) : Boolean(paket.is_aktif)))
+    : false;
+
+  const handleToggleStatus = async () => {
+    if (!paket) return;
+    try {
+      setToggleLoading(true);
+      setToggleError("");
+      const newStatus = !isActive;
+      await axios.patch(
+        `${API}/admin/paket/${paket.id}/status`,
+        { is_active: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setToggleConfirm(false);
+      await fetchDetail();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.error ?? "Gagal mengubah status paket.")
+        : "Gagal mengubah status paket.";
+      setToggleError(msg);
+    } finally {
+      setToggleLoading(false);
+    }
+  };
+
+  const handleFinishPaket = async () => {
+    if (!paket) return;
+    try {
+      setFinishLoading(true);
+      setFinishError("");
+      await axios.patch(
+        `${API}/admin/paket/${paket.id}/finish`,
+        { is_finished: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFinishConfirm(false);
+      await fetchDetail();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.error ?? "Gagal menyelesaikan paket.")
+        : "Gagal menyelesaikan paket.";
+      setFinishError(msg);
+    } finally {
+      setFinishLoading(false);
+    }
+  };
 
   if (loading) return (
     <div className="apd-loading">
@@ -137,15 +207,101 @@ const AdminPaketDetail = () => {
   const jenisBg = jenisBadge[paket.jenis_paket] ?? "#1a6b43";
   const FALLBACK = "https://images.unsplash.com/photo-1537039557005-6e3bcde2e5e5?w=800&q=80";
 
+  // Badge status helper
+  const getStatusBadge = () => {
+    if (isFinished) {
+      return {
+        label: "⚫ Selesai",
+        bg: "#f1f5f9",
+        color: "#475569",
+        border: "1px solid #cbd5e1",
+      };
+    }
+    if (isActive) {
+      return {
+        label: "🟢 Aktif",
+        bg: "#dcfce7",
+        color: "#166534",
+        border: "1px solid #bbf7d0",
+      };
+    }
+    return {
+      label: "🔴 Tidak Aktif",
+      bg: "#fee2e2",
+      color: "#991b1b",
+      border: "1px solid #fecaca",
+    };
+  };
+
+  const statusBadge = getStatusBadge();
+
   return (
     <div className="apd-page">
 
       {/* ── Header ── */}
       <div className="apd-header">
-        <button className="apd-back-btn" onClick={() => navigate("/admin/paket")}>
-          ← Kembali ke Daftar Paket
-        </button>
-        <h1 className="apd-title">Detail Paket Umroh</h1>
+        <div className="apd-header-left">
+          <button className="apd-back-btn" onClick={() => navigate("/admin/paket")}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Kembali ke Daftar Paket
+          </button>
+          <h1 className="apd-title">Detail Paket Umroh</h1>
+        </div>
+
+        <div className="apd-header-actions">
+          {isFinished ? (
+            <span className="apd-badge-finished">
+              ⚫ Paket Selesai
+            </span>
+          ) : (
+            <>
+              {isActive && (
+                <button
+                  type="button"
+                  className="apd-btn-finish"
+                  onClick={() => {
+                    setFinishError("");
+                    setFinishConfirm(true);
+                  }}
+                  title="Selesaikan paket ini"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Selesaikan
+                </button>
+              )}
+              <button
+                type="button"
+                className={isActive ? "apd-btn-deactivate" : "apd-btn-activate"}
+                onClick={() => {
+                  setToggleError("");
+                  setToggleConfirm(true);
+                }}
+                title={isActive ? "Nonaktifkan paket" : "Aktifkan paket"}
+              >
+                {isActive ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                    </svg>
+                    Nonaktifkan
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Aktifkan
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Info Paket ── */}
@@ -157,8 +313,15 @@ const AdminPaketDetail = () => {
             className="apd-foto"
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
           />
-          <span className="apd-status-badge" style={{ background: paket.is_aktif ? "#dcfce7" : "#fee2e2", color: paket.is_aktif ? "#16a34a" : "#dc2626" }}>
-            {paket.is_aktif ? "✅ Aktif" : "⛔ Tidak Aktif"}
+          <span
+            className="apd-status-badge"
+            style={{
+              background: statusBadge.bg,
+              color: statusBadge.color,
+              border: statusBadge.border,
+            }}
+          >
+            {statusBadge.label}
           </span>
         </div>
 
@@ -301,6 +464,97 @@ const AdminPaketDetail = () => {
           </div>
         )}
       </div>
+
+      {/* ── Toggle Status Confirm Modal ── */}
+      {toggleConfirm && (
+        <div
+          className="apd-confirm-overlay"
+          onClick={(e) => e.target === e.currentTarget && !toggleLoading && setToggleConfirm(false)}
+        >
+          <div className="apd-confirm-box">
+            <div className="apd-confirm-icon">{isActive ? "🔴" : "🟢"}</div>
+            <h3>{isActive ? "Nonaktifkan Paket?" : "Aktifkan Paket?"}</h3>
+            <p>
+              Paket <strong>"{paket.nama_paket}"</strong> akan diubah statusnya menjadi{" "}
+              <strong>{isActive ? "Nonaktif" : "Aktif"}</strong>.
+              {isActive && (
+                <span className="apd-confirm-warning">
+                  ⚠️ Paket tidak dapat dinonaktifkan jika masih ada jamaah dengan status proses berjalan.
+                </span>
+              )}
+            </p>
+            {toggleError && (
+              <div className="apd-confirm-error">
+                {toggleError}
+              </div>
+            )}
+            <div className="apd-confirm-actions">
+              <button
+                type="button"
+                className="apd-confirm-cancel"
+                onClick={() => setToggleConfirm(false)}
+                disabled={toggleLoading}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className={isActive ? "apd-confirm-delete-btn" : "apd-confirm-activate-btn"}
+                onClick={handleToggleStatus}
+                disabled={toggleLoading}
+              >
+                {toggleLoading
+                  ? "Memproses..."
+                  : isActive ? "Ya, Nonaktifkan" : "Ya, Aktifkan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Finish Paket Confirm Modal ── */}
+      {finishConfirm && (
+        <div
+          className="apd-confirm-overlay"
+          onClick={(e) => e.target === e.currentTarget && !finishLoading && setFinishConfirm(false)}
+        >
+          <div className="apd-confirm-box">
+            <div className="apd-confirm-icon">⚫</div>
+            <h3>Selesaikan Paket?</h3>
+            <p>
+              Seluruh jamaah pada paket <strong>"{paket.nama_paket}"</strong> yang belum selesai
+              akan otomatis diubah statusnya menjadi <strong>Selesai</strong>.{" "}
+              <span className="apd-confirm-warning">
+                ⚠️ Perubahan ini tidak dapat dibatalkan.
+              </span>
+            </p>
+            {finishError && (
+              <div className="apd-confirm-error">
+                {finishError}
+              </div>
+            )}
+            <div className="apd-confirm-actions">
+              <button
+                type="button"
+                className="apd-confirm-cancel"
+                onClick={() => setFinishConfirm(false)}
+                disabled={finishLoading}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="apd-confirm-finish-btn"
+                onClick={handleFinishPaket}
+                disabled={finishLoading}
+              >
+                {finishLoading ? "Memproses..." : "Ya, Selesaikan Paket"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

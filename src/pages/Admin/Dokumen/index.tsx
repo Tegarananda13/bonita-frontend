@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import "../Pembayaran/AdminPembayaran.css";
 
 interface DokumenItem {
@@ -21,11 +22,10 @@ const DOK_ICONS: Record<string, string> = {
 
 const AdminDokumen = () => {
   const { token } = useAuth();
+  const { showToast } = useToast();
   const [list, setList] = useState<DokumenItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [detailModal, setDetailModal] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<{file?: string; jenis?: string; nama?: string; paket?: string} | null>(null);
 
@@ -37,7 +37,9 @@ const AdminDokumen = () => {
       const res = await axios.get("http://localhost:8080/admin/dokumen/pending", {
         headers: authH(),
       });
-      setList(res.data?.data ?? []);
+      const items: DokumenItem[] = res.data?.data ?? [];
+      items.sort((a, b) => new Date(b.tanggal_upload).getTime() - new Date(a.tanggal_upload).getTime());
+      setList(items);
     } catch {
       setList([]);
     } finally {
@@ -66,20 +68,26 @@ const AdminDokumen = () => {
   };
 
   const handleVerify = async (id: string, status: "diterima" | "ditolak") => {
-    setError("");
-    setSuccess("");
     try {
       setVerifying(id + status);
       await axios.put(`http://localhost:8080/admin/dokumen/${id}/verifikasi`, { status }, {
         headers: authH(),
       });
-      setSuccess(`Dokumen berhasil di${status === "diterima" ? "terima" : "tolak"}.`);
       setDetailModal(null);
       setDetailData(null);
-      fetchList();
-      setTimeout(() => setSuccess(""), 3000);
+      await fetchList();
+      if (status === "diterima") {
+        showToast("success", "Dokumen berhasil diverifikasi.");
+      } else {
+        showToast("success", "Dokumen berhasil ditolak.");
+      }
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal memverifikasi.") : "Gagal memverifikasi.");
+      const errMsg = axios.isAxiosError(err) ? (err.response?.data?.error ?? null) : null;
+      if (status === "diterima") {
+        showToast("error", errMsg || "Dokumen gagal diverifikasi.");
+      } else {
+        showToast("error", errMsg || "Dokumen gagal ditolak.");
+      }
     } finally {
       setVerifying(null);
     }
@@ -104,9 +112,6 @@ const AdminDokumen = () => {
           </button>
         </div>
       </div>
-
-      {success && <div className="alert-success">✓ {success}</div>}
-      {error && <div className="alert-error">✕ {error}</div>}
 
       {/* Stats */}
       {!loading && (
