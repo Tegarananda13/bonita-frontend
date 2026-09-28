@@ -70,10 +70,11 @@ const payLabel: Record<string, string> = {
 };
 
 const dokLabel: Record<string, string> = {
-  belum:   "Belum",
-  pending: "Menunggu",
-  revisi:  "Revisi",
-  lengkap: "Lengkap",
+  belum:         "Belum",
+  pending:       "Pending",
+  belum_lengkap: "Belum Lengkap",
+  revisi:        "Revisi",
+  lengkap:       "Lengkap",
 };
 
 const jenisBadge: Record<string, string> = {

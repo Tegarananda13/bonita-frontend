@@ -179,7 +179,7 @@ const getStatusLabel = (v: string) => {
   const map: Record<string, string> = {
     proses: "Proses", selesai: "Selesai", batal: "Batal",
     kadaluarsa: "Kadaluarsa",
-    belum: "Belum", pending: "Menunggu", lunas: "Lunas",
+    belum: "Belum", pending: "Pending", lunas: "Lunas",
     dp: "DP", diterima: "Diterima", ditolak: "Ditolak",
     lengkap: "Lengkap", revisi: "Revisi",
     belum_lengkap: "Belum Lengkap",

@@ -363,10 +363,11 @@
   font-size: 0.72rem;
   font-weight: 600;
 }
-.dok-belum   { background: #f1f5f9; color: #64748b; }
-.dok-pending { background: #fef3c7; color: #92400e; }
-.dok-revisi  { background: #fee2e2; color: #b91c1c; }
-.dok-lengkap { background: #dcfce7; color: #15803d; }
+.dok-belum         { background: #f1f5f9; color: #64748b; }
+.dok-pending       { background: #fef3c7; color: #92400e; }
+.dok-belum_lengkap { background: #fffbeb; color: #d97706; }
+.dok-revisi        { background: #fee2e2; color: #b91c1c; }
+.dok-lengkap       { background: #dcfce7; color: #15803d; }
 
 /* Aksi */
 .apd-detail-btn {
