@@ -16,6 +16,14 @@
   
   --border-color: #e2e8f0; /* Slate 200 */
   
+  /* Brand Green - Unified Jamaah & Admin Theme */
+  --admin-green: #1a6b43;
+  --admin-green-hover: #2d9e6b;
+  --admin-green-dark: #0f5132;
+  --admin-green-light: #f0fdf4;
+  --admin-green-border: #bbf7d0;
+  --admin-green-shadow: rgba(26, 107, 67, 0.25);
+  
   /* Typography */
   --font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   

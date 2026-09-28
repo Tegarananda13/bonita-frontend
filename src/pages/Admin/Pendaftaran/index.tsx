@@ -494,9 +494,9 @@ const DetailModal = ({
   };
   const btnSubmit: React.CSSProperties = {
     padding: "0.55rem 1.5rem", borderRadius: "10px", border: "none",
-    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+    background: "linear-gradient(135deg, #1a6b43 0%, #0f5132 100%)",
     color: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700,
-    boxShadow: "0 4px 15px rgba(79,70,229,0.4)",
+    boxShadow: "0 4px 15px rgba(26,107,67,0.35)",
     transition: "all 0.15s",
   };
   const actionBtn = (color: string): React.CSSProperties => ({
@@ -509,8 +509,8 @@ const DetailModal = ({
     marginBottom: "0.6rem",
   };
   const addBtn: React.CSSProperties = {
-    fontSize: "0.75rem", fontWeight: 700, color: "#4f46e5",
-    background: "#ede9fe", border: "none", borderRadius: "8px",
+    fontSize: "0.75rem", fontWeight: 700, color: "#1a6b43",
+    background: "#f0fdf4", border: "none", borderRadius: "8px",
     padding: "4px 12px", cursor: "pointer",
   };
 
@@ -522,7 +522,7 @@ const DetailModal = ({
           <div style={inlineBox}>
             {/* Header gradient */}
             <div style={{
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+              background: "linear-gradient(135deg, #1a6b43 0%, #0f5132 100%)",
               padding: "1.25rem 1.5rem",
               display: "flex", alignItems: "center", gap: "0.75rem",
             }}>
@@ -574,7 +574,7 @@ const DetailModal = ({
                 />
               </div>
               {payJumlah && (
-                <div style={{ fontSize: "0.75rem", color: "#6366f1", marginTop: "4px", fontWeight: 600 }}>
+                <div style={{ fontSize: "0.75rem", color: "#1a6b43", marginTop: "4px", fontWeight: 600 }}>
                   {(() => {
                     const num = parseInt(payJumlah.replace(/[^\d]/g, ""), 10);
                     return isNaN(num) ? "" : `Rp ${num.toLocaleString("id-ID")}`;
@@ -596,7 +596,7 @@ const DetailModal = ({
               {/* File Upload */}
               <label style={inlineLabel}>Bukti Pembayaran {editPay ? "(opsional — ganti jika perlu)" : "(opsional)"}</label>
               <div style={{
-                border: "2px dashed #c7d2fe",
+                border: "2px dashed #bbf7d0",
                 borderRadius: "10px",
                 padding: "0.875rem",
                 background: payFile ? "#f0fdf4" : "#f8fafc",
@@ -623,7 +623,7 @@ const DetailModal = ({
                   ) : (
                     <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
                       <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>📁</div>
-                      <div style={{ fontWeight: 600, color: "#6366f1" }}>Pilih file</div>
+                      <div style={{ fontWeight: 600, color: "#1a6b43" }}>Pilih file</div>
                       <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
                     </div>
                   )}
@@ -632,7 +632,7 @@ const DetailModal = ({
               {editPay?.bukti && !payFile && (
                 <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "5px", textAlign: "center" }}>
                   Saat ini:{" "}
-                  <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#4f46e5", fontWeight: 600 }}>Lihat bukti lama</a>
+                  <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#1a6b43", fontWeight: 600 }}>Lihat bukti lama</a>
                 </div>
               )}
             </div>
@@ -951,7 +951,7 @@ const DetailModal = ({
                   </div>
                   <div className="modal-info-item">
                     <div className="modal-info-label">Harga Paket</div>
-                    <div className="modal-info-val" style={{ color: "#4f46e5", fontWeight: 800 }}>
+                    <div className="modal-info-val" style={{ color: "#1a6b43", fontWeight: 800 }}>
                       {fmtRupiah(data.harga)}
                     </div>
                   </div>
@@ -1005,8 +1005,8 @@ const DetailModal = ({
                   return (
                     <div style={{ marginBottom: "1rem" }}>
                       <div className="modal-section-title">💳 Ringkasan Pembayaran</div>
-                      <div style={{ background: "linear-gradient(135deg,#0f172a,#1e1b4b)", borderRadius: 14, padding: "1.25rem", color: "white" }}>
-                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
+                      <div style={{ background: "linear-gradient(135deg,#0f172a,#0f291e)", borderRadius: 14, padding: "1.25rem", color: "white" }}>
+                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#86efac", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>
                           {isGrup ? "Invoice Grup" : "Invoice Individu"}
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
@@ -1027,7 +1027,7 @@ const DetailModal = ({
                             <span>{pct.toFixed(1)}%</span>
                           </div>
                           <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 999, height: 8 }}>
-                            <div style={{ background: pct >= 100 ? "#34d399" : "#818cf8", height: 8, borderRadius: 999, width: `${pct}%`, transition: "width 0.5s" }} />
+                            <div style={{ background: pct >= 100 ? "#34d399" : "#2d9e6b", height: 8, borderRadius: 999, width: `${pct}%`, transition: "width 0.5s" }} />
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.4rem", alignItems: "center" }}>
                             <span>Sisa: {fmtRupiah(sisa)}</span>
@@ -1036,7 +1036,7 @@ const DetailModal = ({
                         </div>
                         {/* Keterangan grup */}
                         {isGrup && (
-                          <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "0.72rem", color: "#a5b4fc", fontStyle: "italic" }}>
+                          <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "0.72rem", color: "#86efac", fontStyle: "italic" }}>
                             ℹ️ Progress pembayaran mengikuti total pembayaran pada invoice grup ({data.grup_count} jamaah).
                           </div>
                         )}
@@ -1045,7 +1045,7 @@ const DetailModal = ({
                           <div style={{ marginTop: "0.875rem" }}>
                             <button
                               type="button"
-                              style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.9rem", background: "rgba(129,140,248,0.2)", border: "1px solid rgba(129,140,248,0.4)", borderRadius: 8, color: "#c7d2fe", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                              style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.9rem", background: "rgba(45,158,107,0.25)", border: "1px solid rgba(45,158,107,0.45)", borderRadius: 8, color: "#bbf7d0", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                               onClick={async () => {
                                 try {
                                   const res = await fetch(`${API}/admin/invoice?nomor=${data.nomor_invoice}`, {
@@ -1099,7 +1099,7 @@ const DetailModal = ({
                             👁 Lihat Bukti
                           </a>
                         )}
-                        <button style={actionBtn("#4f46e5")} onClick={() => openEditPay(pay)}>
+                        <button style={actionBtn("#1a6b43")} onClick={() => openEditPay(pay)}>
                           ✏ Edit
                         </button>
                         <button
@@ -1197,7 +1197,7 @@ const DetailModal = ({
                                     </a>
                                     <button
                                       type="button"
-                                      style={{ ...actionBtn("#4f46e5"), padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}
+                                      style={{ ...actionBtn("#1a6b43"), padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}
                                       onClick={() => downloadFile(doc.file_path, `${td.key}_${data.nomor_pendaftaran}.${getFileExt(doc.file_path)}`)}
                                     >
                                       📥 Download
@@ -1254,7 +1254,7 @@ const DetailModal = ({
                                   👁 Lihat File
                                 </a>
                               )}
-                              <button style={actionBtn("#4f46e5")} onClick={() => openEditDoc(dok)}>
+                              <button style={actionBtn("#1a6b43")} onClick={() => openEditDoc(dok)}>
                                 ✏ Edit
                               </button>
                               <button
@@ -1331,7 +1331,7 @@ const DetailModal = ({
                       <div className="modal-info-label">Didaftarkan Oleh</div>
                       <div className="modal-info-val" style={{
                         fontWeight: 700,
-                        color: data.registration_source === "admin" ? "#7c3aed"
+                        color: data.registration_source === "admin" ? "#1a6b43"
                           : data.registration_source === "chatbot" ? "#0369a1"
                             : "#374151",
                       }}>
@@ -1477,8 +1477,8 @@ const GrupDetailModal = ({
 
         <div className="modal-body">
           {/* Ringkasan Invoice */}
-          <div style={{ background: "linear-gradient(135deg,#0f172a,#1e1b4b)", borderRadius: 14, padding: "1.25rem", marginBottom: "1.25rem", color: "white" }}>
-            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>💳 Ringkasan Invoice</div>
+          <div style={{ background: "linear-gradient(135deg,#0f172a,#0f291e)", borderRadius: 14, padding: "1.25rem", marginBottom: "1.25rem", color: "white" }}>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#86efac", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>💳 Ringkasan Invoice</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               {[
                 { label: "Paket", val: first?.paket ?? "-" },
@@ -1500,7 +1500,7 @@ const GrupDetailModal = ({
                 <span>{pct.toFixed(0)}%</span>
               </div>
               <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 999, height: 8 }}>
-                <div style={{ background: pct >= 100 ? "#34d399" : "#818cf8", height: 8, borderRadius: 999, width: `${pct}%`, transition: "width 0.5s" }} />
+                <div style={{ background: pct >= 100 ? "#34d399" : "#2d9e6b", height: 8, borderRadius: 999, width: `${pct}%`, transition: "width 0.5s" }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.4rem" }}>
                 <span>Sisa: {fmtRupiah(sisaPembayaran)}</span>
@@ -1516,10 +1516,10 @@ const GrupDetailModal = ({
                       alignItems: "center",
                       gap: "0.4rem",
                       padding: "0.45rem 0.9rem",
-                      background: "rgba(129,140,248,0.2)",
-                      border: "1px solid rgba(129,140,248,0.4)",
+                      background: "rgba(45,158,107,0.25)",
+                      border: "1px solid rgba(45,158,107,0.45)",
                       borderRadius: 8,
-                      color: "#c7d2fe",
+                      color: "#bbf7d0",
                       fontSize: "0.78rem",
                       fontWeight: 700,
                       cursor: "pointer",
@@ -1575,7 +1575,7 @@ const GrupDetailModal = ({
                 <div key={j.nomor_pendaftaran} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", gap: "0.75rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
-                      <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "0.85rem", flexShrink: 0 }}>
+                      <div style={{ width: 32, height: 32, background: "linear-gradient(135deg,#1a6b43,#2d9e6b)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "0.85rem", flexShrink: 0 }}>
                         {i + 1}
                       </div>
                       <div>
@@ -1588,7 +1588,7 @@ const GrupDetailModal = ({
                       <StatusPill value={j.status} />
                       <button
                         type="button"
-                        style={{ padding: "0.3rem 0.75rem", borderRadius: 8, border: "1.5px solid #c7d2fe", background: "#eef2ff", color: "#4f46e5", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+                        style={{ padding: "0.3rem 0.75rem", borderRadius: 8, border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#1a6b43", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
                         onClick={() => onOpenDetail(j.nomor_pendaftaran)}
                       >
                         Detail →
@@ -1727,7 +1727,7 @@ const PendaftaranGrupView = ({
                     </div>
                   </td>
                   <td>
-                    <span style={{ background: "#eef2ff", color: "#4f46e5", borderRadius: 999, padding: "0.2rem 0.65rem", fontSize: "0.78rem", fontWeight: 700 }}>
+                    <span style={{ background: "#f0fdf4", color: "#1a6b43", borderRadius: 999, padding: "0.2rem 0.65rem", fontSize: "0.78rem", fontWeight: 700 }}>
                       👥 {g.jamaah.length} Orang
                     </span>
                   </td>
@@ -2000,7 +2000,7 @@ const AdminPendaftaran = () => {
                       <td>
                         <span style={{
                           fontSize: "0.8rem", fontWeight: 600,
-                          color: p.registration_source === "admin" ? "#7c3aed" : p.registration_source === "chatbot" ? "#0369a1" : "#374151",
+                          color: p.registration_source === "admin" ? "#1a6b43" : p.registration_source === "chatbot" ? "#0369a1" : "#374151",
                         }}>
                           {p.registered_by_label ?? "👤 Customer"}
                         </span>
@@ -2267,7 +2267,7 @@ const PICDetailModal = ({
                 </div>
                 <div className="modal-info-item">
                   <div className="modal-info-label">Harga</div>
-                  <div className="modal-info-val" style={{ color: "#4f46e5", fontWeight: 800 }}>{fmtRupiah(data.harga)}</div>
+                  <div className="modal-info-val" style={{ color: "#1a6b43", fontWeight: 800 }}>{fmtRupiah(data.harga)}</div>
                 </div>
                 <div className="modal-info-item">
                   <div className="modal-info-label">Tgl Berangkat</div>
@@ -2386,7 +2386,7 @@ const PICDetailModal = ({
                                   style={{
                                     fontSize: "0.74rem",
                                     fontWeight: 600,
-                                    color: "#4f46e5",
+                                    color: "#1a6b43",
                                     background: "transparent",
                                     border: "none",
                                     cursor: "pointer",

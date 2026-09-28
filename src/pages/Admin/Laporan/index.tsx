@@ -148,11 +148,11 @@ const Laporan = () => {
           {
             label: "Pendaftaran",
             data:  tren.map((t) => t.jumlah),
-            backgroundColor: "rgba(99,102,241,0.7)",
-            borderColor:     "#4f46e5",
+            backgroundColor: "rgba(26,107,67,0.7)",
+            borderColor:     "#1a6b43",
             borderWidth:     1.5,
             borderRadius:    6,
-            hoverBackgroundColor: "rgba(79,70,229,0.85)",
+            hoverBackgroundColor: "rgba(26,107,67,0.85)",
           },
         ],
       },
@@ -558,7 +558,7 @@ const Laporan = () => {
           {/* Chart: Tren Pendaftaran */}
           <div className="laporan-section-card">
             <div className="laporan-section-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a6b43" strokeWidth="2.2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
               <span className="laporan-section-title">Tren Pendaftaran Jamaah</span>
@@ -578,7 +578,7 @@ const Laporan = () => {
           {/* Rekapitulasi Pendaftaran */}
           <div className="laporan-section-card">
             <div className="laporan-section-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a6b43" strokeWidth="2.2">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -625,7 +625,7 @@ const Laporan = () => {
           {/* Rekapitulasi Pembayaran */}
           <div className="laporan-section-card">
             <div className="laporan-section-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a6b43" strokeWidth="2.2">
                 <rect width="20" height="14" x="2" y="5" rx="2"/>
                 <line x1="2" x2="22" y1="10" y2="10"/>
               </svg>

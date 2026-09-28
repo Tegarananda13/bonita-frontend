@@ -14,25 +14,24 @@
 
 /* ── Layout ─────────────────────────────────────────────────────────────────── */
 .apd-page {
-  padding: 1.5rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-family, 'Inter', sans-serif);
 }
 
 .apd-header {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .apd-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: var(--apd-green);
+  color: #0f172a;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
@@ -40,20 +39,21 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.5rem 1.1rem;
-  border-radius: 10px;
-  border: 2px solid var(--apd-green);
-  background: transparent;
-  color: var(--apd-green);
-  font-size: 0.85rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 9px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 .apd-back-btn:hover {
-  background: var(--apd-green);
-  color: #fff;
+  background: #f8fafc;
+  color: var(--apd-green);
+  border-color: var(--apd-green);
 }
 
 /* ── Card shared ─────────────────────────────────────────────────────────────── */
@@ -202,11 +202,94 @@
   min-width: 0;
 }
 
-/* ── Statistik Cards ─────────────────────────────────────────────────────────── */
+/* ── Fasilitas Section ───────────────────────────────────────────────────────── */
+.apd-fasilitas-section {
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.apd-fasilitas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.apd-fasilitas-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.apd-fasilitas-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1a6b43;
+  background: #e8f5ef;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.apd-fasilitas-empty {
+  font-size: 0.82rem;
+  color: var(--apd-sub);
+  margin: 0;
+  font-style: italic;
+}
+
+.apd-fasilitas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem 1rem;
+}
+
+.apd-fasilitas-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.65rem;
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.apd-fasilitas-item:hover {
+  border-color: #cbd5e1;
+}
+
+.apd-fasilitas-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e8f5ef;
+  color: #1a6b43;
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.apd-fasilitas-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.3;
+}
+
+/* ── Statistik Cards (2 KPI Cards) ───────────────────────────────────────────── */
 .apd-statistik-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
 }
 
 .apd-stat-card {
@@ -214,47 +297,65 @@
   border-radius: var(--apd-radius);
   border: 1px solid var(--apd-border);
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  padding: 1.25rem 1rem;
-  text-align: center;
+  padding: 1.25rem 1.5rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
+  gap: 1.25rem;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .apd-stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
-.apd-stat-icon { font-size: 1.75rem; }
+.apd-stat-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.apd-stat-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .apd-stat-value {
-  font-size: 2rem;
-  font-weight: 900;
-  line-height: 1;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 0.2rem;
 }
 
 .apd-stat-label {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--apd-sub);
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.st-total { border-top: 3px solid #1a6b43; }
-.st-total .apd-stat-value { color: #1a6b43; }
+.st-total {
+  border-left: 4px solid #1a6b43;
+}
+.st-total .apd-stat-icon-wrap {
+  background: #e8f5ef;
+}
+.st-total .apd-stat-value {
+  color: #1a6b43;
+}
 
-.st-dp    { border-top: 3px solid #f59e0b; }
-.st-dp .apd-stat-value { color: #f59e0b; }
-
-.st-lunas { border-top: 3px solid #10b981; }
-.st-lunas .apd-stat-value { color: #10b981; }
-
-.st-siap-b { border-top: 3px solid #3b82f6; }
-.st-siap-b .apd-stat-value { color: #3b82f6; }
-
-.st-done  { border-top: 3px solid #6366f1; }
-.st-done .apd-stat-value { color: #6366f1; }
+.st-siap-b {
+  border-left: 4px solid #0284c7;
+}
+.st-siap-b .apd-stat-icon-wrap {
+  background: #e0f2fe;
+}
+.st-siap-b .apd-stat-value {
+  color: #0284c7;
+}
 
 /* ── Tabel Jamaah ────────────────────────────────────────────────────────────── */
 .apd-section-header {
@@ -338,7 +439,7 @@
 
 .st-proses           { background: #dbeafe; color: #1d4ed8; }
 .st-menunggu-bayar   { background: #fef9c3; color: #854d0e; }
-.st-menunggu-dok     { background: #ede9fe; color: #6d28d9; }
+.st-menunggu-dok     { background: #e0f2fe; color: #0369a1; }
 .st-siap             { background: #dcfce7; color: #15803d; }
 .st-selesai          { background: #f0fdf4; color: #166534; }
 .st-batal            { background: #fee2e2; color: #b91c1c; }
@@ -420,11 +521,10 @@
   .apd-info-card { flex-direction: column; }
   .apd-foto { width: 100%; height: 200px; }
   .apd-grid { grid-template-columns: repeat(2, 1fr); }
-  .apd-statistik-grid { grid-template-columns: repeat(3, 1fr); }
+  .apd-fasilitas-grid { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 600px) {
-  .apd-page { padding: 1rem; }
-  .apd-statistik-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 640px) {
+  .apd-statistik-grid { grid-template-columns: 1fr; }
   .apd-grid { grid-template-columns: 1fr 1fr; }
 }

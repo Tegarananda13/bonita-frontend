@@ -126,7 +126,7 @@ const pageTitle: Record<string, string> = {
 };
 
 const AdminLayout = () => {
-  const { role, logout, token } = useAuth();
+  const { role, nama, logout, token } = useAuth();
   const navigate = useNavigate();
   const [badgePengaduan, setBadgePengaduan] = useState(0);
 
@@ -161,6 +161,10 @@ const AdminLayout = () => {
     role ? item.roles.includes(role) : false
   );
 
+  const isOwner = role === "owner";
+  const displayName = nama || (isOwner ? "Owner" : "Administrator");
+  const roleLabel = isOwner ? "Owner" : "Admin";
+
   return (
     <div className="admin-layout">
       {/* ── Sidebar ── */}
@@ -178,10 +182,10 @@ const AdminLayout = () => {
         <div className="sidebar-role-badge">
           <div className="sidebar-role-dot" />
           <div className="sidebar-role-info">
-            <div className="sidebar-role-name">
-              {role === "owner" ? "Owner" : "Administrator"}
+            <div className="sidebar-role-name" title={displayName}>
+              {displayName}
             </div>
-            <div className="sidebar-role-label">{role}</div>
+            <div className="sidebar-role-label">{roleLabel}</div>
           </div>
         </div>
 

@@ -24,6 +24,13 @@ interface PaketInfo {
   is_aktif: boolean;
 }
 
+interface FasilitasItem {
+  id: string;
+  nama_fasilitas: string;
+  deskripsi?: string;
+  foto_fasilitas?: Array<{ id: string; url: string; urutan: number }>;
+}
+
 interface Statistik {
   total_jamaah: number;
   jumlah_dp: number;
@@ -78,7 +85,7 @@ const dokLabel: Record<string, string> = {
 };
 
 const jenisBadge: Record<string, string> = {
-  Reguler:      "#6366f1",
+  Reguler:      "#1a6b43",
   Exclusive:    "#f59e0b",
   "Plus Turki": "#0ea5e9",
   "Plus Dubai": "#8b5cf6",
@@ -94,6 +101,7 @@ const AdminPaketDetail = () => {
   const { token } = useAuth();
 
   const [paket, setPaket] = useState<PaketInfo | null>(null);
+  const [fasilitas, setFasilitas] = useState<FasilitasItem[]>([]);
   const [statistik, setStatistik] = useState<Statistik | null>(null);
   const [jamaah, setJamaah] = useState<JamaahRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +115,7 @@ const AdminPaketDetail = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPaket(res.data.paket);
+      setFasilitas(res.data.fasilitas ?? []);
       setStatistik(res.data.statistik);
       setJamaah(res.data.jamaah ?? []);
     } catch {
@@ -185,7 +194,7 @@ const AdminPaketDetail = () => {
             </div>
             <div className="apd-info-item">
               <div className="apd-info-label">⭐ Fasilitas</div>
-              <div className="apd-info-value">{paket.jumlah_fasilitas} item</div>
+              <div className="apd-info-value">{fasilitas.length || paket.jumlah_fasilitas} item</div>
             </div>
           </div>
 
@@ -212,23 +221,47 @@ const AdminPaketDetail = () => {
               />
             </div>
           </div>
+
+          {/* ── Box Daftar Fasilitas Paket ── */}
+          <div className="apd-fasilitas-section">
+            <div className="apd-fasilitas-header">
+              <div className="apd-fasilitas-title">
+                <span>⭐ Fasilitas Paket</span>
+              </div>
+              <span className="apd-fasilitas-count">
+                {fasilitas.length} Item
+              </span>
+            </div>
+
+            {fasilitas.length === 0 ? (
+              <p className="apd-fasilitas-empty">Belum ada fasilitas yang didaftarkan pada paket ini.</p>
+            ) : (
+              <div className="apd-fasilitas-grid">
+                {fasilitas.map((f) => (
+                  <div key={f.id} className="apd-fasilitas-item">
+                    <span className="apd-fasilitas-check">✓</span>
+                    <span className="apd-fasilitas-name">{f.nama_fasilitas}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Statistik ── */}
+      {/* ── Statistik (KPI) ── */}
       {statistik && (
         <div className="apd-statistik-grid">
           {[
             { label: "Total Jamaah", value: statistik.total_jamaah, icon: "👥", cls: "st-total" },
-            { label: "Masih DP",     value: statistik.jumlah_dp,    icon: "💳", cls: "st-dp"    },
-            { label: "Lunas",        value: statistik.jumlah_lunas,  icon: "✅", cls: "st-lunas" },
             { label: "Siap Berangkat", value: statistik.jumlah_siap_berangkat, icon: "✈️", cls: "st-siap-b" },
-            { label: "Selesai",      value: statistik.jumlah_selesai, icon: "🏁", cls: "st-done"  },
           ].map((s) => (
             <div key={s.label} className={`apd-stat-card ${s.cls}`}>
-              <div className="apd-stat-icon">{s.icon}</div>
-              <div className="apd-stat-value">{s.value}</div>
-              <div className="apd-stat-label">{s.label}</div>
+              <div className="apd-stat-icon-wrap">{s.icon}</div>
+              <div className="apd-stat-info">
+                <div className="apd-stat-value">{s.value}</div>
+                <div className="apd-stat-label">{s.label}</div>
+              </div>
             </div>
           ))}
         </div>

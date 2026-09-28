@@ -265,7 +265,7 @@ const AdminPembayaran = () => {
                       <div className="verify-detail-label">Jumlah Jamaah</div>
                       <div className="verify-detail-val">
                         <span style={{
-                          background: "#ede9fe", color: "#6d28d9",
+                          background: "#f0fdf4", color: "#1a6b43",
                           padding: "2px 10px", borderRadius: 999,
                           fontSize: "0.85rem", fontWeight: 700,
                         }}>
@@ -275,7 +275,7 @@ const AdminPembayaran = () => {
                     </div>
                     <div className="verify-detail-item full">
                       <div className="verify-detail-label">Jumlah Pembayaran</div>
-                      <div className="verify-detail-val" style={{ fontSize: "1.25rem", fontWeight: 800, color: "#4f46e5" }}>
+                      <div className="verify-detail-val" style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1a6b43" }}>
                         {fmtRupiah(detailData.jumlah ?? 0)}
                       </div>
                     </div>
@@ -298,7 +298,7 @@ const AdminPembayaran = () => {
                             border: "1px solid #e8edf5",
                           }}>
                             <span style={{
-                              background: "#ede9fe", color: "#6d28d9",
+                              background: "#f0fdf4", color: "#1a6b43",
                               width: 22, height: 22, borderRadius: "50%",
                               display: "flex", alignItems: "center", justifyContent: "center",
                               fontSize: "0.7rem", fontWeight: 700, flexShrink: 0,

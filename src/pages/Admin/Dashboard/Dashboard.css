@@ -28,7 +28,7 @@
   right: -40px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(26,107,67,0.3) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -98,7 +98,8 @@
   flex-shrink: 0;
 }
 
-.stat-icon-indigo { background: #eef2ff; }
+.stat-icon-green,
+.stat-icon-indigo { background: #f0fdf4; }
 .stat-icon-emerald { background: #ecfdf5; }
 .stat-icon-amber { background: #fffbeb; }
 .stat-icon-rose { background: #fff1f2; }
@@ -212,18 +213,18 @@
 }
 
 .quicklink-card:hover {
-  border-color: #6366f1;
-  background: #fafafe;
+  border-color: #1a6b43;
+  background: #f0fdf4;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99,102,241,0.1);
-  color: #4f46e5;
+  box-shadow: 0 6px 20px rgba(26,107,67,0.12);
+  color: #1a6b43;
 }
 
 .quicklink-icon {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #eef2ff;
+  background: #f0fdf4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,7 +234,7 @@
 }
 
 .quicklink-card:hover .quicklink-icon {
-  background: #e0e7ff;
+  background: #dcfce7;
 }
 
 @media (max-width: 768px) {

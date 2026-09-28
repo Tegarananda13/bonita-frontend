@@ -126,8 +126,8 @@
 }
 
 .laporan-filter-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  border-color: #1a6b43;
+  box-shadow: 0 0 0 3px rgba(26,107,67,0.15);
   background: #fff;
 }
 
@@ -136,7 +136,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.6rem 1.25rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -145,12 +145,12 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(79,70,229,0.3);
+  box-shadow: 0 3px 10px rgba(26,107,67,0.3);
   white-space: nowrap;
 }
 .laporan-filter-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 5px 16px rgba(79,70,229,0.4);
+  box-shadow: 0 5px 16px rgba(26,107,67,0.4);
 }
 .laporan-filter-btn:disabled {
   opacity: 0.65;
@@ -191,7 +191,7 @@
   border-radius: 16px 16px 0 0;
 }
 
-.laporan-card-indigo::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+.laporan-card-indigo::before { background: linear-gradient(90deg, #1a6b43, #2d9e6b); }
 .laporan-card-emerald::before { background: linear-gradient(90deg, #059669, #34d399); }
 .laporan-card-amber::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
 .laporan-card-rose::before { background: linear-gradient(90deg, #e11d48, #fb7185); }
@@ -207,7 +207,7 @@
   margin-bottom: 0.75rem;
 }
 
-.laporan-card-indigo .laporan-card-icon { background: #eef2ff; color: #4f46e5; }
+.laporan-card-indigo .laporan-card-icon { background: #f0fdf4; color: #1a6b43; }
 .laporan-card-emerald .laporan-card-icon { background: #ecfdf5; color: #059669; }
 .laporan-card-amber .laporan-card-icon { background: #fffbeb; color: #d97706; }
 .laporan-card-rose .laporan-card-icon { background: #fff1f2; color: #e11d48; }
@@ -319,7 +319,7 @@
 .lap-pill-diterima  { background: #f0fdf4; color: #16a34a; }
 .lap-pill-pending   { background: #fffbeb; color: #d97706; }
 .lap-pill-ditolak   { background: #fef2f2; color: #dc2626; }
-.lap-pill-aktif     { background: #eef2ff; color: #4f46e5; }
+.lap-pill-aktif     { background: #f0fdf4; color: #1a6b43; }
 .lap-pill-nonaktif  { background: #f1f5f9; color: #64748b; }
 .lap-pill-selesai   { background: #ecfdf5; color: #059669; }
 

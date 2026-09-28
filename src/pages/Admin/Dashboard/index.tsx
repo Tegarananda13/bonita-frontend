@@ -49,7 +49,7 @@ const AdminDashboard = () => {
   const stats = [
     {
       icon: "✨",
-      iconClass: "stat-icon-indigo",
+      iconClass: "stat-icon-green",
       label: "Total Paket",
       value: data?.total_paket ?? 0,
       sub: "paket tersedia",

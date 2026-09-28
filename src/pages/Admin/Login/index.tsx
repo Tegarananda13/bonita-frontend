@@ -30,7 +30,7 @@ const AdminLogin = () => {
         password,
       });
 
-      const { token, role } = res.data;
+      const { token, role, nama } = res.data;
 
       // Hanya izinkan admin dan owner masuk
       if (role !== "admin" && role !== "owner") {
@@ -38,7 +38,7 @@ const AdminLogin = () => {
         return;
       }
 
-      login(token, role);
+      login(token, role, nama);
       navigate("/admin/dashboard", { replace: true });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {

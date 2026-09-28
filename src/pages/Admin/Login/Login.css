@@ -23,9 +23,9 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.3) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 55%),
-    linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    radial-gradient(ellipse at 30% 20%, rgba(26, 107, 67, 0.4) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(45, 158, 107, 0.2) 0%, transparent 55%),
+    linear-gradient(135deg, #0f172a 0%, #0f291e 100%);
 }
 
 .login-left-pattern {
@@ -51,13 +51,13 @@
 .login-brand-icon {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, #6366f1, #818cf8);
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 24px rgba(26, 107, 67, 0.4);
 }
 
 .login-brand-name {
@@ -93,7 +93,7 @@
 }
 
 .login-tagline h2 span {
-  background: linear-gradient(135deg, #818cf8, #38bdf8);
+  background: linear-gradient(135deg, #34d399, #86efac);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -130,8 +130,8 @@
 .login-feature-dot {
   width: 24px;
   height: 24px;
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: rgba(26, 107, 67, 0.25);
+  border: 1px solid rgba(45, 158, 107, 0.45);
   border-radius: 7px;
   display: flex;
   align-items: center;
@@ -205,7 +205,7 @@
 }
 
 .login-input-wrap:focus-within .login-input-icon {
-  color: #6366f1;
+  color: #1a6b43;
 }
 
 .login-input {
@@ -222,8 +222,8 @@
 }
 
 .login-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  border-color: #1a6b43;
+  box-shadow: 0 0 0 3px rgba(26, 107, 67, 0.15);
 }
 
 .login-input::placeholder {
@@ -248,7 +248,7 @@
 }
 
 .password-toggle:hover {
-  color: #6366f1;
+  color: #1a6b43;
 }
 
 /* ── Error alert ── */
@@ -279,7 +279,7 @@
 .login-btn {
   width: 100%;
   padding: 0.875rem;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -293,13 +293,13 @@
   justify-content: center;
   gap: 0.5rem;
   margin-top: 0.5rem;
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 16px rgba(26, 107, 67, 0.35);
   letter-spacing: 0.01em;
 }
 
 .login-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 8px 24px rgba(26, 107, 67, 0.45);
 }
 
 .login-btn:active:not(:disabled) {
