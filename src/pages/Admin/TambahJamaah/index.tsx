@@ -29,6 +29,7 @@ interface JamaahForm {
   kecamatan: string;
   kelurahan_desa: string;
   kode_pos: string;
+  ambil_perlengkapan: boolean;
 }
 
 interface PendaftaranResult {
@@ -49,9 +50,11 @@ const EMPTY_JAMAAH: JamaahForm = {
   jenis_kelamin: "", no_hp: "", email: "",
   alamat_lengkap: "", provinsi: "", kabupaten_kota: "",
   kecamatan: "", kelurahan_desa: "", kode_pos: "",
+  ambil_perlengkapan: false,
 };
 
 const MIN_DP_PER_ORANG = 5_000_000;
+const HARGA_PERLENGKAPAN = 1_450_000;
 const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
@@ -61,7 +64,7 @@ const fmtDate = (d: string) =>
 interface JamaahCardProps {
   idx: number;
   data: JamaahForm;
-  onUpdate: (idx: number, field: keyof JamaahForm, value: string) => void;
+  onUpdate: (idx: number, field: keyof JamaahForm, value: string | boolean) => void;
   onRemove: (idx: number) => void;
   disabled: boolean;
 }
@@ -168,6 +171,54 @@ const AdminJamaahCard = ({ idx, data, onUpdate, onRemove, disabled }: JamaahCard
           value={data.kode_pos} onChange={e => onUpdate(idx, "kode_pos", e.target.value.replace(/\D/g, ""))} disabled={disabled} />
       </div>
     </div>
+
+    {/* ── Perlengkapan Tambahan ── */}
+    <div className="tj-jamaah-perlengkapan">
+      <label className={`tj-perlengkapan-checkbox ${data.ambil_perlengkapan ? "checked" : ""}`}>
+        <input
+          type="checkbox"
+          checked={data.ambil_perlengkapan}
+          onChange={e => onUpdate(idx, "ambil_perlengkapan", e.target.checked)}
+          disabled={disabled}
+        />
+        <span className="tj-perlengkapan-box" aria-hidden="true">
+          {data.ambil_perlengkapan && (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </span>
+        <div className="tj-perlengkapan-content">
+          <div className="tj-perlengkapan-header">
+            <span className="tj-perlengkapan-text tj-perlengkapan-title">
+              Tambahkan Perlengkapan Tambahan
+            </span>
+            <span className="tj-perlengkapan-price">
+              + {fmtRupiah(HARGA_PERLENGKAPAN)}
+            </span>
+          </div>
+          <span className="tj-perlengkapan-sub">
+            Paket koper 2 set, seragam ibadah ihram/mukena, buku doa &amp; perlengkapan
+          </span>
+        </div>
+      </label>
+      {data.ambil_perlengkapan && (
+        <div className="tj-perlengkapan-detail">
+          <div className="tj-perlengkapan-detail-header">
+            <span className="tj-perlengkapan-detail-icon">🧳</span>
+            <span>Rincian Perlengkapan Termasuk:</span>
+          </div>
+          <div className="tj-perlengkapan-tags">
+            <span className="tj-perlengkapan-tag">Koper 22"</span>
+            <span className="tj-perlengkapan-tag">Koper 24"</span>
+            <span className="tj-perlengkapan-tag">Kain Ihram / Mukena</span>
+            <span className="tj-perlengkapan-tag">Ikat Pinggang</span>
+            <span className="tj-perlengkapan-tag">Buku Doa</span>
+            <span className="tj-perlengkapan-tag">Tas Pinggang</span>
+          </div>
+        </div>
+      )}
+    </div>
   </div>
 );
 
@@ -180,8 +231,6 @@ const TambahJamaah = () => {
   const [pakets, setPakets] = useState<PaketOption[]>([]);
   const [loadingPaket, setLoadingPaket] = useState(true);
   const [paketId, setPaketId] = useState("");
-  const [selectedPaket, setSelectedPaket] = useState<PaketOption | null>(null);
-
   const [jamaahList, setJamaahList] = useState<JamaahForm[]>([{ ...EMPTY_JAMAAH }]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -212,11 +261,9 @@ const TambahJamaah = () => {
     fetchPakets();
   }, [token]);
 
-  useEffect(() => {
-    setSelectedPaket(pakets.find(p => p.id === paketId) ?? null);
-  }, [paketId, pakets]);
+  const selectedPaket = pakets.find(p => p.id === paketId) ?? null;
 
-  const updateJamaah = useCallback((idx: number, field: keyof JamaahForm, value: string) => {
+  const updateJamaah = useCallback((idx: number, field: keyof JamaahForm, value: string | boolean) => {
     setJamaahList(prev => {
       const next = [...prev];
       next[idx] = { ...next[idx], [field]: value };
@@ -239,7 +286,9 @@ const TambahJamaah = () => {
     setError("");
   };
 
-  const totalTagihan = selectedPaket ? selectedPaket.harga * jamaahList.length : 0;
+  const jumlahPerlengkapan = jamaahList.filter(j => j.ambil_perlengkapan).length;
+  const totalPerlengkapan = jumlahPerlengkapan * HARGA_PERLENGKAPAN;
+  const totalTagihan = selectedPaket ? selectedPaket.harga * jamaahList.length + totalPerlengkapan : 0;
   const dpMinimum = MIN_DP_PER_ORANG * jamaahList.length;
 
   const validateAll = (): string => {
@@ -250,19 +299,19 @@ const TambahJamaah = () => {
       const j = jamaahList[i];
       const n = i + 1;
       if (!j.nik.trim() || !/^\d{16}$/.test(j.nik.trim())) return `Jamaah ${n}: NIK harus 16 digit angka.`;
-      if (!j.nama.trim())          return `Jamaah ${n}: Nama wajib diisi.`;
-      if (!j.tempat_lahir.trim())  return `Jamaah ${n}: Tempat lahir wajib diisi.`;
-      if (!j.tanggal_lahir)        return `Jamaah ${n}: Tanggal lahir wajib diisi.`;
+      if (!j.nama.trim()) return `Jamaah ${n}: Nama wajib diisi.`;
+      if (!j.tempat_lahir.trim()) return `Jamaah ${n}: Tempat lahir wajib diisi.`;
+      if (!j.tanggal_lahir) return `Jamaah ${n}: Tanggal lahir wajib diisi.`;
       if (new Date(j.tanggal_lahir) > new Date()) return `Jamaah ${n}: Tanggal lahir tidak valid.`;
-      if (!j.jenis_kelamin)        return `Jamaah ${n}: Jenis kelamin wajib dipilih.`;
-      if (!j.no_hp.trim())         return `Jamaah ${n}: Nomor HP wajib diisi.`;
+      if (!j.jenis_kelamin) return `Jamaah ${n}: Jenis kelamin wajib dipilih.`;
+      if (!j.no_hp.trim()) return `Jamaah ${n}: Nomor HP wajib diisi.`;
       if (!j.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(j.email)) return `Jamaah ${n}: Email tidak valid.`;
       if (!j.alamat_lengkap.trim()) return `Jamaah ${n}: Alamat lengkap wajib diisi.`;
-      if (!j.provinsi.trim())       return `Jamaah ${n}: Provinsi wajib diisi.`;
+      if (!j.provinsi.trim()) return `Jamaah ${n}: Provinsi wajib diisi.`;
       if (!j.kabupaten_kota.trim()) return `Jamaah ${n}: Kabupaten/Kota wajib diisi.`;
-      if (!j.kecamatan.trim())      return `Jamaah ${n}: Kecamatan wajib diisi.`;
+      if (!j.kecamatan.trim()) return `Jamaah ${n}: Kecamatan wajib diisi.`;
       if (!j.kelurahan_desa.trim()) return `Jamaah ${n}: Kelurahan/Desa wajib diisi.`;
-      if (!j.kode_pos.trim())       return `Jamaah ${n}: Kode Pos wajib diisi.`;
+      if (!j.kode_pos.trim()) return `Jamaah ${n}: Kode Pos wajib diisi.`;
     }
     return "";
   };
@@ -286,6 +335,7 @@ const TambahJamaah = () => {
             alamat_lengkap: j.alamat_lengkap.trim(), provinsi: j.provinsi.trim(),
             kabupaten_kota: j.kabupaten_kota.trim(), kecamatan: j.kecamatan.trim(),
             kelurahan_desa: j.kelurahan_desa.trim(), kode_pos: j.kode_pos.trim(),
+            ambil_perlengkapan: !!j.ambil_perlengkapan,
           })),
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -331,12 +381,22 @@ const TambahJamaah = () => {
 
           {/* Daftar nomor pendaftaran */}
           <div className="tj-success-list-title">📋 Daftar Nomor Pendaftaran</div>
-          {result.pendaftaran.map((p, i) => (
-            <div key={i} className="tj-success-item">
-              <div className="tj-success-nama">{p.nama_customer}</div>
-              <div className="tj-success-nomor">{p.nomor_pendaftaran}</div>
-            </div>
-          ))}
+          {result.pendaftaran.map((p, i) => {
+            const jForm = jamaahList[i];
+            return (
+              <div key={i} className="tj-success-item">
+                <div>
+                  <div className="tj-success-nama">{p.nama_customer}</div>
+                  {jForm?.ambil_perlengkapan && (
+                    <div className="tj-success-perlengkapan-badge">
+                      🧳 Termasuk Perlengkapan Tambahan ({fmtRupiah(HARGA_PERLENGKAPAN)})
+                    </div>
+                  )}
+                </div>
+                <div className="tj-success-nomor">{p.nomor_pendaftaran}</div>
+              </div>
+            );
+          })}
 
           <div className="tj-success-actions">
             <button type="button" className="tj-btn-submit" onClick={() => navigate("/admin/pendaftaran")}>
@@ -441,6 +501,18 @@ const TambahJamaah = () => {
                 <span>Jumlah Jamaah</span>
                 <span className="tj-ringkasan-count">{jamaahList.length} Orang</span>
               </div>
+              {jumlahPerlengkapan > 0 && (
+                <>
+                  <div className="tj-ringkasan-row">
+                    <span>🧳 Perlengkapan Tambahan</span>
+                    <span className="tj-ringkasan-count">{jumlahPerlengkapan} jamaah × {fmtRupiah(HARGA_PERLENGKAPAN)}</span>
+                  </div>
+                  <div className="tj-ringkasan-row">
+                    <span>Subtotal Perlengkapan</span>
+                    <span>{fmtRupiah(totalPerlengkapan)}</span>
+                  </div>
+                </>
+              )}
               <div className="tj-ringkasan-divider" />
               <div className="tj-ringkasan-row tj-ringkasan-total">
                 <span>Total Tagihan</span>

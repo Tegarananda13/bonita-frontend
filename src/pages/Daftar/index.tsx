@@ -29,6 +29,7 @@ interface JamaahForm {
   kecamatan: string;
   kelurahan_desa: string;
   kode_pos: string;
+  ambil_perlengkapan: boolean;
 }
 
 interface PendaftaranResult {
@@ -49,9 +50,11 @@ const EMPTY_JAMAAH: JamaahForm = {
   jenis_kelamin: "", no_hp: "", email: "",
   alamat_lengkap: "", provinsi: "", kabupaten_kota: "",
   kecamatan: "", kelurahan_desa: "", kode_pos: "",
+  ambil_perlengkapan: false,
 };
 
 const MIN_DP_PER_ORANG = 5_000_000;
+const HARGA_PERLENGKAPAN = 1_450_000;
 const FALLBACK = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=400&q=70";
 const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 const fmtDate = (d: string) =>
@@ -192,6 +195,29 @@ const JamaahCard = ({ idx, data, onUpdate, onRemove, disabled }: JamaahCardProps
           disabled={disabled} />
       </div>
     </div>
+
+    {/* ── Perlengkapan Tambahan ── */}
+    <div className="jamaah-perlengkapan">
+      <label className={`jamaah-perlengkapan-checkbox ${data.ambil_perlengkapan ? "checked" : ""}`}>
+        <input
+          type="checkbox"
+          checked={data.ambil_perlengkapan}
+          onChange={e => onUpdate(idx, "ambil_perlengkapan", e.target.checked ? "true" : "")}
+          disabled={disabled}
+        />
+        <span className="jamaah-perlengkapan-checkmark">
+          {data.ambil_perlengkapan ? "☑" : "☐"}
+        </span>
+        <span className="jamaah-perlengkapan-text">
+          Tambahkan Perlengkapan Tambahan — {fmtRupiah(HARGA_PERLENGKAPAN)}
+        </span>
+      </label>
+      {data.ambil_perlengkapan && (
+        <div className="jamaah-perlengkapan-detail">
+          Koper 22" • Koper 24" • Ihram • Mukena • Ikat pinggang • Buku doa • Tas pinggang
+        </div>
+      )}
+    </div>
   </div>
 );
 
@@ -233,7 +259,11 @@ const Daftar = () => {
   const updateJamaah = useCallback((idx: number, field: keyof JamaahForm, value: string) => {
     setJamaahList(prev => {
       const next = [...prev];
-      next[idx] = { ...next[idx], [field]: value };
+      if (field === "ambil_perlengkapan") {
+        next[idx] = { ...next[idx], ambil_perlengkapan: value === "true" };
+      } else {
+        next[idx] = { ...next[idx], [field]: value };
+      }
       return next;
     });
   }, []);
@@ -252,7 +282,9 @@ const Daftar = () => {
     setError("");
   };
 
-  const totalTagihan = selectedPaket ? selectedPaket.harga * jamaahList.length : 0;
+  const jumlahPerlengkapan = jamaahList.filter(j => j.ambil_perlengkapan).length;
+  const totalPerlengkapan = jumlahPerlengkapan * HARGA_PERLENGKAPAN;
+  const totalTagihan = selectedPaket ? selectedPaket.harga * jamaahList.length + totalPerlengkapan : 0;
   const dpMinimum = MIN_DP_PER_ORANG * jamaahList.length;
 
   const validateJamaah = (j: JamaahForm, idx: number): string => {
@@ -307,6 +339,7 @@ const Daftar = () => {
           alamat_lengkap: j.alamat_lengkap.trim(), provinsi: j.provinsi.trim(),
           kabupaten_kota: j.kabupaten_kota.trim(), kecamatan: j.kecamatan.trim(),
           kelurahan_desa: j.kelurahan_desa.trim(), kode_pos: j.kode_pos.trim(),
+          ambil_perlengkapan: j.ambil_perlengkapan,
         })),
       });
       setResult(res.data as SubmitResult);
@@ -358,6 +391,23 @@ const Daftar = () => {
         <span>Jumlah Jamaah</span>
         <span className="ringkasan-val ringkasan-count">{jamaahList.length} Orang</span>
       </div>
+      <div className="ringkasan-row">
+        <span>Subtotal Paket</span>
+        <span className="ringkasan-val">{selectedPaket ? fmtRupiah(selectedPaket.harga * jamaahList.length) : "-"}</span>
+      </div>
+      {jumlahPerlengkapan > 0 && (
+        <>
+          <div className="ringkasan-divider" />
+          <div className="ringkasan-row">
+            <span>🧳 Perlengkapan Tambahan</span>
+            <span className="ringkasan-val">{jumlahPerlengkapan} jamaah × {fmtRupiah(HARGA_PERLENGKAPAN)}</span>
+          </div>
+          <div className="ringkasan-row">
+            <span>Subtotal Perlengkapan</span>
+            <span className="ringkasan-val">{fmtRupiah(totalPerlengkapan)}</span>
+          </div>
+        </>
+      )}
       <div className="ringkasan-divider" />
       <div className="ringkasan-row ringkasan-total">
         <span>Total Tagihan</span>
@@ -572,6 +622,16 @@ const Daftar = () => {
                           <div className="review-data-value">{d.value || "-"}</div>
                         </div>
                       ))}
+                    </div>
+                    {/* Perlengkapan status per jamaah */}
+                    <div className={`review-perlengkapan ${j.ambil_perlengkapan ? "active" : ""}`}>
+                      <span className="review-perlengkapan-icon">{j.ambil_perlengkapan ? "☑" : "☐"}</span>
+                      <span className="review-perlengkapan-text">
+                        {j.ambil_perlengkapan
+                          ? <>Perlengkapan Tambahan — <strong>{fmtRupiah(HARGA_PERLENGKAPAN)}</strong></>
+                          : <span style={{ color: "#94a3b8" }}>Tidak mengambil perlengkapan tambahan</span>
+                        }
+                      </span>
                     </div>
                   </div>
                 ))}

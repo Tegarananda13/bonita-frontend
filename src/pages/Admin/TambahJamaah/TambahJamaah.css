@@ -522,6 +522,246 @@
   padding: 1rem 1.25rem;
 }
 
+/* ── Perlengkapan Tambahan per Jamaah ── */
+.tj-jamaah-perlengkapan {
+  padding: 0.9rem 1.25rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbff;
+}
+
+.tj-perlengkapan-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  cursor: pointer;
+  padding: 0.85rem 1.15rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  position: relative;
+}
+
+.tj-perlengkapan-checkbox:hover:not(:has(input:disabled)) {
+  border-color: #818cf8;
+  background: #fdfdfd;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+}
+
+.tj-perlengkapan-checkbox.checked {
+  border-color: #4f46e5;
+  background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12), 0 2px 8px rgba(79, 70, 229, 0.08);
+}
+
+.tj-perlengkapan-checkbox:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tj-perlengkapan-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.tj-perlengkapan-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  transition: all 0.18s ease;
+}
+
+.tj-perlengkapan-checkbox:hover:not(:has(input:disabled)) .tj-perlengkapan-box {
+  border-color: #818cf8;
+}
+
+.tj-perlengkapan-checkbox.checked .tj-perlengkapan-box {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.35);
+}
+
+.tj-perlengkapan-box svg {
+  animation: tjCheckPop 0.15s ease-out;
+}
+
+@keyframes tjCheckPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tj-perlengkapan-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tj-perlengkapan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tj-perlengkapan-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.tj-perlengkapan-checkbox.checked .tj-perlengkapan-title {
+  color: #1e1b4b;
+}
+
+.tj-perlengkapan-price {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4f46e5;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 0.2rem 0.6rem;
+  transition: all 0.18s ease;
+}
+
+.tj-perlengkapan-checkbox.checked .tj-perlengkapan-price {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4338ca;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+}
+
+.tj-perlengkapan-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tj-perlengkapan-checkbox.checked .tj-perlengkapan-sub {
+  color: #4338ca;
+  opacity: 0.85;
+}
+
+/* Detail paket yang muncul saat dicentang */
+.tj-perlengkapan-detail {
+  margin-top: 0.65rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  animation: tjSlideDown 0.2s ease-out;
+}
+
+@keyframes tjSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tj-perlengkapan-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.45rem;
+}
+
+.tj-perlengkapan-detail-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.tj-perlengkapan-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tj-perlengkapan-tag {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* Fallback & compatibility styles */
+.tj-perlengkapan-checkmark {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+.tj-perlengkapan-checkbox.checked .tj-perlengkapan-checkmark {
+  color: #4f46e5;
+}
+
+.tj-perlengkapan-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+.tj-perlengkapan-checkbox.checked .tj-perlengkapan-text {
+  color: #1e1b4b;
+}
+
+.jamaah-perlengkapan {
+  padding: 0.9rem 1.25rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+.jamaah-perlengkapan-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fafbff;
+  transition: all 0.2s;
+  user-select: none;
+}
+.jamaah-perlengkapan-checkbox:hover {
+  border-color: #818cf8;
+  background: #eff6ff;
+}
+.jamaah-perlengkapan-checkbox.checked {
+  border-color: #4f46e5;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.jamaah-perlengkapan-checkbox input[type="checkbox"] {
+  display: none;
+}
+
 /* ── Tombol Tambah Jamaah ── */
 .tj-btn-tambah {
   display: flex;
@@ -684,6 +924,20 @@
   border-radius: 6px;
   padding: 0.2rem 0.6rem;
   font-family: monospace;
+}
+
+.tj-success-perlengkapan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #4338ca;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  padding: 0.2rem 0.55rem;
+  margin-top: 0.35rem;
 }
 
 .tj-success-actions {

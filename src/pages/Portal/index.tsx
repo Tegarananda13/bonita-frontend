@@ -96,14 +96,61 @@ const STORAGE_KEY = "customer_session";
 const FALLBACK_PAKET_IMG = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=800&q=80";
 
 const DOK_TYPES = [
-  { key: "paspor",         label: "Paspor",          icon: "🛂",  wajib: true  },
-  { key: "ktp",            label: "KTP",             icon: "🪪",  wajib: true  },
-  { key: "akte_kelahiran", label: "Akte Kelahiran",   icon: "📜",  wajib: true  },
-  { key: "kartu_keluarga", label: "Kartu Keluarga",   icon: "👨‍👩‍👧", wajib: true  },
-  { key: "vaksin",         label: "Vaksin",           icon: "💉",  wajib: true  },
-  { key: "foto",           label: "Foto",             icon: "🖼️", wajib: false },
-  { key: "lainnya",        label: "Lainnya",          icon: "📄",  wajib: false },
+  { key: "paspor", label: "Paspor", icon: "🛂", wajib: true },
+  { key: "ktp", label: "KTP", icon: "🪪", wajib: true },
+  { key: "kartu_keluarga", label: "Kartu Keluarga", icon: "👨‍👩‍👧", wajib: true },
+  { key: "akta_lahir", label: "Akta Lahir", icon: "📜", wajib: true },
+  { key: "vaksin", label: "Vaksin", icon: "💉", wajib: true },
+  { key: "foto", label: "Pas Foto", icon: "🖼️", wajib: true },
+  { key: "lainnya", label: "Lainnya", icon: "📄", wajib: false },
 ];
+
+const TRAVEL_DOC_ITEMS = [
+  { key: "visa", label: "Visa", icon: "🛂", desc: "Visa Resmi Kerajaan Arab Saudi" },
+  { key: "tiket_pesawat", label: "Tiket Pesawat", icon: "✈️", desc: "E-Ticket Penerbangan Pulang-Pergi" },
+  { key: "nusuk", label: "Nusuk", icon: "📱", desc: "Kartu & Izin Masuk Raudhah / Ibadah Nusuk" },
+];
+
+const isTravelDoc = (jenis: string) => ["visa", "tiket_pesawat", "nusuk"].includes(jenis?.toLowerCase());
+
+const getFileName = (url: string = ""): string => {
+  try {
+    const cleanUrl = url.split("?")[0];
+    const rawName = cleanUrl.substring(cleanUrl.lastIndexOf("/") + 1);
+    const decoded = decodeURIComponent(rawName);
+    return decoded.replace(/^\d+_/, "") || decoded || "Dokumen";
+  } catch {
+    return "Dokumen";
+  }
+};
+
+const getFileExt = (url: string = ""): string => {
+  try {
+    const cleanUrl = url.split("?")[0];
+    const ext = cleanUrl.split(".").pop();
+    if (ext && ext.length <= 5) return ext;
+    return "pdf";
+  } catch {
+    return "pdf";
+  }
+};
+
+const downloadFile = async (url: string, filename: string) => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(blobUrl);
+    document.body.removeChild(a);
+  } catch {
+    window.open(url, "_blank");
+  }
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -123,6 +170,7 @@ const getStatusClass = (v: string) => {
     belum: "sval-belum", pending: "sval-pending", lunas: "sval-lunas",
     dp: "sval-dp", diterima: "sval-verified", ditolak: "sval-ditolak",
     lengkap: "sval-lengkap", revisi: "sval-revisi",
+    belum_lengkap: "sval-belum_lengkap",
   };
   return map[v?.toLowerCase()] ?? "sval-belum";
 };
@@ -133,7 +181,8 @@ const getStatusLabel = (v: string) => {
     kadaluarsa: "Kadaluarsa",
     belum: "Belum", pending: "Menunggu", lunas: "Lunas",
     dp: "DP", diterima: "Diterima", ditolak: "Ditolak",
-    lengkap: "Lengkap", revisi: "Perlu Revisi",
+    lengkap: "Lengkap", revisi: "Revisi",
+    belum_lengkap: "Belum Lengkap",
   };
   return map[v?.toLowerCase()] ?? v;
 };
@@ -313,8 +362,8 @@ const SelamatCard = ({
     <div className="selamat-card">
       {/* Confetti dots */}
       <div className="selamat-confetti" aria-hidden>
-        {["🎉","✨","🌟","🎊","⭐","🎉"].map((e, i) => (
-          <span key={i} className={`confetti-dot confetti-dot-${i+1}`}>{e}</span>
+        {["🎉", "✨", "🌟", "🎊", "⭐", "🎉"].map((e, i) => (
+          <span key={i} className={`confetti-dot confetti-dot-${i + 1}`}>{e}</span>
         ))}
       </div>
 
@@ -450,7 +499,7 @@ const TabPembayaran = ({
 
     const nominal = parseFloat(jumlah.replace(/\./g, ""));
     if (!nominal || isNaN(nominal)) { setFormError("Masukkan nominal pembayaran."); return; }
-    if (totalDibayar === 0 && nominal < 5000000) {setFormError("Pembayaran pertama minimal Rp 5.000.000.");return;}
+    if (totalDibayar === 0 && nominal < 5000000) { setFormError("Pembayaran pertama minimal Rp 5.000.000."); return; }
     if (nominal > sisaBayar) { setFormError(`Melebihi sisa tagihan ${fmtRupiah(sisaBayar)}.`); return; }
     if (!buktiFile) { setFormError("Upload foto bukti transfer terlebih dahulu."); return; }
 
@@ -754,10 +803,16 @@ const TabDokumen = ({ token }: { token: string }) => {
     }
   };
 
-  // Map uploaded docs
-  const uploadedMap = new Map(dokumenList.map((d) => [d.jenis, d]));
+  // Pisahkan dokumen persyaratan vs dokumen perjalanan
+  const persyaratanList = dokumenList.filter((d) => !isTravelDoc(d.jenis));
+  const travelDocsMap = new Map(
+    dokumenList.filter((d) => isTravelDoc(d.jenis)).map((d) => [d.jenis.toLowerCase(), d])
+  );
+
+  // Map uploaded requirement docs
+  const uploadedMap = new Map(persyaratanList.map((d) => [d.jenis, d]));
   const wajibDone = DOK_TYPES.filter((t) => t.wajib).every((t) => {
-    const d = uploadedMap.get(t.key);
+    const d = uploadedMap.get(t.key) || (t.key === "akta_lahir" ? uploadedMap.get("akte_kelahiran") : undefined);
     return d && d.status !== "ditolak";
   });
 
@@ -765,6 +820,21 @@ const TabDokumen = ({ token }: { token: string }) => {
     const t = DOK_TYPES.find((d) => d.key === jenis);
     return t?.icon ?? "📄";
   };
+
+  // Label display untuk jenis dokumen (backward-compat: "foto" lama → "Pas Foto")
+  const PORTAL_DOC_LABEL: Record<string, string> = {
+    paspor: "Paspor",
+    ktp: "KTP",
+    kartu_keluarga: "Kartu Keluarga",
+    akta_lahir: "Akta Lahir",
+    akte_kelahiran: "Akta Lahir",
+    vaksin: "Vaksin",
+    foto: "Pas Foto",
+    pas_foto: "Pas Foto",
+    lainnya: "Lainnya",
+  };
+  const getPortalDocLabel = (jenis: string) =>
+    PORTAL_DOC_LABEL[jenis] ?? jenis.replace(/_/g, " ");
 
   if (loading) return (
     <div style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
@@ -774,164 +844,343 @@ const TabDokumen = ({ token }: { token: string }) => {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
 
-      {/* ── Banner Syarat Upload DP ── */}
-      {!dpDiterima ? (
+      {/* ═════════════════════════════════════════════════════════════ */}
+      {/* BAGIAN A: DOKUMEN PERSYARATAN                                */}
+      {/* ═════════════════════════════════════════════════════════════ */}
+      <div>
         <div style={{
-          background: "linear-gradient(135deg, #fffbeb, #fef3c7)",
-          border: "1.5px solid #f59e0b",
-          borderRadius: "14px",
-          padding: "1.125rem 1.375rem",
           display: "flex",
-          gap: "0.875rem",
-          alignItems: "flex-start",
+          alignItems: "center",
+          gap: "0.5rem",
+          fontSize: "1.05rem",
+          fontWeight: 800,
+          color: "#0f172a",
+          marginBottom: "1rem",
+          paddingBottom: "0.5rem",
+          borderBottom: "2px solid #e2e8f0",
         }}>
-          <span style={{ fontSize: "1.5rem", flexShrink: 0 }}>🔒</span>
+          <span>📋</span> Dokumen Persyaratan
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          {/* ── Banner Syarat Upload DP ── */}
+          {!dpDiterima ? (
+            <div style={{
+              background: "linear-gradient(135deg, #fffbeb, #fef3c7)",
+              border: "1.5px solid #f59e0b",
+              borderRadius: "14px",
+              padding: "1.125rem 1.375rem",
+              display: "flex",
+              gap: "0.875rem",
+              alignItems: "flex-start",
+            }}>
+              <span style={{ fontSize: "1.5rem", flexShrink: 0 }}>🔒</span>
+              <div>
+                <div style={{ fontWeight: 700, color: "#92400e", fontSize: "0.9rem", marginBottom: "0.3rem" }}>
+                  Syarat Upload Dokumen Persyaratan
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "#78350f", lineHeight: 1.6 }}>
+                  Dokumen persyaratan umroh baru dapat diunggah setelah{" "}
+                  <strong>pembayaran DP pertama sebesar minimal Rp5.000.000</strong>{" "}
+                  telah diverifikasi oleh admin Bonita.
+                </div>
+                <div style={{ marginTop: "0.6rem", fontSize: "0.78rem", color: "#b45309", fontWeight: 600 }}>
+                  ⏳ Menunggu verifikasi pembayaran DP oleh admin...
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
+              border: "1.5px solid #6ee7b7",
+              borderRadius: "14px",
+              padding: "0.875rem 1.25rem",
+              display: "flex",
+              gap: "0.75rem",
+              alignItems: "center",
+              fontSize: "0.85rem",
+              color: "#065f46",
+              fontWeight: 600,
+            }}>
+              <span style={{ fontSize: "1.2rem" }}>✅</span>
+              Pembayaran DP telah diverifikasi. Anda dapat mengunggah dokumen persyaratan.
+            </div>
+          )}
+
+          {/* Info dokumen wajib */}
+          <div className="dokumen-wajib-info">
+            <strong>📋 Dokumen Wajib</strong>
+            Upload dokumen berikut untuk melengkapi berkas Anda.
+            <div className="dokumen-wajib-list">
+              {DOK_TYPES.filter((t) => t.wajib).map((t) => {
+                const uploaded = uploadedMap.get(t.key) || (t.key === "akta_lahir" ? uploadedMap.get("akte_kelahiran") : undefined);
+                const cls = !uploaded ? "missing" : uploaded.status === "ditolak" ? "missing" : "done";
+                return (
+                  <span key={t.key} className={`dokumen-wajib-tag ${cls}`}>
+                    {t.icon} {t.label}
+                    {cls === "done" ? " ✓" : " ✗"}
+                  </span>
+                );
+              })}
+            </div>
+            {wajibDone && (
+              <div style={{ marginTop: "0.5rem", fontWeight: 700, color: "#059669" }}>
+                ✓ Semua dokumen wajib telah diupload!
+              </div>
+            )}
+          </div>
+
+          {/* Upload dokumen baru (Hanya jenis dokumen persyaratan) */}
+          <div className="dokumen-upload-card" style={!dpDiterima ? { opacity: 0.85 } : {}}>
+            <div className="dokumen-upload-title">📤 Upload Dokumen Persyaratan</div>
+
+            {!dpDiterima && (
+              <div style={{
+                background: "#fef9c3", border: "1px solid #fbbf24", borderRadius: "10px",
+                padding: "0.7rem 1rem", fontSize: "0.82rem", color: "#92400e",
+                marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem",
+              }}>
+                🔒 Dokumen baru dapat diunggah setelah pembayaran DP pertama diverifikasi oleh admin.
+              </div>
+            )}
+
+            <div className="section-title" style={{ marginBottom: "0.5rem" }}>Jenis Dokumen</div>
+            <div className="dokumen-type-selector">
+              {DOK_TYPES.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  className={`dok-type-btn ${selectedType === t.key ? "selected" : ""}`}
+                  onClick={() => setSelectedType(t.key)}
+                  disabled={!dpDiterima}
+                >
+                  {t.icon} {t.label}
+                  {t.wajib && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
+                </button>
+              ))}
+            </div>
+
+            <div className="dokumen-drop-area" style={!dpDiterima ? { pointerEvents: "none", opacity: 0.5 } : {}}>
+              <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileRef} disabled={!dpDiterima} />
+              {file ? (
+                <div className="dokumen-file-selected">📎 {file.name}</div>
+              ) : (
+                <>
+                  <div className="dokumen-drop-icon">📁</div>
+                  <div className="dokumen-drop-text">Klik untuk pilih file (JPG, PNG, PDF)</div>
+                </>
+              )}
+            </div>
+
+            {uploadError && <div className="portal-error" style={{ marginBottom: "0.875rem" }}>{uploadError}</div>}
+            {uploadSuccess && <div className="portal-success-msg" style={{ marginBottom: "0.875rem" }}>✓ {uploadSuccess}</div>}
+
+            <button
+              className="dokumen-submit-btn"
+              onClick={handleUpload}
+              disabled={uploading || !file || !dpDiterima}
+              style={!dpDiterima ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+            >
+              {uploading ? <><div className="mini-spin" />Mengupload...</> : <>📤 Upload Dokumen</>}
+            </button>
+          </div>
+
+          {/* Daftar dokumen persyaratan */}
           <div>
-            <div style={{ fontWeight: 700, color: "#92400e", fontSize: "0.9rem", marginBottom: "0.3rem" }}>
-              Syarat Upload Dokumen
+            <div className="section-title" style={{ fontSize: "0.95rem" }}>
+              <span>📂</span> Berkas Persyaratan Terunggah ({persyaratanList.length})
             </div>
-            <div style={{ fontSize: "0.82rem", color: "#78350f", lineHeight: 1.6 }}>
-              Dokumen persyaratan umroh baru dapat diunggah setelah{" "}
-              <strong>pembayaran DP pertama sebesar minimal Rp5.000.000</strong>{" "}
-              telah diverifikasi oleh admin Bonita.
-            </div>
-            <div style={{ marginTop: "0.6rem", fontSize: "0.78rem", color: "#b45309", fontWeight: 600 }}>
-              ⏳ Menunggu verifikasi pembayaran DP oleh admin...
-            </div>
+            {persyaratanList.length === 0 ? (
+              <div className="portal-empty">
+                <div className="portal-empty-icon">📁</div>
+                <p>Belum ada dokumen persyaratan diupload.</p>
+              </div>
+            ) : (
+              <div className="dokumen-riwayat">
+                {persyaratanList.map((d) => (
+                  <div className="dokumen-item" key={d.id}>
+                    <div className="dokumen-item-left">
+                      <div className="dokumen-icon">{getDokIcon(d.jenis)}</div>
+                      <div>
+                        <div className="dokumen-jenis" style={{ textTransform: "capitalize" }}>
+                          {getPortalDocLabel(d.jenis)}
+                        </div>
+                        <div className="dokumen-tanggal">{fmtDate(d.uploaded_at)}</div>
+                      </div>
+                    </div>
+                    <span className={`dokumen-status ds-${d.status?.toLowerCase()}`}>
+                      {d.status === "pending" ? "Menunggu" :
+                        d.status === "diterima" ? "✓ Diterima" : "✕ Ditolak"}
+                    </span>
+                    {d.file && (
+                      <a href={d.file} target="_blank" rel="noreferrer" className="dokumen-view-link">
+                        👁 Lihat
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div style={{
-          background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
-          border: "1.5px solid #6ee7b7",
-          borderRadius: "14px",
-          padding: "0.875rem 1.25rem",
-          display: "flex",
-          gap: "0.75rem",
-          alignItems: "center",
-          fontSize: "0.85rem",
-          color: "#065f46",
-          fontWeight: 600,
-        }}>
-          <span style={{ fontSize: "1.2rem" }}>✅</span>
-          Pembayaran DP telah diverifikasi. Anda dapat mengunggah dokumen.
-        </div>
-      )}
+      </div>
 
-      {/* Info dokumen wajib */}
-      <div className="dokumen-wajib-info">
-        <strong>📋 Dokumen Wajib</strong>
-        Upload 5 dokumen berikut untuk melengkapi berkas Anda.
-        <div className="dokumen-wajib-list">
-          {DOK_TYPES.filter((t) => t.wajib).map((t) => {
-            const uploaded = uploadedMap.get(t.key);
-            const cls = !uploaded ? "missing" : uploaded.status === "ditolak" ? "missing" : "done";
+      {/* ═════════════════════════════════════════════════════════════ */}
+      {/* BAGIAN B: DOKUMEN PERJALANAN (READ-ONLY BAGI JAMAAH)          */}
+      {/* ═════════════════════════════════════════════════════════════ */}
+      <div>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          fontSize: "1.05rem",
+          fontWeight: 800,
+          color: "#0f172a",
+          marginBottom: "0.35rem",
+          paddingBottom: "0.5rem",
+          borderBottom: "2px solid #e2e8f0",
+        }}>
+          <span>✈️</span> Dokumen Perjalanan
+        </div>
+        <p style={{ fontSize: "0.82rem", color: "#64748b", margin: "0 0 1rem 0", lineHeight: 1.5 }}>
+          Dokumen perjalanan (Visa, Tiket Pesawat, dan Nusuk) diterbitkan dan disediakan oleh pihak Bonita Umroh.
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+          {TRAVEL_DOC_ITEMS.map((td) => {
+            const doc = travelDocsMap.get(td.key);
+            const isAvailable = !!(doc && doc.file);
+            const fileName = isAvailable ? getFileName(doc.file) : "";
+
             return (
-              <span key={t.key} className={`dokumen-wajib-tag ${cls}`}>
-                {t.icon} {t.label}
-                {cls === "done" ? " ✓" : " ✗"}
-              </span>
+              <div
+                key={td.key}
+                style={{
+                  background: isAvailable ? "#ffffff" : "#f8fafc",
+                  border: isAvailable ? "1.5px solid #86efac" : "1.5px dashed #cbd5e1",
+                  borderRadius: "14px",
+                  padding: "1rem 1.25rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.75rem",
+                  boxShadow: isAvailable ? "0 2px 10px rgba(34, 197, 94, 0.08)" : "none",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: "10px",
+                      background: isAvailable ? "#dcfce7" : "#f1f5f9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.35rem",
+                      flexShrink: 0,
+                    }}>
+                      {td.icon}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e293b" }}>{td.label}</div>
+                      <div style={{ fontSize: "0.78rem", color: "#64748b" }}>{td.desc}</div>
+                    </div>
+                  </div>
+
+                  <span style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    padding: "0.25rem 0.65rem",
+                    borderRadius: "999px",
+                    background: isAvailable ? "#dcfce7" : "#f1f5f9",
+                    color: isAvailable ? "#15803d" : "#64748b",
+                    border: isAvailable ? "1px solid #bbf7d0" : "1px solid #e2e8f0",
+                  }}>
+                    {isAvailable ? "✓ Tersedia" : "Belum Tersedia"}
+                  </span>
+                </div>
+
+                {!isAvailable ? (
+                  <div style={{
+                    background: "#f1f5f9",
+                    borderRadius: "8px",
+                    padding: "0.75rem 1rem",
+                    fontSize: "0.82rem",
+                    color: "#64748b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    lineHeight: 1.5,
+                  }}>
+                    <span style={{ flexShrink: 0 }}>ℹ️</span>
+                    <span>Dokumen belum tersedia. Dokumen akan tersedia setelah disediakan oleh pihak Bonita Umroh.</span>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "0.75rem",
+                    paddingTop: "0.5rem",
+                    borderTop: "1px solid #f1f5f9",
+                  }}>
+                    <div style={{ fontSize: "0.8rem", color: "#475569", display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                      <span>📎</span>
+                      <strong style={{ color: "#1e293b", wordBreak: "break-all" }}>{fileName}</strong>
+                      {doc.uploaded_at && (
+                        <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
+                          • Diperbarui {fmtDate(doc.uploaded_at)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <a
+                        href={doc.file}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="dokumen-view-link"
+                        style={{
+                          padding: "0.45rem 0.85rem",
+                          background: "#eff6ff",
+                          color: "#1d4ed8",
+                          border: "1px solid #bfdbfe",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        👁 Lihat
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => downloadFile(doc.file, `${td.key}.${getFileExt(doc.file)}`)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.3rem",
+                          padding: "0.45rem 0.85rem",
+                          borderRadius: "7px",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          background: "#059669",
+                          color: "#ffffff",
+                          border: "none",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        📥 Download
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
-        {wajibDone && (
-          <div style={{ marginTop: "0.5rem", fontWeight: 700, color: "#059669" }}>
-            ✓ Semua dokumen wajib telah diupload!
-          </div>
-        )}
-      </div>
-
-      {/* Upload dokumen baru */}
-      <div className="dokumen-upload-card" style={!dpDiterima ? { opacity: 0.85 } : {}}>
-        <div className="dokumen-upload-title">📤 Upload Dokumen</div>
-
-        {!dpDiterima && (
-          <div style={{
-            background: "#fef9c3", border: "1px solid #fbbf24", borderRadius: "10px",
-            padding: "0.7rem 1rem", fontSize: "0.82rem", color: "#92400e",
-            marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem",
-          }}>
-            🔒 Dokumen baru dapat diunggah setelah pembayaran DP pertama diverifikasi oleh admin.
-          </div>
-        )}
-
-        <div className="section-title" style={{ marginBottom: "0.5rem" }}>Jenis Dokumen</div>
-        <div className="dokumen-type-selector">
-          {DOK_TYPES.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              className={`dok-type-btn ${selectedType === t.key ? "selected" : ""}`}
-              onClick={() => setSelectedType(t.key)}
-              disabled={!dpDiterima}
-            >
-              {t.icon} {t.label}
-              {t.wajib && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
-            </button>
-          ))}
-        </div>
-
-        <div className="dokumen-drop-area" style={!dpDiterima ? { pointerEvents: "none", opacity: 0.5 } : {}}>
-          <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileRef} disabled={!dpDiterima} />
-          {file ? (
-            <div className="dokumen-file-selected">📎 {file.name}</div>
-          ) : (
-            <>
-              <div className="dokumen-drop-icon">📁</div>
-              <div className="dokumen-drop-text">Klik untuk pilih file (JPG, PNG, PDF)</div>
-            </>
-          )}
-        </div>
-
-        {uploadError && <div className="portal-error" style={{ marginBottom: "0.875rem" }}>{uploadError}</div>}
-        {uploadSuccess && <div className="portal-success-msg" style={{ marginBottom: "0.875rem" }}>✓ {uploadSuccess}</div>}
-
-        <button
-          className="dokumen-submit-btn"
-          onClick={handleUpload}
-          disabled={uploading || !file || !dpDiterima}
-          style={!dpDiterima ? { opacity: 0.6, cursor: "not-allowed" } : {}}
-        >
-          {uploading ? <><div className="mini-spin" />Mengupload...</> : <>📤 Upload Dokumen</>}
-        </button>
-      </div>
-
-      {/* Daftar dokumen */}
-      <div>
-        <div className="section-title">
-          <span>📂</span> Dokumen Diupload ({dokumenList.length})
-        </div>
-        {dokumenList.length === 0 ? (
-          <div className="portal-empty">
-            <div className="portal-empty-icon">📁</div>
-            <p>Belum ada dokumen diupload.</p>
-          </div>
-        ) : (
-          <div className="dokumen-riwayat">
-            {dokumenList.map((d) => (
-              <div className="dokumen-item" key={d.id}>
-                <div className="dokumen-item-left">
-                  <div className="dokumen-icon">{getDokIcon(d.jenis)}</div>
-                  <div>
-                    <div className="dokumen-jenis">{d.jenis}</div>
-                    <div className="dokumen-tanggal">{fmtDate(d.uploaded_at)}</div>
-                  </div>
-                </div>
-                <span className={`dokumen-status ds-${d.status?.toLowerCase()}`}>
-                  {d.status === "pending" ? "Menunggu" :
-                    d.status === "diterima" ? "✓ Diterima" : "✕ Ditolak"}
-                </span>
-                {d.file && (
-                  <a href={d.file} target="_blank" rel="noreferrer" className="dokumen-view-link">
-                    👁 Lihat
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1486,10 +1735,10 @@ const Portal = () => {
     try {
       // GET /customer/pembayaran untuk ambil info paket via pendaftaran
       const [dashRes] = await Promise.all([
-  axios.get(`${API}/customer/dashboard`, {
-    headers: { Authorization: `Bearer ${t}` },
-  }),
-]);
+        axios.get(`${API}/customer/dashboard`, {
+          headers: { Authorization: `Bearer ${t}` },
+        }),
+      ]);
       setDashData(dashRes.data);
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403)) {
@@ -1548,41 +1797,41 @@ const Portal = () => {
     }
   };
 
-    // ── Step 2: Verify OTP ──
-    const handleVerifyOtp = async (e: FormEvent) => {
-      e.preventDefault();
-      setError("");
-      if (otpInput.length !== 6) { setError("Masukkan 6 digit OTP."); return; }
-      try {
-        setLoadingVerify(true);
-        const res = await axios.post(`${API}/otp/verify`, { nomor: nomor.trim(), otp: otpInput });
-        const newToken = res.data.token;
+  // ── Step 2: Verify OTP ──
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (otpInput.length !== 6) { setError("Masukkan 6 digit OTP."); return; }
+    try {
+      setLoadingVerify(true);
+      const res = await axios.post(`${API}/otp/verify`, { nomor: nomor.trim(), otp: otpInput });
+      const newToken = res.data.token;
 
-        // Simpan ke localStorage
-        const session = {
-          token: newToken,
-          nomor: nomor.trim(),
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-        setToken(newToken);
-        setStep("dashboard");
-      } catch (err: unknown) {
-        setError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "OTP salah atau expired.") : "Verifikasi gagal.");
-      } finally {
-        setLoadingVerify(false);
-      }
-    };
+      // Simpan ke localStorage
+      const session = {
+        token: newToken,
+        nomor: nomor.trim(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      setToken(newToken);
+      setStep("dashboard");
+    } catch (err: unknown) {
+      setError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "OTP salah atau expired.") : "Verifikasi gagal.");
+    } finally {
+      setLoadingVerify(false);
+    }
+  };
 
-    const handleLogout = () => {
-      localStorage.removeItem(STORAGE_KEY);
-      setToken("");
-      setNomor("");
-      setOtpInput("");
-      setStep("input-nomor");
-      setDashData(null);
-      setError("");
-      setOtpSent(false);
-    };
+  const handleLogout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setToken("");
+    setNomor("");
+    setOtpInput("");
+    setStep("input-nomor");
+    setDashData(null);
+    setError("");
+    setOtpSent(false);
+  };
 
   // ── Render: Input Nomor ──────────────────────────────────────────────────────
 
@@ -1701,8 +1950,6 @@ const Portal = () => {
 
   // ── Render: Dashboard ───────────────────────────────────────────────────────
 
-  const savedStr = localStorage.getItem(STORAGE_KEY);
-  const saved = savedStr ? JSON.parse(savedStr) : {};
   const harga = dashData?.harga ?? 0;
   const paymentStatus = dashData?.payment_status ?? "belum";
   const documentStatus = dashData?.document_status ?? "belum";
@@ -1718,10 +1965,10 @@ const Portal = () => {
   // Format batas waktu DP untuk tampilan
   const batasDPFormatted = batasWaktuDP
     ? new Date(batasWaktuDP).toLocaleString("id-ID", {
-        day: "2-digit", month: "long", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-        timeZone: "Asia/Jakarta",
-      }) + " WIB"
+      day: "2-digit", month: "long", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+      timeZone: "Asia/Jakarta",
+    }) + " WIB"
     : "";
 
   // Cek apakah sudah kadaluarsa berdasarkan waktu (meski status belum diupdate backend)
@@ -1735,35 +1982,35 @@ const Portal = () => {
           <h1>Portal Jamaah</h1>
         </div>
 
-          <div className="portal-card">
-            {/* Error display (misal: session bermasalah) */}
-            {error && (
-              <div className="portal-error" style={{ margin: "1rem 1.75rem 0" }}>{error}</div>
-            )}
-            {/* Dashboard Header */}
-            <div className="portal-dash-header portal-header-relative">
-              <button className="portal-dash-logout" onClick={handleLogout}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Keluar
+        <div className="portal-card">
+          {/* Error display (misal: session bermasalah) */}
+          {error && (
+            <div className="portal-error" style={{ margin: "1rem 1.75rem 0" }}>{error}</div>
+          )}
+          {/* Dashboard Header */}
+          <div className="portal-dash-header portal-header-relative">
+            <button className="portal-dash-logout" onClick={handleLogout}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Keluar
+            </button>
+            <div className="portal-dash-greeting">Selamat datang,</div>
+            <div className="portal-dash-name">{displayNama}</div>
+            <div className="portal-dash-header-row">
+              <div className="portal-dash-nomor">📋 {nomor}</div>
+              <button
+                type="button"
+                className="portal-dash-btn-invoice"
+                onClick={() => setShowInvoiceModal(true)}
+                title="Lihat Invoice Tagihan"
+              >
+                🧾 Lihat Invoice
               </button>
-              <div className="portal-dash-greeting">Selamat datang,</div>
-              <div className="portal-dash-name">{displayNama}</div>
-              <div className="portal-dash-header-row">
-                <div className="portal-dash-nomor">📋 {nomor}</div>
-                <button
-                  type="button"
-                  className="portal-dash-btn-invoice"
-                  onClick={() => setShowInvoiceModal(true)}
-                  title="Lihat Invoice Tagihan"
-                >
-                  🧾 Lihat Invoice
-                </button>
-              </div>
             </div>
+          </div>
 
           {/* Status bar */}
           {!loadingDash && (
@@ -1905,7 +2152,7 @@ const Portal = () => {
       )}
 
       {/* Unused variable suppressor */}
-     
+
     </div>
   );
 };

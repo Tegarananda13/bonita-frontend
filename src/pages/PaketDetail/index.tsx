@@ -351,6 +351,35 @@ const PaketDetail = () => {
         </section>
       )}
 
+      {/* ── Perlengkapan Tambahan ── */}
+      <section className="pd-section">
+        <h2 className="pd-section-title">
+          <span className="pd-section-icon">🧳</span>
+          Perlengkapan Tambahan Jamaah
+        </h2>
+        <div className="pd-perlengkapan-card">
+          <p className="pd-perlengkapan-intro">
+            Lengkapi perjalanan Anda dengan perlengkapan tambahan yang disediakan oleh Bonita Umroh.
+          </p>
+          <ul className="pd-perlengkapan-list">
+            <li>Koper 22"</li>
+            <li>Koper 24"</li>
+            <li>Ihram</li>
+            <li>Mukena perempuan</li>
+            <li>Ikat pinggang</li>
+            <li>Buku doa</li>
+            <li>Tas pinggang</li>
+          </ul>
+          <div className="pd-perlengkapan-price">
+            <span className="pd-perlengkapan-price-val">{fmt(1450000)}</span>
+            <span className="pd-perlengkapan-price-sub">/ jamaah</span>
+          </div>
+          <p className="pd-perlengkapan-note">
+            <em>Opsional dan tidak termasuk dalam harga paket. Hanya dikenakan kepada jamaah yang memilihnya.</em>
+          </p>
+        </div>
+      </section>
+
       {/* Lightbox */}
       {lightboxImages.length > 0 && (
         <Lightbox

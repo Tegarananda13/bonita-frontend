@@ -459,6 +459,43 @@
   gap: 0.6rem;
 }
 
+/* ── Review perlengkapan per jamaah ── */
+.review-perlengkapan {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.875rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.review-perlengkapan.active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.review-perlengkapan-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.review-perlengkapan.active .review-perlengkapan-icon {
+  color: #2563eb;
+}
+
+.review-perlengkapan-text {
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.review-perlengkapan.active .review-perlengkapan-text {
+  color: #1e40af;
+}
+
 /* ── Success Screen ── */
 .daftar-success {
   text-align: center;
@@ -814,4 +851,69 @@
   border-radius: 6px;
   padding: 0.2rem 0.6rem;
   font-family: monospace;
+}
+
+/* ── Perlengkapan Tambahan per Jamaah ── */
+.jamaah-perlengkapan {
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.jamaah-perlengkapan-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fafbff;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.jamaah-perlengkapan-checkbox:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.jamaah-perlengkapan-checkbox.checked {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.jamaah-perlengkapan-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.jamaah-perlengkapan-checkmark {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.jamaah-perlengkapan-checkbox.checked .jamaah-perlengkapan-checkmark {
+  color: #2563eb;
+}
+
+.jamaah-perlengkapan-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.jamaah-perlengkapan-checkbox.checked .jamaah-perlengkapan-text {
+  color: #1e40af;
+}
+
+.jamaah-perlengkapan-detail {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0f9ff;
+  border-radius: 8px;
+  line-height: 1.6;
 }

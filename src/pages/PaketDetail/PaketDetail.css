@@ -524,3 +524,76 @@
   font-family: inherit;
 }
 .pd-back-btn:hover { background: #dcfce7; }
+
+/* ── Perlengkapan Tambahan ── */
+.pd-perlengkapan-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1.5px solid #bae6fd;
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.pd-perlengkapan-intro {
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.pd-perlengkapan-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.pd-perlengkapan-list li {
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 500;
+  padding-left: 1.25rem;
+  position: relative;
+}
+.pd-perlengkapan-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #0ea5e9;
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.pd-perlengkapan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.pd-perlengkapan-price-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0369a1;
+  letter-spacing: -0.02em;
+}
+
+.pd-perlengkapan-price-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pd-perlengkapan-note {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .pd-perlengkapan-list {
+    grid-template-columns: 1fr;
+  }
+}

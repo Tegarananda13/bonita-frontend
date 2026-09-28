@@ -393,6 +393,7 @@
 .sval-selesai     { background: #ecfdf5; color: #059669; }
 .sval-belum       { background: #f1f5f9; color: #64748b; }
 .sval-pending     { background: #fffbeb; color: #d97706; }
+.sval-belum_lengkap { background: #fffbeb; color: #d97706; }
 .sval-lunas       { background: #ecfdf5; color: #059669; }
 .sval-dp          { background: #eff6ff; color: #2563eb; }
 .sval-verified    { background: #ecfdf5; color: #059669; }
