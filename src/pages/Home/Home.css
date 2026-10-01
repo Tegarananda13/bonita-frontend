@@ -704,11 +704,27 @@
 }
 
 .why-card-icon-1 { background: linear-gradient(135deg, #fef3c7, #fde68a); }
-.why-card-icon-2 { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
-.why-card-icon-3 { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
-.why-card-icon-4 { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+.why-card-icon-2 { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
+.why-card-icon-3 { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+.why-card-icon-4 { background: linear-gradient(135deg, #fef9c3, #fde047); }
 .why-card-icon-5 { background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
-.why-card-icon-6 { background: linear-gradient(135deg, #fef9c3, #fef08a); }
+.why-card-icon-6 { background: linear-gradient(135deg, #ccfbf1, #99f6e4); }
+.why-card-icon-7 { background: linear-gradient(135deg, #ffe4e6, #fecdd3); }
+
+@media (min-width: 1025px) {
+  .why-card:last-child:nth-child(3n + 1) {
+    grid-column: 2;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .why-card:last-child:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
 
 .why-card-title {
   font-size: 1rem;

@@ -5,40 +5,46 @@ import "./Home.css";
 
 const WHY_ITEMS = [
   {
-    icon: "🏅",
+    icon: "🛡️",
     cls: "why-card-icon-1",
     title: "Legal dan Terpercaya",
     text: "Beroperasi secara resmi serta berkomitmen menjalankan layanan sesuai ketentuan yang berlaku.",
   },
   {
-    icon: "🕌",
+    icon: "🤝",
     cls: "why-card-icon-2",
-    title: "Pembimbing Berpengalaman",
-    text: "Setiap rombongan didampingi ustadz/ustadzah berpengalaman yang siap membimbing selama perjalanan.",
+    title: "Pelayanan Profesional",
+    text: "Didukung oleh tim yang berpengalaman dan siap mendampingi jamaah mulai dari proses pendaftaran hingga kepulangan.",
   },
   {
-    icon: "🏨",
+    icon: "🕋",
     cls: "why-card-icon-3",
-    title: "Hotel Bintang 4-5",
-    text: "Penginapan mewah pilihan yang berlokasi strategis, dekat Masjidil Haram dan Masjid Nabawi.",
+    title: "Pembimbing Ibadah Berpengalaman",
+    text: "Jamaah mendapatkan bimbingan manasik dan pendampingan selama menjalankan ibadah di Tanah Suci.",
   },
   {
-    icon: "✈️",
+    icon: "⭐",
     cls: "why-card-icon-4",
-    title: "Penerbangan Langsung",
-    text: "Kami menggunakan maskapai terpilih dengan penerbangan direct untuk kenyamanan perjalanan Anda.",
+    title: "Fasilitas Berkualitas",
+    text: "Menyediakan maskapai, hotel, transportasi, dan konsumsi yang dipilih untuk memberikan kenyamanan selama perjalanan.",
   },
   {
-    icon: "📱",
+    icon: "💎",
     cls: "why-card-icon-5",
-    title: "Sistem Digital Modern",
-    text: "Kelola pendaftaran, pembayaran, dan dokumen Anda secara mudah melalui portal digital kami.",
+    title: "Harga Kompetitif dan Transparan",
+    text: "Menawarkan paket umrah dengan biaya yang jelas tanpa mengurangi kualitas pelayanan.",
   },
   {
-    icon: "💝",
+    icon: "💬",
     cls: "why-card-icon-6",
-    title: "Pelayanan Penuh Hati",
-    text: "Kami melayani Anda dengan sepenuh hati, memastikan setiap momen ibadah menjadi kenangan indah.",
+    title: "Pelayanan Responsif",
+    text: "Siap memberikan informasi dan membantu kebutuhan jamaah dengan cepat melalui berbagai saluran komunikasi.",
+  },
+  {
+    icon: "🤲",
+    cls: "why-card-icon-7",
+    title: "Mengutamakan Kepuasan Jamaah",
+    text: "Seluruh layanan dirancang agar jamaah dapat beribadah dengan tenang, nyaman, dan khusyuk.",
   },
 ];
 
@@ -212,7 +218,7 @@ const Home = () => {
                 </div>
               </div>
               <div className="about-year-badge">
-                <div className="year">2015</div>
+                <div className="year">2006</div>
                 <div className="year-label">Berdiri Sejak</div>
               </div>
             </div>

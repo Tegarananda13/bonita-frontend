@@ -1659,7 +1659,7 @@ const PendaftaranGrupView = ({
   const invoiceLunas = countStatus("lunas");
 
   return (
-    <div>
+    <div className="pendaftaran-grup-view">
       {/* Stats */}
       {!loading && (
         <div className="pendaftaran-stats-row">
@@ -1685,8 +1685,7 @@ const PendaftaranGrupView = ({
         <table className="pendaftaran-table">
           <thead>
             <tr>
-              <th>Invoice</th>
-              <th>Kontak Utama</th>
+              <th>Grup</th>
               <th>Jamaah</th>
               <th>Paket</th>
               <th>Total Tagihan</th>
@@ -1700,7 +1699,7 @@ const PendaftaranGrupView = ({
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={9}>
+                  <td colSpan={8}>
                     <div className="table-skel-row">
                       {Array.from({ length: 6 }).map((__, j) => <div key={j} className="skel" style={{ width: 80 + j * 20, height: 12 }} />)}
                     </div>
@@ -1709,7 +1708,7 @@ const PendaftaranGrupView = ({
               ))
             ) : groups.length === 0 ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={8}>
                   <div className="table-empty">
                     <div className="table-empty-icon">👥</div>
                     <p>Belum ada pendaftaran grup (lebih dari 1 jamaah per invoice).</p>
@@ -1719,7 +1718,6 @@ const PendaftaranGrupView = ({
             ) : (
               groups.map(g => (
                 <tr key={g.nomor_invoice}>
-                  <td><span className="nomor-pendaftaran" style={{ fontSize: "0.78rem" }}>{g.nomor_invoice}</span></td>
                   <td>
                     <div className="customer-cell">
                       <div className="customer-avatar">{g.jamaah[0]?.nama_customer?.charAt(0)?.toUpperCase() ?? "?"}</div>

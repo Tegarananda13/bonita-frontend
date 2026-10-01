@@ -9,6 +9,12 @@
   font-family: var(--font-family);
 }
 
+.pendaftaran-grup-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 /* ── Header ── */
 .page-header {
   display: flex;
