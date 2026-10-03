@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent } from 'react';
 import axios from 'axios';
-import { FiMessageSquare, FiX, FiSend } from 'react-icons/fi';
+import { FiMessageSquare, FiX, FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import './ChatbotWidget.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ const ssClear = () => {
 
 const ChatbotWidget = () => {
   const [isOpen, setIsOpen]   = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput]     = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -221,7 +222,7 @@ const ChatbotWidget = () => {
   };
 
   return (
-    <div className="chatbot-widget-container">
+    <div className={`chatbot-widget-container ${isFullscreen && isOpen ? 'is-fullscreen' : ''}`}>
       {/* ── Floating Button ── */}
       <button
         className={`chatbot-fab ${isOpen ? 'hidden' : ''}`}
@@ -233,22 +234,47 @@ const ChatbotWidget = () => {
       </button>
 
       {/* ── Chat Window ── */}
-      <div className={`chatbot-window ${isOpen ? 'open' : ''}`}>
+      <div className={`chatbot-window ${isOpen ? 'open' : ''} ${isFullscreen ? 'fullscreen' : ''}`}>
         {/* Header */}
         <div className="chatbot-header">
-          <div className="chatbot-header-left">
-            <div className="chatbot-avatar">🕌</div>
-            <div>
-              <div className="chatbot-header-name">Bonita Assistant</div>
-              <div className="chatbot-header-status">
-                <span className="status-dot" />
-                {isLoading ? 'Mengetik...' : 'Online'}
+          <div className="chatbot-header-inner">
+            <div className="chatbot-header-left">
+              <div className="chatbot-avatar">🕌</div>
+              <div>
+                <div className="chatbot-header-name">Bonita Assistant</div>
+                <div className="chatbot-header-status">
+                  <span className="status-dot" />
+                  {isLoading ? 'Mengetik...' : 'Online'}
+                </div>
               </div>
             </div>
+            <div className="chatbot-header-actions">
+              <button
+                type="button"
+                className="header-action-btn fullscreen-btn"
+                onClick={() => {
+                  setIsFullscreen((prev) => !prev);
+                  setTimeout(scrollToBottom, 60);
+                }}
+                aria-label={isFullscreen ? 'Kecilkan Tampilan' : 'Layar Penuh'}
+                title={isFullscreen ? 'Kecilkan Tampilan' : 'Layar Penuh'}
+              >
+                {isFullscreen ? <FiMinimize2 size={17} /> : <FiMaximize2 size={17} />}
+              </button>
+              <button
+                type="button"
+                className="header-action-btn close-btn"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsFullscreen(false);
+                }}
+                aria-label="Tutup"
+                title="Tutup Chat"
+              >
+                <FiX size={19} />
+              </button>
+            </div>
           </div>
-          <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Tutup">
-            <FiX size={20} />
-          </button>
         </div>
 
         {/* Messages */}
@@ -294,10 +320,12 @@ const ChatbotWidget = () => {
           {isLoading && (
             <div className="message-row bot">
               <div className="bot-avatar-sm">🤖</div>
-              <div className="message-bubble bot typing-bubble">
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span className="typing-dot" />
+              <div className="message-body">
+                <div className="message-bubble bot typing-bubble">
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                </div>
               </div>
             </div>
           )}
@@ -322,21 +350,23 @@ const ChatbotWidget = () => {
         </div>
 
         {/* Input */}
-        <form className="chatbot-input-area" onSubmit={handleSubmit}>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Ketik pertanyaan atau keluhan Anda..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            autoComplete="off"
-          />
-          <button type="submit" disabled={!input.trim() || isLoading} aria-label="Kirim">
-            <FiSend size={18} />
-          </button>
-        </form>
+        <div className="chatbot-input-wrapper">
+          <form className="chatbot-input-area" onSubmit={handleSubmit}>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Ketik pertanyaan atau keluhan Anda..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              autoComplete="off"
+            />
+            <button type="submit" disabled={!input.trim() || isLoading} aria-label="Kirim">
+              <FiSend size={18} />
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
