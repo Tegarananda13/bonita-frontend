@@ -16,12 +16,16 @@ interface Message {
 
 // ── Session Storage Keys ───────────────────────────────────────────────────────
 
-const SS_FLOW           = 'bonita_chat_flow';
-const SS_STEP           = 'bonita_chat_step';
-const SS_PENDAFTARAN_ID = 'bonita_chat_pendaftaran_id';
-const SS_NOMOR_UMR      = 'bonita_chat_nomor_umr';
-const SS_KATEGORI       = 'bonita_chat_kategori';
-const SS_REG_DATA       = 'bonita_chat_reg_data';
+const SS_CHAT_SESSION_ID = 'bonita_chat_session_id'; // Chat session identifier
+const SS_REG_SESSION_ID  = 'bonita_chat_reg_session_id';  // Registration session identifier
+const SS_FLOW            = 'bonita_chat_flow';
+const SS_STEP            = 'bonita_chat_step';
+const SS_PENDAFTARAN_ID  = 'bonita_chat_pendaftaran_id';
+const SS_NOMOR_UMR       = 'bonita_chat_nomor_umr';
+const SS_KATEGORI        = 'bonita_chat_kategori';
+const SS_REG_DATA        = 'bonita_chat_reg_data';
+const SS_MESSAGES        = 'bonita_chat_messages';
+const SS_REGISTERED_UMRS = 'bonita_chat_registered_umrs';
 
 type FlowState = '' | 'pengaduan' | 'registrasi';
 type StepState = '' | 'ask_nomor' | 'ask_kategori' | string; // ask_isi_<kategori> | done | error
@@ -40,12 +44,12 @@ const KATEGORI_LIST = ['Pembayaran', 'Dokumen', 'Jadwal', 'Hotel', 'Transportasi
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-let idCounter = 1;
-const nextId = () => idCounter++;
+let idCounter = 100;
+const nextId = () => ++idCounter;
 
 const INITIAL_MESSAGES: Message[] = [
   {
-    id: nextId(),
+    id: 1,
     sender: 'bot',
     text: "Assalamu'alaikum 🕌 Selamat datang di Bonita Umroh! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umroh. Ada yang ingin ditanyakan?",
     timestamp: new Date(),
@@ -75,10 +79,49 @@ const renderText = (text: string) => {
 
 const ssGet = (key: string) => sessionStorage.getItem(key) ?? '';
 const ssSet = (key: string, val: string) => sessionStorage.setItem(key, val);
+
+// Mengambil atau membuat Chat Session ID baru
+const getOrCreateChatSessionId = (): string => {
+  let id = sessionStorage.getItem(SS_CHAT_SESSION_ID);
+  if (!id) {
+    id = 'chat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    sessionStorage.setItem(SS_CHAT_SESSION_ID, id);
+  }
+  return id;
+};
+
+// Membersihkan hanya data sementara proses pendaftaran, chat session tetap utuh
+const ssClearRegistration = () => {
+  sessionStorage.removeItem(SS_FLOW);
+  sessionStorage.removeItem(SS_STEP);
+  sessionStorage.removeItem(SS_REG_SESSION_ID);
+  sessionStorage.removeItem(SS_REG_DATA);
+};
+
+// Membersihkan seluruh state alur (pengaduan / pendaftaran), chat session tetap utuh
 const ssClear = () => {
-  [SS_FLOW, SS_STEP, SS_PENDAFTARAN_ID, SS_NOMOR_UMR, SS_KATEGORI].forEach(k =>
+  [SS_FLOW, SS_STEP, SS_PENDAFTARAN_ID, SS_NOMOR_UMR, SS_KATEGORI, SS_REG_SESSION_ID, SS_REG_DATA].forEach(k =>
     sessionStorage.removeItem(k)
   );
+};
+
+// Membaca riwayat pesan percakapan dari sessionStorage saat inisialisasi
+const loadInitialMessages = (): Message[] => {
+  try {
+    const raw = sessionStorage.getItem(SS_MESSAGES);
+    if (raw) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+      }
+    }
+  } catch { /* ignore */ }
+  return INITIAL_MESSAGES;
 };
 
 // ── Chatbot Widget ─────────────────────────────────────────────────────────────
@@ -86,7 +129,7 @@ const ssClear = () => {
 const ChatbotWidget = () => {
   const [isOpen, setIsOpen]   = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>(loadInitialMessages);
   const [input, setInput]     = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
@@ -94,6 +137,20 @@ const ChatbotWidget = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Pastikan Chat Session ID ada sejak awal
+  useEffect(() => {
+    getOrCreateChatSessionId();
+  }, []);
+
+  // Simpan riwayat percakapan ke sessionStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        sessionStorage.setItem(SS_MESSAGES, JSON.stringify(messages));
+      } catch { /* ignore */ }
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -120,9 +177,11 @@ const ChatbotWidget = () => {
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
 
+    const userText = text.trim();
+
     // Tambah pesan user
     setMessages(prev => [...prev, {
-      id: nextId(), sender: 'user', text: text.trim(), timestamp: new Date(),
+      id: nextId(), sender: 'user', text: userText, timestamp: new Date(),
     }]);
     setInput('');
     setShowQuickReplies(false);
@@ -130,6 +189,8 @@ const ChatbotWidget = () => {
 
     try {
       // Baca state dari sessionStorage
+      const chatSessionId = getOrCreateChatSessionId();
+      const regSessionId  = ssGet(SS_REG_SESSION_ID);
       const flow          = ssGet(SS_FLOW) as FlowState;
       const step          = ssGet(SS_STEP) as StepState;
       const pendaftaranId = ssGet(SS_PENDAFTARAN_ID);
@@ -138,14 +199,16 @@ const ChatbotWidget = () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: Record<string, any> = {
-        pertanyaan:     text.trim(),
-        flow:           flow,
-        step:           step,
-        pendaftaran_id: pendaftaranId,
-        kategori:       kategori,
+        pertanyaan:      userText,
+        chat_session_id: chatSessionId,
+        reg_session_id:  regSessionId,
+        flow:            flow,
+        step:            step,
+        pendaftaran_id:  pendaftaranId,
+        kategori:        kategori,
       };
 
-      // Sertakan reg_data jika sedang dalam flow registrasi
+      // Sertakan reg_data jika sedang dalam flow registrasi aktif
       if (flow === 'registrasi' && regDataRaw) {
         try { payload.reg_data = JSON.parse(regDataRaw); } catch { /* ignore */ }
       }
@@ -153,41 +216,58 @@ const ChatbotWidget = () => {
       const res = await axios.post('http://localhost:8080/chatbot', payload);
       const data = res.data?.data ?? {};
 
-      const jawaban    = data.jawaban    ?? 'Maaf, saya tidak bisa menjawab saat ini.';
-      const nextFlow   = (data.flow      ?? '') as FlowState;
-      const nextStep   = (data.step      ?? '') as StepState;
-      const nextPendId = data.pendaftaran_id ?? '';
+      const jawaban       = data.jawaban    ?? 'Maaf, saya tidak bisa menjawab saat ini.';
+      const nextFlow      = (data.flow      ?? '') as FlowState;
+      const nextStep      = (data.step      ?? '') as StepState;
+      const nextPendId    = data.pendaftaran_id ?? '';
+      const nextRegSessId = data.reg_session_id ?? '';
+      const nextNomorUmr  = data.nomor_pendaftaran ?? nextPendId ?? '';
 
       // Update sessionStorage
       if (nextFlow === 'pengaduan') {
         if (nextStep === 'done' || nextStep === 'error') {
-          // Pengaduan selesai/error → clear state agar pesan berikutnya bisa jadi intent baru
-          ssClear();
-          sessionStorage.removeItem(SS_REG_DATA);
+          sessionStorage.removeItem(SS_FLOW);
+          sessionStorage.removeItem(SS_STEP);
+          sessionStorage.removeItem(SS_KATEGORI);
         } else {
           ssSet(SS_FLOW, 'pengaduan');
           ssSet(SS_STEP, nextStep);
           if (nextPendId) ssSet(SS_PENDAFTARAN_ID, nextPendId);
-          // Simpan kategori dari step ask_isi_<kategori>
           if (nextStep.startsWith('ask_isi_')) {
             const kat = nextStep.replace('ask_isi_', '');
             ssSet(SS_KATEGORI, kat);
           }
         }
       } else if (nextFlow === 'registrasi') {
+        // Sedang aktif dalam tahapan pengumpulan data pendaftaran
         ssSet(SS_FLOW, 'registrasi');
         ssSet(SS_STEP, nextStep);
-        // Simpan reg_data agar state jamaah tidak hilang saat request berikutnya
+        if (nextRegSessId) {
+          ssSet(SS_REG_SESSION_ID, nextRegSessId);
+        }
         if (data.reg_data) {
           ssSet(SS_REG_DATA, JSON.stringify(data.reg_data));
-        } else if (nextStep === 'selesai' || nextStep === 'batal' || nextStep === 'error') {
-          sessionStorage.removeItem(SS_REG_DATA);
         }
       } else {
-        // flow selesai atau normal → clear
-        if (nextStep === 'done' || nextStep === 'error' || nextFlow === '') {
-          ssClear();
-          sessionStorage.removeItem(SS_REG_DATA);
+        // nextFlow === '' : Pendaftaran selesai, dibatalkan, atau percakapan umum
+        // Bersihkan state form sementara pendaftaran, chat session & riwayat tetap utuh!
+        ssClearRegistration();
+
+        // Jika pendaftaran berhasil dibuat
+        if (nextStep === 'selesai' && nextNomorUmr) {
+          ssSet(SS_NOMOR_UMR, nextNomorUmr);
+          ssSet(SS_PENDAFTARAN_ID, nextNomorUmr);
+          try {
+            const prev = JSON.parse(sessionStorage.getItem(SS_REGISTERED_UMRS) || '[]');
+            if (!prev.includes(nextNomorUmr)) {
+              prev.push(nextNomorUmr);
+              sessionStorage.setItem(SS_REGISTERED_UMRS, JSON.stringify(prev));
+            }
+          } catch { /* ignore */ }
+          // Tampilkan opsi quick reply kembali
+          setShowQuickReplies(true);
+        } else if (nextStep === 'batal') {
+          setShowQuickReplies(true);
         }
       }
 

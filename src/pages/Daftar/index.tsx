@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
 import "./Daftar.css";
@@ -368,16 +368,16 @@ const Daftar = () => {
   const StepBar = () => (
     <div className="daftar-steps">
       {[{ n: 1, label: "Pilih Paket" }, { n: 2, label: "Data Jamaah" }, { n: 3, label: "Konfirmasi" }].map((s, i) => (
-        <>
-          <div key={s.n} className={`daftar-step ${step === s.n ? "active" : step > s.n ? "done" : ""}`}>
+        <Fragment key={s.n}>
+          <div className={`daftar-step ${step === s.n ? "active" : step > s.n ? "done" : ""}`}>
             <div className="step-num">{step > s.n ? "✓" : s.n}</div>
             {s.label}
           </div>
           {i < 2 && (
-            <div key={`div-${i}`}
+            <div
               className={`step-divider ${step > s.n + 1 ? "done" : step === s.n + 1 ? "active" : ""}`} />
           )}
-        </>
+        </Fragment>
       ))}
     </div>
   );
@@ -591,7 +591,7 @@ const Daftar = () => {
                       <div className="review-paket-details">
                         <span className="review-paket-detail-item">📅 {selectedPaket ? fmtDate(selectedPaket.tanggal_berangkat) : ""}</span>
                         <span className="review-paket-detail-item">⏱ {selectedPaket?.durasi} hari</span>
-                        <span style={{ fontWeight: 700, color: "#4f46e5" }}>{selectedPaket ? fmtRupiah(selectedPaket.harga) : ""}/orang</span>
+                        <span style={{ fontWeight: 700, color: "#1a6b43" }}>{selectedPaket ? fmtRupiah(selectedPaket.harga) : ""}/orang</span>
                       </div>
                     </div>
                   </div>

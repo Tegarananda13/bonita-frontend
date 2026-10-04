@@ -24,6 +24,7 @@ const AdminDokumen = () => {
   const { token } = useAuth();
   const { showToast } = useToast();
   const [list, setList] = useState<DokumenItem[]>([]);
+  const [totalPending, setTotalPending] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<string | null>(null);
@@ -40,8 +41,11 @@ const AdminDokumen = () => {
       const items: DokumenItem[] = res.data?.data ?? [];
       items.sort((a, b) => new Date(b.tanggal_upload).getTime() - new Date(a.tanggal_upload).getTime());
       setList(items);
+      const count = Number(res.data?.count_menunggu ?? res.data?.total ?? items.length);
+      setTotalPending(count);
     } catch {
       setList([]);
+      setTotalPending(0);
     } finally {
       setLoading(false);
     }
@@ -76,6 +80,7 @@ const AdminDokumen = () => {
       setDetailModal(null);
       setDetailData(null);
       await fetchList();
+      window.dispatchEvent(new CustomEvent("admin-badge-refresh"));
       if (status === "diterima") {
         showToast("success", "Dokumen berhasil diverifikasi.");
       } else {
@@ -100,7 +105,12 @@ const AdminDokumen = () => {
     <div className="admin-verify-page">
       <div className="page-header">
         <div className="page-header-left">
-          <h2>Verifikasi Dokumen</h2>
+          <h2>
+            Verifikasi Dokumen
+            {totalPending > 0 && (
+              <span className="verify-badge-header">{totalPending}</span>
+            )}
+          </h2>
           <p>Tinjau dan verifikasi dokumen yang diupload jamaah.</p>
         </div>
         <div className="page-header-actions">
@@ -119,7 +129,7 @@ const AdminDokumen = () => {
           <div className="verify-stat-card">
             <div className="verify-stat-icon">📂</div>
             <div>
-              <div className="verify-stat-val">{list.length}</div>
+              <div className="verify-stat-val">{totalPending}</div>
               <div className="verify-stat-label">Menunggu Verifikasi</div>
             </div>
           </div>

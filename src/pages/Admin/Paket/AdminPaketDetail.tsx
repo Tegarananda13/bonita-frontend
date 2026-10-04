@@ -8,11 +8,19 @@ const API = "http://localhost:8080";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface GambarPaketItem {
+  id: string | null;
+  url: string;
+  urutan: number;
+  is_utama: boolean;
+}
+
 interface PaketInfo {
   id: string;
   nama_paket: string;
   jenis_paket: string;
   foto_paket: string;
+  gambar_paket?: GambarPaketItem[];
   harga: number;
   durasi: number;
   tanggal_berangkat: string;
@@ -105,6 +113,8 @@ const AdminPaketDetail = () => {
   const { token } = useAuth();
 
   const [paket, setPaket] = useState<PaketInfo | null>(null);
+  const [gambarPaket, setGambarPaket] = useState<GambarPaketItem[]>([]);
+  const [activeFotoIdx, setActiveFotoIdx] = useState<number>(0);
   const [fasilitas, setFasilitas] = useState<FasilitasItem[]>([]);
   const [statistik, setStatistik] = useState<Statistik | null>(null);
   const [jamaah, setJamaah] = useState<JamaahRow[]>([]);
@@ -127,7 +137,37 @@ const AdminPaketDetail = () => {
       const res = await axios.get(`${API}/admin/paket/${id}/detail`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPaket(res.data.paket);
+      const rawPaket = res.data.paket;
+      let rawGambar: Array<any> = res.data.gambar_paket ?? rawPaket?.gambar_paket ?? rawPaket?.GambarPaket ?? [];
+
+      const coverUrl = rawPaket?.foto_paket || rawPaket?.FotoPaket || "";
+      if (rawGambar.length === 0 && coverUrl) {
+        rawGambar = [{ id: null, url: coverUrl, urutan: 1, is_utama: true }];
+      }
+
+      const normalizedGambar: GambarPaketItem[] = rawGambar
+        .map((g: any, i: number) => ({
+          id: g.id || g.ID || null,
+          url: g.url || g.file_path || g.FilePath || "",
+          urutan: g.urutan ?? g.Urutan ?? (i + 1),
+          is_utama: Boolean(g.is_utama ?? g.IsUtama),
+        }))
+        .filter((g: GambarPaketItem) => Boolean(g.url));
+
+      let utamaIndex = normalizedGambar.findIndex((g) => g.is_utama);
+      if (utamaIndex === -1 && normalizedGambar.length > 0) {
+        utamaIndex = 0;
+      }
+
+      const resolvedFoto = normalizedGambar[utamaIndex]?.url || coverUrl;
+
+      setPaket({
+        ...rawPaket,
+        foto_paket: resolvedFoto,
+        gambar_paket: normalizedGambar,
+      });
+      setGambarPaket(normalizedGambar);
+      setActiveFotoIdx(utamaIndex >= 0 ? utamaIndex : 0);
       setFasilitas(res.data.fasilitas ?? []);
       setStatistik(res.data.statistik);
       setJamaah(res.data.jamaah ?? []);
@@ -314,22 +354,54 @@ const AdminPaketDetail = () => {
       {/* ── Info Paket ── */}
       <div className="apd-card apd-info-card">
         <div className="apd-foto-wrap">
-          <img
-            src={paket.foto_paket || FALLBACK}
-            alt={paket.nama_paket}
-            className="apd-foto"
-            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
-          />
-          <span
-            className="apd-status-badge"
-            style={{
-              background: statusBadge.bg,
-              color: statusBadge.color,
-              border: statusBadge.border,
-            }}
-          >
-            {statusBadge.label}
-          </span>
+          <div className="apd-foto-main-box">
+            {((gambarPaket.length > 0 && gambarPaket[activeFotoIdx]?.url) || paket.foto_paket) ? (
+              <img
+                src={gambarPaket[activeFotoIdx]?.url || paket.foto_paket}
+                alt={paket.nama_paket}
+                className="apd-foto"
+                onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
+              />
+            ) : (
+              <div className="apd-foto-placeholder">
+                <span className="apd-foto-placeholder-icon">🕌</span>
+                <span className="apd-foto-placeholder-text">Tidak ada foto</span>
+              </div>
+            )}
+            <span
+              className="apd-status-badge"
+              style={{
+                background: statusBadge.bg,
+                color: statusBadge.color,
+                border: statusBadge.border,
+              }}
+            >
+              {statusBadge.label}
+            </span>
+          </div>
+
+          {/* Galeri seluruh foto paket */}
+          {gambarPaket.length > 1 && (
+            <div className="apd-foto-gallery" title="Seluruh foto paket">
+              {gambarPaket.map((g, idx) => (
+                <button
+                  type="button"
+                  key={g.id || idx}
+                  className={`apd-foto-thumb-btn ${idx === activeFotoIdx ? "active" : ""}`}
+                  onClick={() => setActiveFotoIdx(idx)}
+                  title={`Foto ${idx + 1}${g.is_utama ? " (Foto Utama)" : ""}`}
+                >
+                  <img
+                    src={g.url}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className="apd-foto-thumb"
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
+                  />
+                  {g.is_utama && <span className="apd-foto-thumb-star" title="Foto Utama">★</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="apd-info-body">

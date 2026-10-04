@@ -1274,10 +1274,20 @@ const AdminPaket = () => {
         headers: authH(),
       });
       const rawList = res.data?.paket ?? [];
-      const normalizedList = rawList.map((p: any) => ({
-        ...p,
-        Fasilitas: normalizeFasilitas(p.Fasilitas),
-      }));
+      const normalizedList = rawList.map((p: any) => {
+        const rawGambar = p.GambarPaket || p.gambar_paket || [];
+        const utamaFoto = rawGambar.find((g: any) => g.is_utama)?.file_path ||
+                          rawGambar.find((g: any) => g.is_utama)?.url ||
+                          rawGambar[0]?.file_path ||
+                          rawGambar[0]?.url;
+        const fotoCover = p.FotoPaket || p.foto_paket || utamaFoto || "";
+        return {
+          ...p,
+          FotoPaket: fotoCover,
+          GambarPaket: normalizeFotoPaket(rawGambar, fotoCover),
+          Fasilitas: normalizeFasilitas(p.Fasilitas || p.fasilitas),
+        };
+      });
       setPaketList(normalizedList);
     } catch {
       setPaketList([]);
@@ -1452,9 +1462,9 @@ const AdminPaket = () => {
                     {/* Nama + Foto */}
                     <td>
                       <div className="paket-name-cell">
-                        {p.FotoPaket ? (
+                        {p.FotoPaket || (p.GambarPaket && p.GambarPaket[0]?.url) ? (
                           <img
-                            src={p.FotoPaket}
+                            src={p.FotoPaket || (p.GambarPaket && p.GambarPaket[0]?.url)}
                             alt={p.NamaPaket}
                             className="paket-foto-thumb"
                             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}

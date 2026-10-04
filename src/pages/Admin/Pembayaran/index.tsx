@@ -29,6 +29,7 @@ const AdminPembayaran = () => {
   const { token } = useAuth();
   const { showToast } = useToast();
   const [list, setList] = useState<PembayaranItem[]>([]);
+  const [totalPending, setTotalPending] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<string | null>(null);
@@ -45,8 +46,11 @@ const AdminPembayaran = () => {
       const items: PembayaranItem[] = res.data?.data ?? [];
       items.sort((a, b) => new Date(b.tanggal_pembayaran).getTime() - new Date(a.tanggal_pembayaran).getTime());
       setList(items);
+      const count = Number(res.data?.count_menunggu ?? res.data?.total ?? items.length);
+      setTotalPending(count);
     } catch {
       setList([]);
+      setTotalPending(0);
     } finally {
       setLoading(false);
     }
@@ -96,6 +100,7 @@ const AdminPembayaran = () => {
       setDetailModal(null);
       setDetailData(null);
       await fetchList();
+      window.dispatchEvent(new CustomEvent("admin-badge-refresh"));
       if (status === "diterima") {
         showToast("success", "Pembayaran berhasil diverifikasi.");
       } else {
@@ -117,7 +122,12 @@ const AdminPembayaran = () => {
     <div className="admin-verify-page">
       <div className="page-header">
         <div className="page-header-left">
-          <h2>Verifikasi Pembayaran</h2>
+          <h2>
+            Verifikasi Pembayaran
+            {totalPending > 0 && (
+              <span className="verify-badge-header">{totalPending}</span>
+            )}
+          </h2>
           <p>Tinjau dan verifikasi bukti pembayaran dari jamaah.</p>
         </div>
         <div className="page-header-actions">
@@ -136,7 +146,7 @@ const AdminPembayaran = () => {
           <div className="verify-stat-card">
             <div className="verify-stat-icon">⏳</div>
             <div>
-              <div className="verify-stat-val">{list.length}</div>
+              <div className="verify-stat-val">{totalPending}</div>
               <div className="verify-stat-label">Menunggu Verifikasi</div>
             </div>
           </div>

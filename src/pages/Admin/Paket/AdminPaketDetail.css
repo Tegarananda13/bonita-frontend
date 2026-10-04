@@ -167,14 +167,108 @@
 .apd-foto-wrap {
   position: relative;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.apd-foto {
+.apd-foto-main-box {
+  position: relative;
   width: 260px;
   height: 180px;
-  object-fit: cover;
   border-radius: 12px;
+  overflow: hidden;
   border: 1px solid var(--apd-border);
+  background: #f8fafc;
+}
+
+.apd-foto-main-box .apd-foto,
+.apd-foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+  border: none;
+  display: block;
+}
+
+.apd-foto-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  gap: 0.35rem;
+}
+
+.apd-foto-placeholder-icon {
+  font-size: 2.5rem;
+}
+
+.apd-foto-placeholder-text {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.apd-foto-gallery {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  max-width: 260px;
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.apd-foto-gallery::-webkit-scrollbar {
+  height: 4px;
+}
+
+.apd-foto-gallery::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.apd-foto-thumb-btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.apd-foto-thumb-btn:hover {
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.apd-foto-thumb-btn.active {
+  border-color: #1a6b43;
+  box-shadow: 0 0 0 2px rgba(26, 107, 67, 0.25);
+}
+
+.apd-foto-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.apd-foto-thumb-star {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  color: #eab308;
+  font-size: 0.65rem;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
 }
 
 .apd-status-badge {

@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "./AdminLayout.css";
 
@@ -128,24 +128,58 @@ const pageTitle: Record<string, string> = {
 const AdminLayout = () => {
   const { role, nama, logout, token } = useAuth();
   const navigate = useNavigate();
+  const [badgeDokumen, setBadgeDokumen] = useState(0);
+  const [badgePembayaran, setBadgePembayaran] = useState(0);
   const [badgePengaduan, setBadgePengaduan] = useState(0);
 
-  // Fetch jumlah pengaduan menunggu untuk badge sidebar
-  useEffect(() => {
+  // Fetch jumlah data menunggu untuk badge sidebar
+  const fetchBadges = useCallback(async () => {
     if (!token) return;
-    const fetchBadge = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/admin/badges", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBadgeDokumen(Number(res.data?.dokumen ?? 0));
+      setBadgePembayaran(Number(res.data?.pembayaran ?? 0));
+      setBadgePengaduan(Number(res.data?.pengaduan ?? 0));
+    } catch {
+      // Fallback ke endpoint individual
       try {
-        const res = await axios.get("http://localhost:8080/admin/pengaduan", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setBadgePengaduan(res.data?.count_menunggu ?? 0);
-      } catch { /* silent */ }
-    };
-    fetchBadge();
-    // refresh setiap 60 detik
-    const interval = setInterval(fetchBadge, 60000);
-    return () => clearInterval(interval);
+        const [dokRes, bayarRes, pengRes] = await Promise.all([
+          axios.get("http://localhost:8080/admin/dokumen/pending", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://localhost:8080/admin/pembayaran/pending", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://localhost:8080/admin/pengaduan", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        setBadgeDokumen(Number(dokRes.data?.count_menunggu ?? dokRes.data?.total ?? dokRes.data?.data?.length ?? 0));
+        setBadgePembayaran(Number(bayarRes.data?.count_menunggu ?? bayarRes.data?.total ?? bayarRes.data?.data?.length ?? 0));
+        setBadgePengaduan(Number(pengRes.data?.count_menunggu ?? 0));
+      } catch {
+        /* silent */
+      }
+    }
   }, [token]);
+
+  useEffect(() => {
+    fetchBadges();
+    // Refresh interval setiap 30 detik
+    const interval = setInterval(fetchBadges, 30000);
+
+    const handleRefresh = () => {
+      fetchBadges();
+    };
+    window.addEventListener("admin-badge-refresh", handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("admin-badge-refresh", handleRefresh);
+    };
+  }, [fetchBadges]);
 
   const currentPath = window.location.pathname;
   const title = Object.entries(pageTitle).find(([key]) =>
@@ -205,8 +239,14 @@ const AdminLayout = () => {
                 >
                   <span className="sidebar-nav-icon">{item.icon}</span>
                   {item.label}
+                  {item.to === "/admin/pembayaran" && badgePembayaran > 0 && (
+                    <span className="sidebar-badge">{badgePembayaran}</span>
+                  )}
+                  {item.to === "/admin/dokumen" && badgeDokumen > 0 && (
+                    <span className="sidebar-badge">{badgeDokumen}</span>
+                  )}
                   {item.to === "/admin/pengaduan" && badgePengaduan > 0 && (
-                    <span className="sidebar-pengaduan-badge">{badgePengaduan}</span>
+                    <span className="sidebar-badge sidebar-pengaduan-badge">{badgePengaduan}</span>
                   )}
                 </NavLink>
               ))}
@@ -261,7 +301,7 @@ const AdminLayout = () => {
 
         {/* Page content */}
         <main className="admin-content">
-          <Outlet />
+          <Outlet context={{ fetchBadges, badgeDokumen, badgePembayaran, badgePengaduan }} />
         </main>
       </div>
     </div>

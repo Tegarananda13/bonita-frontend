@@ -293,8 +293,9 @@
   }
 }
 
-/* ── Pengaduan Badge di Sidebar ── */
-.sidebar-pengaduan-badge {
+/* ── Badges Notifikasi di Sidebar ── */
+.sidebar-pengaduan-badge,
+.sidebar-badge {
   margin-left: auto;
   background: #ef4444;
   color: #fff;

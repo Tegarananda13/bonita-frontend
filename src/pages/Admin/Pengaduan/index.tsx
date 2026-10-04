@@ -122,6 +122,7 @@ const DetailModal = ({
         : "✅ Status berhasil diperbarui."
       );
       onStatusChanged();
+      window.dispatchEvent(new CustomEvent("admin-badge-refresh"));
     } catch {
       setMsg("❌ Gagal mengubah status.");
     } finally {
@@ -370,8 +371,10 @@ const AdminPengaduan = () => {
             </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.id} className={p.status === "menunggu" ? "row-menunggu" : ""}>
-                  <td className="td-nomor">{p.nomor_pendaftaran}</td>
+                <tr key={p.id}>
+                  <td className="td-nomor">
+                    <span className="nomor-pill">{p.nomor_pendaftaran}</span>
+                  </td>
                   <td>
                     <div className="peng-customer-cell">
                       <div className="peng-avatar">{p.nama_customer?.charAt(0)?.toUpperCase() ?? "?"}</div>
