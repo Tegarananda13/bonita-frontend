@@ -79,7 +79,7 @@ const SkeletonCard = () => (
 
 // ── Modal ────────────────────────────────────────────────────────────────────
 
-const PaketModal = ({
+export const PaketModal = ({
   paketId,
   onClose,
 }: {

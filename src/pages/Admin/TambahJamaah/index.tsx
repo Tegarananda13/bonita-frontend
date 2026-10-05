@@ -526,7 +526,7 @@ const TambahJamaah = () => {
           )}
 
           {/* PIC Info */}
-          <div className="tj-pic-info">
+          {/* <div className="tj-pic-info">
             <span className="tj-pic-icon">🔒</span>
             <div>
               <div className="tj-pic-title">PIC Otomatis</div>
@@ -536,7 +536,7 @@ const TambahJamaah = () => {
                   : "Jamaah ini akan menjadi tanggung jawab Anda sebagai PIC secara otomatis."}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {error && <div className="tj-alert tj-alert-error">❌ {error}</div>}
 

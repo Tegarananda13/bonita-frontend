@@ -23,6 +23,7 @@ import Laporan from './pages/Admin/Laporan';
 import ProtectedRoute from './pages/Admin/components/ProtectedRoute';
 import TambahJamaah from './pages/Admin/TambahJamaah';
 import AdminPengaduan from './pages/Admin/Pengaduan';
+import TambahPaket from './pages/Admin/Paket/TambahPaket';
 
 // ── Guard: redirect ke dashboard jika sudah login ──────────────────────
 const GuestRoute = ({ children }: { children: React.ReactNode }) => {
@@ -96,6 +97,7 @@ function App() {
 
           {/* Placeholder pages — bisa diisi nanti */}
           <Route path="paket" element={<AdminPaket />} />
+          <Route path="paket/tambah" element={<TambahPaket />} />
           <Route path="paket/:id" element={<AdminPaketDetail />} />
           <Route path="pendaftaran" element={<AdminPendaftaran />} />
           <Route path="tambah-jamaah" element={<TambahJamaah />} />
@@ -112,7 +114,7 @@ function App() {
 }
 
 // ── Simple placeholder untuk halaman yang belum dibuat ──────────────────
-const ComingSoon = ({ title }: { title: string }) => (
+export const ComingSoon = ({ title }: { title: string }) => (
   <div style={{
     textAlign: 'center',
     padding: '4rem 2rem',

@@ -145,7 +145,7 @@ const normalizeFotoPaket = (raw: any[], fallbackUrl?: string): FotoPaket[] => {
 };
 
 // ── Fasilitas Panel ──────────────────────────────────────────────────────────
-const FasilitasPanel = ({
+export const FasilitasPanel = ({
   paket,
   token,
   onClose,
@@ -366,7 +366,6 @@ const PaketDrawer = ({
   onSaved: () => void;
 }) => {
   const isEdit = !!editData;
-  const fileRef = useRef<HTMLInputElement>(null);
   const multiFotoRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<PaketFormData>(() =>
     editData
@@ -391,7 +390,6 @@ const PaketDrawer = ({
   );
   // Foto baru (belum upload, hanya preview lokal)
   const [newFotos, setNewFotos] = useState<{ file: File; preview: string; isUtama: boolean }[]>([]);
-  const [uploading, setUploading] = useState(false);
 
   const fetchDbFotos = async () => {
     if (!isEdit || !editData?.ID) return;
@@ -756,7 +754,6 @@ const PaketDrawer = ({
     const authJSON = { Authorization: `Bearer ${token}` };
     try {
       setSubmitting(true);
-      setUploading(true);
       if (isEdit) {
         await axios.put(`http://localhost:8080/admin/paket/${editData!.ID}`, fd, { headers });
         // Upload foto baru yang dipilih
@@ -1354,7 +1351,17 @@ const AdminPaket = () => {
           <p>Kelola semua paket umroh yang tersedia.</p>
         </div>
         <div className="page-header-actions">
-          <Link to="/paket" target="_blank" className="btn-outline">
+          <button
+            type="button"
+            className="btn-primary-sm"
+            onClick={() => navigate("/admin/paket/tambah")}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Tambah Paket
+          </button>
+          <Link to="/paket" target="_blank" className="btn-outline-sm">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               <polyline points="15 3 21 3 21 9" />
@@ -1363,13 +1370,16 @@ const AdminPaket = () => {
             Lihat Halaman Publik
           </Link>
           <button
-            className="btn-primary"
-            onClick={() => { setEditTarget(null); setDrawerOpen(true); }}
+            type="button"
+            className="btn-outline-sm"
+            onClick={fetchPaket}
+            disabled={loading}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14" />
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
             </svg>
-            Tambah Paket
+            Refresh
           </button>
         </div>
       </div>

@@ -99,7 +99,7 @@ const ssClearRegistration = () => {
 };
 
 // Membersihkan seluruh state alur (pengaduan / pendaftaran), chat session tetap utuh
-const ssClear = () => {
+export const ssClear = () => {
   [SS_FLOW, SS_STEP, SS_PENDAFTARAN_ID, SS_NOMOR_UMR, SS_KATEGORI, SS_REG_SESSION_ID, SS_REG_DATA].forEach(k =>
     sessionStorage.removeItem(k)
   );

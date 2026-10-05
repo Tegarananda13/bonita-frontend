@@ -863,7 +863,32 @@ const DetailModal = ({
                     <StatusPill value={data.document_status} />
                   </div>
                 </div>
-
+                {/* Informasi Pendaftaran */}
+                <div style={{ marginTop: "1.25rem" }}>
+                  <div className="modal-section-title">📋 Informasi Pendaftaran</div>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item">
+                      <div className="modal-info-label">Asal Pendaftaran</div>
+                      <div className="modal-info-val" style={{ textTransform: "capitalize" }}>
+                        {data.registration_source === "admin" ? "Admin"
+                          : data.registration_source === "chatbot" ? "AI Chatbot"
+                            : "Customer"}
+                      </div>
+                    </div>
+                    <div className="modal-info-item">
+                      <div className="modal-info-label">Didaftarkan Oleh</div>
+                      <div className="modal-info-val" style={{
+                        fontWeight: 700,
+                        color: data.registration_source === "admin" ? "#1a6b43"
+                          : data.registration_source === "chatbot" ? "#0369a1"
+                            : "#374151",
+                      }}>
+                        {data.registered_by_label ?? "👤 Customer"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 {/* Info jamaah */}
                 <div className="modal-section-title">👤 Informasi Jamaah</div>
                 <div className="modal-info-grid">
@@ -1448,7 +1473,7 @@ const GrupDetailModal = ({
           status: String(b.Status ?? b.status ?? ""),
           tanggal: String(b.TanggalBayar ?? b.tanggal_bayar ?? ""),
         }));
-        mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+        mappedBayar.sort((a: { tanggal: string }, b: { tanggal: string }) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
         setPayments(mappedBayar);
       } catch { /* silent */ }
       finally { setLoadingPay(false); }
@@ -2153,7 +2178,7 @@ const PICDetailModal = ({
           tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
           bukti: String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
         }));
-        mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+        mappedBayar.sort((a: { tanggal: string }, b: { tanggal: string }) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
         setPayments(mappedBayar);
         // Dokumen: Go model → field PascalCase
         const rawDok = res.data?.dokumen ?? [];
@@ -2164,7 +2189,7 @@ const PICDetailModal = ({
           file_path: String(d.FilePath ?? d.file_path ?? ""),
           created_at: String(d.CreatedAt ?? d.created_at ?? ""),
         }));
-        mappedDocs.sort((a, b) => {
+        mappedDocs.sort((a: { created_at: string }, b: { created_at: string }) => {
           if (!a.created_at && !b.created_at) return 0;
           return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
         });
