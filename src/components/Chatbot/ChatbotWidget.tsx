@@ -417,7 +417,7 @@ const ChatbotWidget = () => {
               {QUICK_REPLIES.map((q) => (
                 <button
                   key={q}
-                  className={`quick-reply-btn${q.includes('pengaduan') ? ' quick-reply-pengaduan' : ''}`}
+                  className="quick-reply-btn"
                   onClick={() => sendMessage(q)}
                 >
                   {q.includes('pengaduan') ? '📣 ' : ''}{q}

@@ -291,13 +291,14 @@ const AdminPaketDetail = () => {
       {/* ── Header ── */}
       <div className="apd-header">
         <div className="apd-header-left">
-          <button className="apd-back-btn" onClick={() => navigate("/admin/paket")}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
+          <button type="button" className="apd-back-btn" onClick={() => navigate("/admin/paket")}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            Kembali ke Daftar Paket
+            Kembali
           </button>
           <h1 className="apd-title">Detail Paket Umroh</h1>
+          <p className="apd-subtitle">Informasi lengkap, jadwal keberangkatan, fasilitas, dan status paket umroh.</p>
         </div>
 
         <div className="apd-header-actions">
@@ -322,6 +323,7 @@ const AdminPaketDetail = () => {
             </button>
           )}
 
+          {!isFinished && (
           <button
             type="button"
             className={isActive ? "apd-btn-deactivate" : "apd-btn-activate"}
@@ -348,6 +350,7 @@ const AdminPaketDetail = () => {
               </>
             )}
           </button>
+          )}
         </div>
       </div>
 

@@ -410,7 +410,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  padding: 0.35rem 0 0.5rem;
+  padding: 0.35rem 0 0.75rem;
   animation: msgIn 0.3s ease;
   width: 100%;
   box-sizing: border-box;
@@ -420,27 +420,31 @@
   font-size: 0.75rem;
   color: #64748b;
   font-weight: 600;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.2rem;
   margin-left: 0.25rem;
 }
 
 .quick-reply-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   flex: 0 0 auto;
-  padding: 0.5rem 0.95rem;
+  width: 100%;
+  min-height: 42px;
+  padding: 0.6rem 0.95rem;
   background: #ffffff;
   border: 1.5px solid #bbf7d0;
-  border-radius: 20px;
+  border-radius: 12px;
   color: #1a6b43;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
   transition: all 0.15s ease;
-  width: fit-content;
-  max-width: 100%;
   box-sizing: border-box;
-  line-height: 1.45;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .quick-reply-btn:hover {
@@ -448,19 +452,6 @@
   border-color: #86efac;
   color: #0f5132;
   transform: translateX(2px);
-}
-
-.quick-reply-pengaduan {
-  background: linear-gradient(135deg, #1a6b43, #0f5132) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
-  font-weight: 600 !important;
-}
-
-.quick-reply-pengaduan:hover {
-  background: linear-gradient(135deg, #15803d, #0d442a) !important;
-  box-shadow: 0 3px 8px rgba(26, 107, 67, 0.3);
-  transform: translateX(2px) translateY(-1px);
 }
 
 /* ── Kategori Pengaduan ── */

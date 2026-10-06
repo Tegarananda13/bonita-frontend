@@ -47,6 +47,7 @@ interface PaketAdmin {
   BatasPendaftaran: number;
   IsActive: boolean;
   IsFinished: boolean;
+  status_perjalanan?: "Berjalan" | "Belum Berangkat" | "Selesai";
   Fasilitas: Fasilitas[];
 }
 interface PaketFormData {
@@ -1511,7 +1512,7 @@ const AdminPaket = () => {
                     </td>
                     {/* Status Aktif/Nonaktif */}
                     <td>
-                      {p.IsActive ? (
+                      {p.IsActive && !p.IsFinished ? (
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: 4,
                           background: "#dcfce7", color: "#166534",
@@ -1531,13 +1532,21 @@ const AdminPaket = () => {
                     </td>
                     {/* Status Perjalanan */}
                     <td>
-                      {p.IsFinished ? (
+                      {(p.status_perjalanan ?? (p.IsFinished ? "Selesai" : "Berjalan")) === "Selesai" ? (
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: 4,
                           background: "#f1f5f9", color: "#475569",
                           borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
                         }}>
                           ⚫ Selesai
+                        </span>
+                      ) : p.status_perjalanan === "Belum Berangkat" ? (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          background: "#dbeafe", color: "#1e40af",
+                          borderRadius: 20, padding: "3px 10px", fontSize: "0.78rem", fontWeight: 600,
+                        }}>
+                          🔵 Belum Berangkat
                         </span>
                       ) : (
                         <span style={{
