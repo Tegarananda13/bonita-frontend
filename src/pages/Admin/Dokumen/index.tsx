@@ -29,6 +29,15 @@ const AdminDokumen = () => {
   const [verifying, setVerifying] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<{file?: string; jenis?: string; nama?: string; paket?: string} | null>(null);
+  const [rejectMode, setRejectMode] = useState(false);
+  const [alasan, setAlasan] = useState("");
+
+  const closeModal = () => {
+    setDetailModal(null);
+    setDetailData(null);
+    setRejectMode(false);
+    setAlasan("");
+  };
 
   const authH = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -72,13 +81,18 @@ const AdminDokumen = () => {
   };
 
   const handleVerify = async (id: string, status: "diterima" | "ditolak") => {
+    const reason = alasan.trim();
+    if (status === "ditolak" && !reason) {
+      showToast("error", "Alasan penolakan wajib diisi.");
+      return;
+    }
     try {
       setVerifying(id + status);
-      await axios.put(`http://localhost:8080/admin/dokumen/${id}/verifikasi`, { status }, {
+      await axios.put(`http://localhost:8080/admin/dokumen/${id}/verifikasi`,
+        status === "ditolak" ? { status, alasan: reason } : { status }, {
         headers: authH(),
       });
-      setDetailModal(null);
-      setDetailData(null);
+      closeModal();
       await fetchList();
       window.dispatchEvent(new CustomEvent("admin-badge-refresh"));
       if (status === "diterima") {
@@ -214,14 +228,14 @@ const AdminDokumen = () => {
       {detailModal && (
         <div
           className="verify-modal-overlay"
-          onClick={(e) => e.target === e.currentTarget && !verifying && setDetailModal(null)}
+          onClick={(e) => e.target === e.currentTarget && !verifying && closeModal()}
         >
           <div className="verify-modal">
             <div className="verify-modal-header">
-              <div className="verify-modal-title">📄 Tinjau Dokumen</div>
+              <div className="verify-modal-title">{rejectMode ? "✕ Tolak Dokumen" : "📄 Tinjau Dokumen"}</div>
               <button
                 className="verify-modal-close"
-                onClick={() => { setDetailModal(null); setDetailData(null); }}
+                onClick={closeModal}
                 disabled={!!verifying}
               >
                 ✕
@@ -271,6 +285,21 @@ const AdminDokumen = () => {
                   ) : (
                     <div className="verify-no-bukti">⚠️ File dokumen tidak tersedia.</div>
                   )}
+
+                  {rejectMode && (
+                    <div className="verify-reject-box">
+                      <label htmlFor="alasan-tolak-dokumen">Alasan Penolakan <span>*</span></label>
+                      <textarea
+                        id="alasan-tolak-dokumen"
+                        rows={3}
+                        value={alasan}
+                        onChange={(e) => setAlasan(e.target.value)}
+                        placeholder="Contoh: Foto halaman identitas paspor kurang jelas."
+                        disabled={!!verifying}
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={{ textAlign: "center", padding: "1.5rem", color: "#94a3b8" }}>
@@ -280,20 +309,41 @@ const AdminDokumen = () => {
             </div>
 
             <div className="verify-modal-footer">
-              <button
-                className="verify-btn-tolak"
-                onClick={() => handleVerify(detailModal!, "ditolak")}
-                disabled={!!verifying}
-              >
-                {verifying === detailModal + "ditolak" ? "Menolak..." : "✕ Tolak"}
-              </button>
-              <button
-                className="verify-btn-terima"
-                onClick={() => handleVerify(detailModal!, "diterima")}
-                disabled={!!verifying}
-              >
-                {verifying === detailModal + "diterima" ? "Menerima..." : "✓ Terima Dokumen"}
-              </button>
+              {rejectMode ? (
+                <>
+                  <button
+                    className="verify-btn-batal"
+                    onClick={() => { setRejectMode(false); setAlasan(""); }}
+                    disabled={!!verifying}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    className="verify-btn-tolak"
+                    onClick={() => handleVerify(detailModal!, "ditolak")}
+                    disabled={!!verifying || !alasan.trim()}
+                  >
+                    {verifying === detailModal + "ditolak" ? "Menolak..." : "Tolak Dokumen"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="verify-btn-tolak"
+                    onClick={() => setRejectMode(true)}
+                    disabled={!!verifying}
+                  >
+                    ✕ Tolak
+                  </button>
+                  <button
+                    className="verify-btn-terima"
+                    onClick={() => handleVerify(detailModal!, "diterima")}
+                    disabled={!!verifying}
+                  >
+                    {verifying === detailModal + "diterima" ? "Menerima..." : "✓ Terima Dokumen"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -380,3 +380,46 @@
   margin-left: 0.5rem;
   vertical-align: middle;
 }
+
+/* ── Form alasan penolakan (dokumen & pembayaran) ── */
+.verify-reject-box {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.verify-reject-box label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #991b1b;
+}
+.verify-reject-box label span { color: #dc2626; }
+.verify-reject-box textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 78px;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid #fecaca;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #1e293b;
+  background: #fffafa;
+}
+.verify-reject-box textarea:focus { outline: none; border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12); }
+
+.verify-btn-batal {
+  padding: 0.6rem 1.1rem;
+  background: #fff;
+  color: #475569;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.verify-btn-batal:hover:not(:disabled) { background: #f1f5f9; }
+.verify-btn-batal:disabled { opacity: 0.65; cursor: not-allowed; }

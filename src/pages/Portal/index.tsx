@@ -11,6 +11,7 @@ interface PembayaranItem {
   status: string;
   tanggal: string;
   bukti: string;
+  alasan_penolakan?: string;
 }
 
 interface DokumenItem {
@@ -19,6 +20,7 @@ interface DokumenItem {
   status: string;
   file: string;
   uploaded_at: string;
+  alasan_penolakan?: string;
 }
 
 interface CustomerData {
@@ -698,19 +700,30 @@ const TabPembayaran = ({
                 </div>
                 <div className="riwayat-right">
                   <span className={`riwayat-status rs-${p.status?.toLowerCase()}`}>
-                    {p.status === "pending" ? "Menunggu Verifikasi" :
+                    {p.status === "pending" ? "⏳ Menunggu Verifikasi" :
                       p.status === "diterima" ? "✓ Diterima" : "✕ Ditolak"}
                   </span>
                   {p.bukti ? (
                     <a href={p.bukti} target="_blank" rel="noreferrer" className="bukti-link">
-                      📎 Lihat Bukti
+                      👁 Lihat
                     </a>
                   ) : p.status === "pending" ? (
-                    <button className="upload-bukti-btn" onClick={() => setUploadModalId(p.id)}>
+                    <button type="button" className="upload-bukti-btn" onClick={() => setUploadModalId(p.id)}>
                       📤 Upload Bukti
                     </button>
                   ) : null}
+                  {p.status === "ditolak" && (
+                    <button type="button" className="btn-ganti" onClick={() => setUploadModalId(p.id)}>
+                      ↻ Ganti
+                    </button>
+                  )}
                 </div>
+                {p.status === "ditolak" && p.alasan_penolakan && (
+                  <div className="alasan-penolakan">
+                    <strong>Alasan penolakan:</strong>
+                    <span>{p.alasan_penolakan}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -732,7 +745,7 @@ const TabPembayaran = ({
 
 // ── Tab Dokumen ───────────────────────────────────────────────────────────────
 
-const TabDokumen = ({ token }: { token: string }) => {
+const TabDokumen = ({ token, onRefreshDashboard }: { token: string; onRefreshDashboard?: () => void }) => {
   const [dokumenList, setDokumenList] = useState<DokumenItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dpDiterima, setDpDiterima] = useState(false);
@@ -796,10 +809,48 @@ const TabDokumen = ({ token }: { token: string }) => {
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       fetchDokumen();
+      onRefreshDashboard?.();
     } catch (err: unknown) {
       setUploadError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Upload gagal.") : "Upload gagal.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Ganti dokumen yang ditolak (memakai endpoint upload yang sama + dokumen_id)
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<DokumenItem | null>(null);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+
+  const startReplace = (d: DokumenItem) => {
+    replaceTargetRef.current = d;
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    const target = replaceTargetRef.current;
+    e.target.value = "";
+    if (!f || !target) return;
+    setUploadError("");
+    setUploadSuccess("");
+    try {
+      setReplacingId(target.id);
+      const fd = new FormData();
+      fd.append("file", f);
+      fd.append("jenis", target.jenis);
+      fd.append("dokumen_id", target.id);
+      await axios.post(`${API}/customer/dokumen/upload`, fd, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+      });
+      setUploadSuccess(`${target.jenis.replace(/_/g, " ")} berhasil diganti, menunggu verifikasi admin.`);
+      fetchDokumen();
+      onRefreshDashboard?.();
+    } catch (err: unknown) {
+      setUploadError(axios.isAxiosError(err) ? (err.response?.data?.error ?? "Penggantian gagal.") : "Penggantian gagal.");
+    } finally {
+      setReplacingId(null);
+      replaceTargetRef.current = null;
     }
   };
 
@@ -810,9 +861,18 @@ const TabDokumen = ({ token }: { token: string }) => {
   );
 
   // Map uploaded requirement docs
-  const uploadedMap = new Map(persyaratanList.map((d) => [d.jenis, d]));
+  const uploadedMap = new Map(persyaratanList.map((d) => [d.jenis.toLowerCase(), d]));
+  const getUploadedDoc = (key: string) => {
+    const k = key.toLowerCase();
+    return uploadedMap.get(k)
+      || (k === "akta_lahir" ? uploadedMap.get("akte_kelahiran") : undefined)
+      || (k === "akte_kelahiran" ? uploadedMap.get("akta_lahir") : undefined)
+      || (k === "foto" ? uploadedMap.get("pas_foto") : undefined)
+      || (k === "pas_foto" ? uploadedMap.get("foto") : undefined)
+      || (k === "kartu_keluarga" ? uploadedMap.get("kk") : undefined);
+  };
   const wajibDone = DOK_TYPES.filter((t) => t.wajib).every((t) => {
-    const d = uploadedMap.get(t.key) || (t.key === "akta_lahir" ? uploadedMap.get("akte_kelahiran") : undefined);
+    const d = getUploadedDoc(t.key);
     return d && d.status !== "ditolak";
   });
 
@@ -915,7 +975,7 @@ const TabDokumen = ({ token }: { token: string }) => {
             Upload dokumen berikut untuk melengkapi berkas Anda.
             <div className="dokumen-wajib-list">
               {DOK_TYPES.filter((t) => t.wajib).map((t) => {
-                const uploaded = uploadedMap.get(t.key) || (t.key === "akta_lahir" ? uploadedMap.get("akte_kelahiran") : undefined);
+                const uploaded = getUploadedDoc(t.key);
                 const cls = !uploaded ? "missing" : uploaded.status === "ditolak" ? "missing" : "done";
                 return (
                   <span key={t.key} className={`dokumen-wajib-tag ${cls}`}>
@@ -999,6 +1059,13 @@ const TabDokumen = ({ token }: { token: string }) => {
               </div>
             ) : (
               <div className="dokumen-riwayat">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  ref={replaceInputRef}
+                  onChange={handleReplaceFile}
+                  style={{ display: "none" }}
+                />
                 {persyaratanList.map((d) => (
                   <div className="dokumen-item" key={d.id}>
                     <div className="dokumen-item-left">
@@ -1011,13 +1078,29 @@ const TabDokumen = ({ token }: { token: string }) => {
                       </div>
                     </div>
                     <span className={`dokumen-status ds-${d.status?.toLowerCase()}`}>
-                      {d.status === "pending" ? "Menunggu" :
+                      {d.status === "pending" ? "⏳ Menunggu Verifikasi" :
                         d.status === "diterima" ? "✓ Diterima" : "✕ Ditolak"}
                     </span>
                     {d.file && (
                       <a href={d.file} target="_blank" rel="noreferrer" className="dokumen-view-link">
                         👁 Lihat
                       </a>
+                    )}
+                    {d.status === "ditolak" && (
+                      <button
+                        type="button"
+                        className="btn-ganti"
+                        onClick={() => startReplace(d)}
+                        disabled={replacingId === d.id}
+                      >
+                        {replacingId === d.id ? "Mengupload..." : "↻ Ganti"}
+                      </button>
+                    )}
+                    {d.status === "ditolak" && d.alasan_penolakan && (
+                      <div className="alasan-penolakan">
+                        <strong>Alasan penolakan:</strong>
+                        <span>{d.alasan_penolakan}</span>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -2125,7 +2208,7 @@ const Portal = () => {
                 onOpenInvoice={() => setShowInvoiceModal(true)}
               />
             ) : (
-              <TabDokumen token={token} />
+              <TabDokumen token={token} onRefreshDashboard={() => fetchDashboard(token)} />
             )}
           </div>
         </div>

@@ -34,6 +34,15 @@ const AdminPembayaran = () => {
   const [verifying, setVerifying] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<DetailDataType | null>(null);
+  const [rejectMode, setRejectMode] = useState(false);
+  const [alasan, setAlasan] = useState("");
+
+  const closeModal = () => {
+    setDetailModal(null);
+    setDetailData(null);
+    setRejectMode(false);
+    setAlasan("");
+  };
 
   const authH = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -92,13 +101,18 @@ const AdminPembayaran = () => {
   };
 
   const handleVerify = async (id: string, status: "diterima" | "ditolak") => {
+    const reason = alasan.trim();
+    if (status === "ditolak" && !reason) {
+      showToast("error", "Alasan penolakan wajib diisi.");
+      return;
+    }
     try {
       setVerifying(id + status);
-      await axios.put(`http://localhost:8080/admin/pembayaran/${id}/verifikasi`, { status }, {
+      await axios.put(`http://localhost:8080/admin/pembayaran/${id}/verifikasi`,
+        status === "ditolak" ? { status, alasan: reason } : { status }, {
         headers: authH(),
       });
-      setDetailModal(null);
-      setDetailData(null);
+      closeModal();
       await fetchList();
       window.dispatchEvent(new CustomEvent("admin-badge-refresh"));
       if (status === "diterima") {
@@ -238,14 +252,14 @@ const AdminPembayaran = () => {
       {detailModal && (
         <div
           className="verify-modal-overlay"
-          onClick={(e) => e.target === e.currentTarget && !verifying && setDetailModal(null)}
+          onClick={(e) => e.target === e.currentTarget && !verifying && closeModal()}
         >
           <div className="verify-modal">
             <div className="verify-modal-header">
-              <div className="verify-modal-title">🔍 Tinjau Pembayaran</div>
+              <div className="verify-modal-title">{rejectMode ? "✕ Tolak Pembayaran" : "🔍 Tinjau Pembayaran"}</div>
               <button
                 className="verify-modal-close"
-                onClick={() => { setDetailModal(null); setDetailData(null); }}
+                onClick={closeModal}
                 disabled={!!verifying}
               >
                 ✕
@@ -352,26 +366,62 @@ const AdminPembayaran = () => {
                       ⚠️ Bukti pembayaran belum diupload oleh jamaah.
                     </div>
                   )}
+
+                  {rejectMode && (
+                    <div className="verify-reject-box">
+                      <label htmlFor="alasan-tolak-pembayaran">Alasan Penolakan <span>*</span></label>
+                      <textarea
+                        id="alasan-tolak-pembayaran"
+                        rows={3}
+                        value={alasan}
+                        onChange={(e) => setAlasan(e.target.value)}
+                        placeholder="Contoh: Bukti transfer tidak menunjukkan nominal pembayaran."
+                        disabled={!!verifying}
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>
 
             {detailData?.bukti && (
               <div className="verify-modal-footer">
-                <button
-                  className="verify-btn-tolak"
-                  onClick={() => handleVerify(detailModal!, "ditolak")}
-                  disabled={!!verifying}
-                >
-                  {verifying === detailModal + "ditolak" ? "Menolak..." : "✕ Tolak"}
-                </button>
-                <button
-                  className="verify-btn-terima"
-                  onClick={() => handleVerify(detailModal!, "diterima")}
-                  disabled={!!verifying}
-                >
-                  {verifying === detailModal + "diterima" ? "Menerima..." : "✓ Terima Pembayaran"}
-                </button>
+                {rejectMode ? (
+                  <>
+                    <button
+                      className="verify-btn-batal"
+                      onClick={() => { setRejectMode(false); setAlasan(""); }}
+                      disabled={!!verifying}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      className="verify-btn-tolak"
+                      onClick={() => handleVerify(detailModal!, "ditolak")}
+                      disabled={!!verifying || !alasan.trim()}
+                    >
+                      {verifying === detailModal + "ditolak" ? "Menolak..." : "Tolak Pembayaran"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="verify-btn-tolak"
+                      onClick={() => setRejectMode(true)}
+                      disabled={!!verifying}
+                    >
+                      ✕ Tolak
+                    </button>
+                    <button
+                      className="verify-btn-terima"
+                      onClick={() => handleVerify(detailModal!, "diterima")}
+                      disabled={!!verifying}
+                    >
+                      {verifying === detailModal + "diterima" ? "Menerima..." : "✓ Terima Pembayaran"}
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

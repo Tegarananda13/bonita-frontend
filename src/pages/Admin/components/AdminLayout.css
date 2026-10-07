@@ -13,7 +13,9 @@
 .admin-sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: #0f172a;
+  background: linear-gradient(180deg, #0a2e1c 0%, #0f3d28 35%, #082617 75%, #051a0f 100%);
+  border-right: 1px solid rgba(45, 158, 107, 0.2);
+  box-shadow: 4px 0 24px rgba(5, 26, 15, 0.25);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -30,13 +32,14 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.5rem 1.5rem 1.25rem;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-brand-icon {
   width: 38px;
   height: 38px;
   background: linear-gradient(135deg, #1a6b43, #2d9e6b);
+  border: 1px solid rgba(52, 211, 153, 0.3);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -60,7 +63,7 @@
 
 .sidebar-brand-sub {
   font-size: 0.68rem;
-  color: rgba(255,255,255,0.4);
+  color: rgba(167, 243, 208, 0.75);
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -70,12 +73,13 @@
 .sidebar-role-badge {
   margin: 1rem 1.5rem;
   padding: 0.6rem 0.875rem;
-  background: rgba(26, 107, 67, 0.15);
-  border: 1px solid rgba(45, 158, 107, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(52, 211, 153, 0.25);
   border-radius: 10px;
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  backdrop-filter: blur(4px);
 }
 
 .sidebar-role-dot {
@@ -83,6 +87,7 @@
   height: 7px;
   border-radius: 50%;
   background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
   animation: pulseDot 2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -109,7 +114,7 @@
 
 .sidebar-role-label {
   font-size: 0.68rem;
-  color: rgba(255,255,255,0.4);
+  color: rgba(167, 243, 208, 0.75);
   text-transform: capitalize;
 }
 
@@ -120,6 +125,23 @@
   padding: 0.5rem 0;
 }
 
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(45, 158, 107, 0.3);
+  border-radius: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(45, 158, 107, 0.5);
+}
+
 .sidebar-nav-section {
   margin-bottom: 0.25rem;
 }
@@ -127,7 +149,7 @@
 .sidebar-nav-label {
   font-size: 0.65rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.25);
+  color: rgba(167, 243, 208, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.75rem 1.5rem 0.35rem;
@@ -140,7 +162,7 @@
   padding: 0.65rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
   border-radius: 0;
   transition: all 0.15s;
@@ -155,12 +177,12 @@
 
 .sidebar-nav-item:hover {
   color: #ffffff;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-nav-item.active {
   color: #ffffff;
-  background: rgba(45, 158, 107, 0.2);
+  background: linear-gradient(90deg, rgba(45, 158, 107, 0.35) 0%, rgba(45, 158, 107, 0.1) 100%);
   font-weight: 600;
 }
 
@@ -172,8 +194,9 @@
   transform: translateY(-50%);
   width: 3px;
   height: 60%;
-  background: #2d9e6b;
+  background: #34d399;
   border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
 }
 
 .sidebar-nav-icon {
@@ -187,7 +210,7 @@
 
 /* Footer (Logout) */
 .sidebar-footer {
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 1rem 1.5rem;
 }
 
@@ -197,10 +220,10 @@
   gap: 0.75rem;
   width: 100%;
   padding: 0.65rem 0.75rem;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: 10px;
-  color: #f87171;
+  color: #fca5a5;
   font-size: 0.875rem;
   font-weight: 600;
   font-family: var(--font-family);
@@ -209,8 +232,9 @@
 }
 
 .sidebar-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 /* ── Main Content ── */
