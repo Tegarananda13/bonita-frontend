@@ -83,6 +83,7 @@ interface DashboardData {
   payment_status: string;
   document_status: string;
   status: string;
+  catatan_verifikasi_manager?: string;
   batas_waktu_dp?: string;
   tanggal_daftar?: string;
   customer?: CustomerData;
@@ -167,11 +168,22 @@ const fmtDate = (d?: string | null) => {
 
 const getStatusClass = (v: string) => {
   const map: Record<string, string> = {
-    proses: "sval-proses", selesai: "sval-selesai", batal: "sval-batal",
+    proses: "sval-proses",
+    sedang_diproses: "sval-proses",
+    menunggu_verifikasi_manager: "sval-pending",
+    perlu_perbaikan: "sval-revisi",
+    siap_berangkat: "sval-selesai",
+    selesai: "sval-selesai",
+    batal: "sval-batal",
     kadaluarsa: "sval-kadaluarsa",
-    belum: "sval-belum", pending: "sval-pending", lunas: "sval-lunas",
-    dp: "sval-dp", diterima: "sval-verified", ditolak: "sval-ditolak",
-    lengkap: "sval-lengkap", revisi: "sval-revisi",
+    belum: "sval-belum",
+    pending: "sval-pending",
+    lunas: "sval-lunas",
+    dp: "sval-dp",
+    diterima: "sval-verified",
+    ditolak: "sval-ditolak",
+    lengkap: "sval-lengkap",
+    revisi: "sval-revisi",
     belum_lengkap: "sval-belum_lengkap",
   };
   return map[v?.toLowerCase()] ?? "sval-belum";
@@ -179,11 +191,22 @@ const getStatusClass = (v: string) => {
 
 const getStatusLabel = (v: string) => {
   const map: Record<string, string> = {
-    proses: "Proses", selesai: "Selesai", batal: "Batal",
+    proses: "Sedang Diproses",
+    sedang_diproses: "Sedang Diproses",
+    menunggu_verifikasi_manager: "Menunggu Verifikasi Administration Manager",
+    perlu_perbaikan: "Perlu Perbaikan",
+    siap_berangkat: "Siap Berangkat",
+    selesai: "Selesai",
+    batal: "Batal",
     kadaluarsa: "Kadaluarsa",
-    belum: "Belum", pending: "Pending", lunas: "Lunas",
-    dp: "DP", diterima: "Diterima", ditolak: "Ditolak",
-    lengkap: "Lengkap", revisi: "Revisi",
+    belum: "Belum",
+    pending: "Pending",
+    lunas: "Lunas",
+    dp: "DP",
+    diterima: "Diterima",
+    ditolak: "Ditolak",
+    lengkap: "Lengkap",
+    revisi: "Revisi",
     belum_lengkap: "Belum Lengkap",
   };
   return map[v?.toLowerCase()] ?? v;
@@ -2160,6 +2183,75 @@ const Portal = () => {
                 <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
                   Pendaftaran ini sudah kadaluarsa karena pembayaran DP tidak dilakukan dalam batas waktu.
                   Silakan <a href="/daftar" style={{ color: "#4f46e5", fontWeight: 600 }}>daftar ulang</a> jika masih ingin mengikuti paket umroh.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner Perlu Perbaikan */}
+          {!loadingDash && pendaftaranStatus === "perlu_perbaikan" && (
+            <div style={{
+              margin: "0.75rem 1.75rem 0",
+              padding: "1rem 1.25rem",
+              background: "linear-gradient(135deg, #fef2f2, #fff1f2)",
+              border: "1.5px solid #fca5a5",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.35rem", lineHeight: 1 }}>⚠️</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#991b1b", marginBottom: 3 }}>
+                  Perlu Perbaikan
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#b91c1c", lineHeight: 1.4 }}>
+                  <strong>Catatan:</strong> {dashData?.catatan_verifikasi_manager || "-"}
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "#ef4444", marginTop: 4 }}>
+                  Silakan periksa dan perbaiki data dokumen atau pembayaran pada tab di bawah ini menggunakan tombol Ganti.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner Menunggu Verifikasi Manager */}
+          {!loadingDash && pendaftaranStatus === "menunggu_verifikasi_manager" && (
+            <div style={{
+              margin: "0.75rem 1.75rem 0",
+              padding: "0.875rem 1.125rem",
+              background: "linear-gradient(135deg, #f0fdf4, #ecfdf5)",
+              border: "1.5px solid #86efac",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>⏳</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#166534", marginBottom: 2 }}>
+                  Menunggu Verifikasi Administration Manager
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "#15803d" }}>
+                  Seluruh dokumen dan pembayaran telah lengkap. Berkas pendaftaran Anda sedang dalam tahap pemeriksaan akhir oleh Administration Manager.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner Siap Berangkat */}
+          {!loadingDash && pendaftaranStatus === "siap_berangkat" && (
+            <div style={{
+              margin: "0.75rem 1.75rem 0",
+              padding: "0.875rem 1.125rem",
+              background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
+              border: "1.5px solid #34d399",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.25rem", lineHeight: 1 }}>🎉</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.9rem", color: "#065f46", marginBottom: 2 }}>
+                  Siap Berangkat!
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "#047857" }}>
+                  Pendaftaran Anda telah disetujui dan disahkan oleh Administration Manager. Silakan cek dokumen perjalanan Anda di tab Dokumen.
                 </div>
               </div>
             </div>

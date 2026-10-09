@@ -11,6 +11,12 @@ interface DashboardData {
   total_dokumen_pending?: number;
 }
 
+interface ManagerBadgeData {
+  menunggu_verifikasi: number;
+  perlu_perbaikan: number;
+  siap_berangkat: number;
+}
+
 const quicklinks = [
   { to: "/admin/paket", icon: "✨", label: "Paket Umroh" },
   { to: "/admin/pendaftaran", icon: "👥", label: "Pendaftaran" },
@@ -21,16 +27,33 @@ const quicklinks = [
 const AdminDashboard = () => {
   const { token, role } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [managerBadges, setManagerBadges] = useState<ManagerBadgeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    const isManager = role === "owner" || role === "manager" || role === "administration_manager";
+
     const fetchDashboard = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/admin/dashboard", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const reqs: Promise<any>[] = [
+          axios.get("http://localhost:8080/admin/dashboard", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ];
+        if (isManager) {
+          reqs.push(
+            axios.get("http://localhost:8080/manager/badges", {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          );
+        }
+
+        const [res, mgrRes] = await Promise.all(reqs);
         setData(res.data);
+        if (mgrRes) {
+          setManagerBadges(mgrRes.data);
+        }
         setError(false);
       } catch {
         setData({});
@@ -40,13 +63,13 @@ const AdminDashboard = () => {
       }
     };
     fetchDashboard();
-  }, [token]);
+  }, [token, role]);
 
   const hour = new Date().getHours();
   const greeting =
     hour < 11 ? "Selamat Pagi" : hour < 15 ? "Selamat Siang" : hour < 19 ? "Selamat Sore" : "Selamat Malam";
 
-  const stats = [
+  const adminStats = [
     {
       icon: "✨",
       iconClass: "stat-icon-green",
@@ -81,13 +104,55 @@ const AdminDashboard = () => {
     },
   ];
 
+  const managerStats = [
+    {
+      icon: "⏳",
+      iconClass: "stat-icon-amber",
+      label: "Menunggu Verifikasi",
+      value: managerBadges?.menunggu_verifikasi ?? 0,
+      sub: "antrean verifikasi Manager",
+      to: "/admin/verifikasi",
+    },
+    {
+      icon: "⚠️",
+      iconClass: "stat-icon-rose",
+      label: "Perlu Perbaikan",
+      value: managerBadges?.perlu_perbaikan ?? 0,
+      sub: "dikembalikan ke Admin",
+      to: "/admin/pendaftaran",
+    },
+    {
+      icon: "✅",
+      iconClass: "stat-icon-emerald",
+      label: "Siap Berangkat",
+      value: managerBadges?.siap_berangkat ?? 0,
+      sub: "disahkan Manager",
+      to: "/admin/pendaftaran",
+    },
+    {
+      icon: "👥",
+      iconClass: "stat-icon-green",
+      label: "Total Pendaftaran",
+      value: data?.total_pendaftaran ?? 0,
+      sub: "seluruh jamaah",
+      to: "/admin/pendaftaran",
+    },
+  ];
+
+  const isManager = role === "owner" || role === "manager" || role === "administration_manager";
+  const stats = isManager ? managerStats : adminStats;
+
   return (
     <div className="dashboard-page">
       {/* Welcome */}
       <div className="dashboard-welcome">
         <div className="welcome-text">
-          <h2>{greeting}, {role === "owner" ? "Owner 👑" : "Admin"}!</h2>
-          <p>Berikut ringkasan aktivitas hari ini di Bonita Umroh.</p>
+          <h2>{greeting}, {isManager ? "Administration Manager 🛡️" : "Admin"}!</h2>
+          <p>
+            {isManager
+              ? "Berikut ringkasan verifikasi akhir dan aktivitas pendaftaran Bonita Umroh."
+              : "Berikut ringkasan aktivitas hari ini di Bonita Umroh."}
+          </p>
         </div>
         <div className="welcome-icon">🕌</div>
       </div>
@@ -112,7 +177,9 @@ const AdminDashboard = () => {
 
       {/* Stats */}
       <div>
-        <div className="dashboard-section-title">Ringkasan</div>
+        <div className="dashboard-section-title">
+          {isManager ? "Ringkasan Verifikasi & Status" : "Ringkasan"}
+        </div>
         {loading ? (
           <div className="dashboard-skeleton-stats">
             {[1, 2, 3, 4].map((i) => (
@@ -146,13 +213,19 @@ const AdminDashboard = () => {
       <div>
         <div className="dashboard-section-title">Akses Cepat</div>
         <div className="dashboard-quicklinks">
+          {isManager && (
+            <Link to="/admin/verifikasi" className="quicklink-card">
+              <div className="quicklink-icon">🛡️</div>
+              Verifikasi Pendaftaran
+            </Link>
+          )}
           {quicklinks.map((q) => (
             <Link to={q.to} className="quicklink-card" key={q.to}>
               <div className="quicklink-icon">{q.icon}</div>
               {q.label}
             </Link>
           ))}
-          {role === "owner" && (
+          {isManager && (
             <Link to="/admin/manajemen-admin" className="quicklink-card">
               <div className="quicklink-icon">👤</div>
               Manajemen Admin

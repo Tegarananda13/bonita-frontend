@@ -24,6 +24,7 @@ import ProtectedRoute from './pages/Admin/components/ProtectedRoute';
 import TambahJamaah from './pages/Admin/TambahJamaah';
 import AdminPengaduan from './pages/Admin/Pengaduan';
 import TambahPaket from './pages/Admin/Paket/TambahPaket';
+import VerifikasiManager from './pages/Admin/Verifikasi';
 
 // ── Guard: redirect ke dashboard jika sudah login ──────────────────────
 const GuestRoute = ({ children }: { children: React.ReactNode }) => {
@@ -58,7 +59,7 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'owner']}>
+            <ProtectedRoute allowedRoles={['admin', 'owner', 'manager', 'administration_manager']}>
               <AdminLayout />
             </ProtectedRoute>
           }
@@ -66,21 +67,21 @@ function App() {
           {/* Redirect /admin → /admin/dashboard */}
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
 
-          {/* Admin & Owner */}
+          {/* Admin & Administration Manager */}
           <Route
             path="dashboard"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'owner']}>
+              <ProtectedRoute allowedRoles={['admin', 'owner', 'manager', 'administration_manager']}>
                 <AdminDashboard />
               </ProtectedRoute>
             }
           />
 
-          {/* Owner only */}
+          {/* Administration Manager only */}
           <Route
             path="manajemen-admin"
             element={
-              <ProtectedRoute allowedRoles={['owner']}>
+              <ProtectedRoute allowedRoles={['owner', 'manager', 'administration_manager']}>
                 <ManajemenAdmin />
               </ProtectedRoute>
             }
@@ -89,8 +90,17 @@ function App() {
           <Route
             path="laporan"
             element={
-              <ProtectedRoute allowedRoles={['owner']}>
+              <ProtectedRoute allowedRoles={['owner', 'manager', 'administration_manager']}>
                 <Laporan />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="verifikasi"
+            element={
+              <ProtectedRoute allowedRoles={['owner', 'manager', 'administration_manager']}>
+                <VerifikasiManager />
               </ProtectedRoute>
             }
           />

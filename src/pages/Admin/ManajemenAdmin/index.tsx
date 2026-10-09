@@ -83,7 +83,7 @@ const ManajemenAdmin = () => {
   const fetchAdmins = useCallback(async () => {
     try {
       setLoadingList(true);
-      const res = await axios.get("http://localhost:8080/owner/admin", authHeader);
+      const res = await axios.get("http://localhost:8080/manager/admin", authHeader);
       setAdmins(res.data?.admins ?? []);
     } catch {
       setAdmins([]);
@@ -140,7 +140,7 @@ const ManajemenAdmin = () => {
     setAddSubmitting(true);
     try {
       await axios.post(
-        "http://localhost:8080/owner/admin",
+        "http://localhost:8080/manager/admin",
         { nama: nama.trim(), username: username.trim(), password, no_hp: no_hp.trim(), email: email.trim() },
         authHeader
       );
@@ -171,7 +171,7 @@ const ManajemenAdmin = () => {
     setEditSubmitting(true);
     try {
       await axios.put(
-        `http://localhost:8080/owner/admin/${selectedAdmin.id}`,
+        `http://localhost:8080/manager/admin/${selectedAdmin.id}`,
         { nama: nama.trim(), username: username.trim(), no_hp: no_hp.trim(), email: email.trim() },
         authHeader
       );
@@ -196,7 +196,7 @@ const ManajemenAdmin = () => {
     const endpoint = admin.is_active ? "deactivate" : "reactivate";
     try {
       await axios.patch(
-        `http://localhost:8080/owner/admin/${admin.id}/${endpoint}`,
+        `http://localhost:8080/manager/admin/${admin.id}/${endpoint}`,
         {},
         authHeader
       );

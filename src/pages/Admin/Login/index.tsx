@@ -32,9 +32,9 @@ const AdminLogin = () => {
 
       const { token, role, nama } = res.data;
 
-      // Hanya izinkan admin dan owner masuk
-      if (role !== "admin" && role !== "owner") {
-        setError("Akses ditolak. Akun ini bukan admin atau owner.");
+      // Hanya izinkan admin dan administration manager masuk
+      if (role !== "admin" && role !== "owner" && role !== "manager" && role !== "administration_manager") {
+        setError("Akses ditolak. Akun ini bukan Admin atau Administration Manager.");
         return;
       }
 
@@ -75,8 +75,8 @@ const AdminLogin = () => {
               <span>Ibadah dengan Mudah</span>
             </h2>
             <p>
-              Platform manajemen terpadu untuk admin dan owner dalam
-              mengelola paket, jamaah, dan pembayaran umroh.
+              Platform manajemen terpadu untuk Admin dan Administration Manager dalam
+              mengelola paket, jamaah, verifikasi berkas, dan pembayaran umroh.
             </p>
           </div>
         </div>
@@ -88,7 +88,7 @@ const AdminLogin = () => {
               { icon: "📋", text: "Manajemen paket & fasilitas" },
               { icon: "👥", text: "Kelola data jamaah & pendaftaran" },
               { icon: "💳", text: "Verifikasi pembayaran real-time" },
-              { icon: "👑", text: "Owner: manajemen akun admin" },
+              { icon: "🛡️", text: "Manager: verifikasi & pengesahan akhir" },
             ].map((f, i) => (
               <div className="login-feature-item" key={i}>
                 <div className="login-feature-dot">{f.icon}</div>
@@ -105,7 +105,7 @@ const AdminLogin = () => {
           <div className="login-form-header">
             <h1 className="login-form-title">Selamat Datang</h1>
             <p className="login-form-subtitle">
-              Masuk dengan akun admin atau owner Anda.
+              Masuk dengan akun Admin atau Administration Manager Anda.
             </p>
           </div>
 
@@ -216,7 +216,7 @@ const AdminLogin = () => {
           </form>
 
           <p className="login-form-note">
-            Portal ini hanya untuk admin & owner Bonita Umroh.
+            Portal ini hanya untuk Admin &amp; Administration Manager Bonita Umroh.
           </p>
         </div>
       </div>

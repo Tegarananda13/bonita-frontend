@@ -21,6 +21,7 @@ interface PendaftaranItem {
   registered_by_label?: string;
   registration_source?: string;
   assigned?: boolean;
+  catatan_verifikasi_manager?: string;
 }
 
 interface DetailPendaftaran {
@@ -50,6 +51,11 @@ interface DetailPendaftaran {
   payment_status: string;
   document_status: string;
   status: string;
+  catatan_verifikasi_manager?: string;
+  approved_by?: string;
+  approved_at?: string;
+  approver_nama?: string;
+  approver?: { id?: string; nama?: string; Nama?: string; username?: string; role?: string };
   admin_pic?: string;
   registration_source?: string;
   registered_by?: string;
@@ -117,6 +123,9 @@ const downloadFile = async (url: string, filename: string) => {
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   proses: { label: "Proses", cls: "status-proses" },
+  sedang_diproses: { label: "Sedang Diproses", cls: "status-proses" },
+  menunggu_verifikasi_manager: { label: "Menunggu Verifikasi Manager", cls: "status-menunggu" },
+  perlu_perbaikan: { label: "Perlu Perbaikan", cls: "status-batal" },
   selesai: { label: "Selesai", cls: "status-selesai" },
   batal: { label: "Batal", cls: "status-batal" },
   kadaluarsa: { label: "Kadaluarsa", cls: "status-kadaluarsa" },
@@ -206,8 +215,27 @@ const DetailModal = ({
   // ── Konfirmasi hapus ──
   const [deletingPayId, setDeletingPayId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [submittingAjukan, setSubmittingAjukan] = useState(false);
 
   const authH = { Authorization: `Bearer ${token}` };
+
+  const handleAjukanVerifikasi = async () => {
+    if (!data) return;
+    setSubmittingAjukan(true);
+    try {
+      const res = await axios.post(`${API}/admin/pendaftaran/${data.nomor_pendaftaran}/ajukan-verifikasi`, {}, {
+        headers: authH,
+      });
+      showToast("success", res.data?.message || "✓ Pendaftaran berhasil diajukan ulang ke Administration Manager.");
+      await fetchData();
+      window.dispatchEvent(new Event("admin-badge-refresh"));
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal mengajukan verifikasi.") : "Gagal mengajukan verifikasi.";
+      showToast("error", msg);
+    } finally {
+      setSubmittingAjukan(false);
+    }
+  };
 
   // ── Fetch data ──
   const fetchData = useCallback(async () => {
@@ -243,6 +271,11 @@ const DetailModal = ({
         nomor_invoice: p?.nomor_invoice ?? "",
         document_status: p?.DocumentStatus ?? p?.document_status,
         status: p?.Status ?? p?.status,
+        catatan_verifikasi_manager: p?.CatatanVerifikasiManager ?? p?.catatan_verifikasi_manager,
+        approved_by: p?.ApprovedBy ?? p?.approved_by,
+        approved_at: p?.ApprovedAt ?? p?.approved_at,
+        approver: p?.Approver ?? p?.approver,
+        approver_nama: p?.approver_nama ?? p?.Approver?.Nama ?? p?.approver?.nama ?? p?.Approver?.nama,
         admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
         registration_source: p?.registration_source ?? "customer",
         registered_by: p?.registered_by ?? "Self",
@@ -848,6 +881,71 @@ const DetailModal = ({
               </div>
             ) : (
               <>
+                {/* Banner Perlu Perbaikan dari Manager */}
+                {data.status === "perlu_perbaikan" && (
+                  <div style={{
+                    background: "linear-gradient(135deg, #fef2f2, #fff1f2)",
+                    border: "1.5px solid #fca5a5",
+                    borderRadius: 12,
+                    padding: "1rem 1.25rem",
+                    marginBottom: "1.25rem",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "0.75rem",
+                  }}>
+                    <span style={{ fontSize: "1.4rem" }}>⚠️</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#991b1b" }}>
+                        Pendaftaran Perlu Perbaikan (Administration Manager)
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "#b91c1c", marginTop: 4, lineHeight: 1.4 }}>
+                        <strong>Catatan Manager:</strong> {data.catatan_verifikasi_manager || "-"}
+                      </div>
+                      <div style={{ marginTop: 10 }}>
+                        <button
+                          type="button"
+                          disabled={submittingAjukan}
+                          onClick={handleAjukanVerifikasi}
+                          style={{
+                            background: "linear-gradient(135deg, #dc2626, #b91c1c)",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: 8,
+                            padding: "0.5rem 1rem",
+                            fontSize: "0.82rem",
+                            fontWeight: 700,
+                            cursor: submittingAjukan ? "not-allowed" : "pointer",
+                            boxShadow: "0 2px 6px rgba(220, 38, 38, 0.3)",
+                          }}
+                        >
+                          {submittingAjukan ? "Mengajukan..." : "🛡️ Ajukan Verifikasi Ulang ke Manager"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner Disahkan oleh Manager */}
+                {data.status === "siap_berangkat" && data.approved_at && (
+                  <div style={{
+                    background: "linear-gradient(135deg, #ecfdf5, #f0fdf4)",
+                    border: "1.5px solid #86efac",
+                    borderRadius: 12,
+                    padding: "0.85rem 1.15rem",
+                    marginBottom: "1.25rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}>
+                    <span style={{ fontSize: "1.3rem" }}>🛡️</span>
+                    <div style={{ fontSize: "0.84rem", color: "#166534" }}>
+                      <strong>Disahkan oleh Administration Manager:</strong>{" "}
+                      {data.approver?.nama || data.approver?.Nama || data.approver_nama || "Administration Manager"}{" "}
+                      ({fmtDate(data.approved_at)})
+                    </div>
+                  </div>
+                )}
+
                 {/* Status bar */}
                 <div className="modal-status-row">
                   <div className="modal-status-item">
@@ -1445,6 +1543,10 @@ const GrupDetailModal = ({
   const [totalPerlengkapan, setTotalPerlengkapan] = useState(0);
   const [grupJamaah, setGrupJamaah] = useState<{ nomor_pendaftaran: string; nama: string; ambil_perlengkapan: boolean; harga_perlengkapan: number }[]>([]);
   const [loadingPay, setLoadingPay] = useState(true);
+  const [groupStatus, setGroupStatus] = useState(first?.status ?? "");
+  const [groupCatatan, setGroupCatatan] = useState(first?.catatan_verifikasi_manager ?? "");
+  const [submittingAjukanGrup, setSubmittingAjukanGrup] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!first) return;
@@ -1457,6 +1559,8 @@ const GrupDetailModal = ({
         if (p?.total_tagihan) setTotalTagihan(p.total_tagihan);
         if (p?.total_pembayaran !== undefined) setTotalPembayaran(p.total_pembayaran);
         if (p?.total_perlengkapan !== undefined) setTotalPerlengkapan(p.total_perlengkapan);
+        if (p?.status) setGroupStatus(p.status);
+        if (p?.catatan_verifikasi_manager) setGroupCatatan(p.catatan_verifikasi_manager);
         const rawGrup = res.data?.grup_jamaah ?? [];
         if (rawGrup.length > 0) {
           setGrupJamaah(rawGrup.map((g: Record<string, unknown>) => ({
@@ -1481,6 +1585,24 @@ const GrupDetailModal = ({
     fetch();
   }, [first, token]);
 
+  const handleAjukanVerifikasiGrup = async () => {
+    if (!first) return;
+    setSubmittingAjukanGrup(true);
+    try {
+      const res = await axios.post(`http://localhost:8080/admin/pendaftaran/${first.nomor_pendaftaran}/ajukan-verifikasi`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast("success", res.data?.message || "✓ Pendaftaran grup berhasil diajukan ulang ke Administration Manager.");
+      setGroupStatus("menunggu_verifikasi_manager");
+      window.dispatchEvent(new Event("admin-badge-refresh"));
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal mengajukan verifikasi.") : "Gagal mengajukan verifikasi.";
+      showToast("error", msg);
+    } finally {
+      setSubmittingAjukanGrup(false);
+    }
+  };
+
   // Helper: cari equipment info untuk satu jamaah
   const getPerlengkapan = (nomor: string) => grupJamaah.find(g => g.nomor_pendaftaran === nomor);
 
@@ -1501,6 +1623,50 @@ const GrupDetailModal = ({
         </div>
 
         <div className="modal-body">
+          {/* Banner Perlu Perbaikan untuk Grup */}
+          {groupStatus === "perlu_perbaikan" && (
+            <div style={{
+              background: "linear-gradient(135deg, #fef2f2, #fff1f2)",
+              border: "1.5px solid #fca5a5",
+              borderRadius: 14,
+              padding: "1rem 1.25rem",
+              marginBottom: "1.25rem",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.4rem" }}>⚠️</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#991b1b" }}>
+                  Pendaftaran Grup Perlu Perbaikan (Administration Manager)
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#b91c1c", marginTop: 4, lineHeight: 1.4 }}>
+                  <strong>Catatan Manager:</strong> {groupCatatan || "-"}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    type="button"
+                    disabled={submittingAjukanGrup}
+                    onClick={handleAjukanVerifikasiGrup}
+                    style={{
+                      background: "linear-gradient(135deg, #dc2626, #b91c1c)",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "0.5rem 1rem",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      cursor: submittingAjukanGrup ? "not-allowed" : "pointer",
+                      boxShadow: "0 2px 6px rgba(220, 38, 38, 0.3)",
+                    }}
+                  >
+                    {submittingAjukanGrup ? "Mengajukan..." : "🛡️ Ajukan Verifikasi Ulang Grup ke Manager"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Ringkasan Invoice */}
           <div style={{ background: "linear-gradient(135deg,#0f172a,#0f291e)", borderRadius: 14, padding: "1.25rem", marginBottom: "1.25rem", color: "white" }}>
             <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#86efac", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1rem" }}>💳 Ringkasan Invoice</div>
@@ -1901,10 +2067,12 @@ const AdminPendaftaran = () => {
               {[
                 { icon: "📋", label: "Total", value: list.length, cls: "", filter: "semua" },
                 { icon: "⏳", label: "Proses", value: countByStatus("proses"), cls: "s-proses", filter: "proses" },
+                { icon: "🛡️", label: "Verifikasi Manager", value: countByStatus("menunggu_verifikasi_manager"), cls: "s-proses", filter: "menunggu_verifikasi_manager" },
+                { icon: "⚠️", label: "Perlu Perbaikan", value: countByStatus("perlu_perbaikan"), cls: "s-batal", filter: "perlu_perbaikan" },
                 { icon: "✈️", label: "Siap Berangkat", value: countByStatus("siap_berangkat"), cls: "s-siap", filter: "siap_berangkat" },
                 { icon: "✅", label: "Selesai", value: countByStatus("selesai"), cls: "s-selesai", filter: "selesai" },
                 { icon: "❌", label: "Batal", value: countByStatus("batal"), cls: "s-batal", filter: "batal" },
-                { icon: "⚠️", label: "Kadaluarsa", value: countByStatus("kadaluarsa"), cls: "s-kadaluarsa", filter: "kadaluarsa" },
+                { icon: "⏰", label: "Kadaluarsa", value: countByStatus("kadaluarsa"), cls: "s-kadaluarsa", filter: "kadaluarsa" },
               ].map((s) => (
                 <div
                   className={`pendaftaran-stat-card ${s.cls}`}
@@ -1942,6 +2110,8 @@ const AdminPendaftaran = () => {
             >
               <option value="semua">Semua Status</option>
               <option value="proses">Proses</option>
+              <option value="menunggu_verifikasi_manager">Menunggu Verifikasi Manager</option>
+              <option value="perlu_perbaikan">Perlu Perbaikan</option>
               <option value="siap_berangkat">Siap Berangkat</option>
               <option value="selesai">Selesai</option>
               <option value="menunggu_pembayaran">Menunggu Bayar</option>
@@ -2031,7 +2201,24 @@ const AdminPendaftaran = () => {
                       <td>
                         <span className="paket-name-small">{p.paket}</span>
                       </td>
-                      <td><StatusPill value={p.status} /></td>
+                      <td>
+                        <StatusPill value={p.status} />
+                        {p.status === "perlu_perbaikan" && p.catatan_verifikasi_manager && (
+                          <div
+                            style={{
+                              fontSize: "0.72rem",
+                              color: "#dc2626",
+                              marginTop: 4,
+                              maxWidth: 180,
+                              whiteSpace: "normal",
+                              lineHeight: 1.25,
+                            }}
+                            title={p.catatan_verifikasi_manager}
+                          >
+                            ⚠️ {p.catatan_verifikasi_manager}
+                          </div>
+                        )}
+                      </td>
                       <td><StatusPill value={p.payment_status} /></td>
                       <td><StatusPill value={p.document_status} /></td>
                       <td>

@@ -15,7 +15,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/dashboard",
     label: "Dashboard",
-    roles: ["admin", "owner"],
+    roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <rect width="7" height="9" x="3" y="3" rx="1" />
@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/paket",
     label: "Paket Umroh",
-    roles: ["admin", "owner"],
+    roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/pendaftaran",
     label: "Pendaftaran",
-    roles: ["admin", "owner"],
+    roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/pembayaran",
     label: "Pembayaran",
-    roles: ["admin", "owner"],
+    roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <rect width="20" height="14" x="2" y="5" rx="2" />
@@ -61,7 +61,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/dokumen",
     label: "Dokumen",
-    roles: ["admin", "owner"],
+    roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
@@ -70,11 +70,22 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
-  // Owner only
+  // Administration Manager only
+  {
+    to: "/admin/verifikasi",
+    label: "Verifikasi Pendaftaran",
+    roles: ["owner", "manager", "administration_manager"],
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    ),
+  },
   {
     to: "/admin/manajemen-admin",
     label: "Manajemen Admin",
-    roles: ["owner"],
+    roles: ["owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -86,7 +97,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/laporan",
     label: "Laporan & Rekapitulasi",
-    roles: ["owner"],
+    roles: ["owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -101,7 +112,7 @@ const navItems: NavItem[] = [
   {
     to: "/admin/pengaduan",
     label: "Pengaduan",
-    roles: ["admin", "owner"],
+    roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -116,6 +127,7 @@ const navItems: NavItem[] = [
 
 const pageTitle: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
+  "/admin/verifikasi": "Verifikasi Pendaftaran",
   "/admin/paket": "Paket Umroh",
   "/admin/pendaftaran": "Pendaftaran",
   "/admin/pembayaran": "Pembayaran",
@@ -131,6 +143,7 @@ const AdminLayout = () => {
   const [badgeDokumen, setBadgeDokumen] = useState(0);
   const [badgePembayaran, setBadgePembayaran] = useState(0);
   const [badgePengaduan, setBadgePengaduan] = useState(0);
+  const [badgeVerifikasi, setBadgeVerifikasi] = useState(0);
 
   // Fetch jumlah data menunggu untuk badge sidebar
   const fetchBadges = useCallback(async () => {
@@ -142,6 +155,7 @@ const AdminLayout = () => {
       setBadgeDokumen(Number(res.data?.dokumen ?? 0));
       setBadgePembayaran(Number(res.data?.pembayaran ?? 0));
       setBadgePengaduan(Number(res.data?.pengaduan ?? 0));
+      setBadgeVerifikasi(Number(res.data?.verifikasi_manager ?? 0));
     } catch {
       // Fallback ke endpoint individual
       try {
@@ -195,9 +209,9 @@ const AdminLayout = () => {
     role ? item.roles.includes(role) : false
   );
 
-  const isOwner = role === "owner";
-  const displayName = nama || (isOwner ? "Owner" : "Administrator");
-  const roleLabel = isOwner ? "Owner" : "Admin";
+  const isManager = role === "owner" || role === "manager" || role === "administration_manager";
+  const displayName = nama || (isManager ? "Administration Manager" : "Administrator");
+  const roleLabel = isManager ? "Administration Manager" : "Admin";
 
   return (
     <div className="admin-layout">
@@ -252,10 +266,10 @@ const AdminLayout = () => {
               ))}
           </div>
 
-          {/* Owner-only section */}
-          {role === "owner" && (
+          {/* Administration Manager section */}
+          {isManager && (
             <div className="sidebar-nav-section">
-              <div className="sidebar-nav-label">Owner</div>
+              <div className="sidebar-nav-label">Administration Manager</div>
               {navItems
                 .filter((item) => !item.roles.includes("admin"))
                 .map((item) => (
@@ -268,6 +282,9 @@ const AdminLayout = () => {
                   >
                     <span className="sidebar-nav-icon">{item.icon}</span>
                     {item.label}
+                    {item.to === "/admin/verifikasi" && badgeVerifikasi > 0 && (
+                      <span className="sidebar-badge sidebar-pengaduan-badge">{badgeVerifikasi}</span>
+                    )}
                   </NavLink>
                 ))}
             </div>
@@ -293,15 +310,15 @@ const AdminLayout = () => {
         <header className="admin-topbar">
           <span className="admin-topbar-title">{title}</span>
           <div className="admin-topbar-right">
-            <div className={`admin-role-chip ${role === "owner" ? "role-chip-owner" : "role-chip-admin"}`}>
-              {role === "owner" ? "👑" : "🔧"} {role}
+            <div className={`admin-role-chip ${isManager ? "role-chip-owner" : "role-chip-admin"}`}>
+              {isManager ? "🛡️ Administration Manager" : "🔧 Admin"}
             </div>
           </div>
         </header>
 
         {/* Page content */}
         <main className="admin-content">
-          <Outlet context={{ fetchBadges, badgeDokumen, badgePembayaran, badgePengaduan }} />
+          <Outlet context={{ fetchBadges, badgeDokumen, badgePembayaran, badgePengaduan, badgeVerifikasi }} />
         </main>
       </div>
     </div>

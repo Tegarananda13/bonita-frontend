@@ -106,7 +106,7 @@ const Laporan = () => {
     setLoading(true);
     setData(null);
     try {
-      const res = await axios.get("http://localhost:8080/owner/laporan", {
+      const res = await axios.get("http://localhost:8080/manager/laporan", {
         ...authHeader,
         params: { start_date: start, end_date: end },
       });

@@ -3,7 +3,7 @@ import axios from "axios";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Role = "admin" | "owner" | null;
+type Role = "admin" | "owner" | "manager" | "administration_manager" | null;
 
 interface AuthContextValue {
   token: string | null;
