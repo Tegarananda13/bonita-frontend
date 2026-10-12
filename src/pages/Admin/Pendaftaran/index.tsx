@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { LuEye, LuPlus, LuRefreshCw, LuX, LuCheck } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
@@ -363,8 +364,8 @@ const AssignModal = ({
               {nomor} {data?.nomor_invoice ? `• ${data.nomor_invoice}` : ""}
             </div>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose} disabled={submitting}>
-            ✕
+          <button type="button" className="modal-close-btn" onClick={onClose} disabled={submitting} aria-label="Tutup">
+            <LuX size={16} />
           </button>
         </div>
 
@@ -520,7 +521,7 @@ const AssignModal = ({
               </>
             ) : (
               <>
-                <span>✓</span> Tugaskan Admin
+                <LuCheck size={14} /> Tugaskan Admin
               </>
             )}
           </button>
@@ -1261,8 +1262,8 @@ const DetailModal = ({
                 </div>
               )}
             </div>
-            <button type="button" className="modal-close-btn" onClick={onClose} title="Tutup">
-              ✕
+            <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup" title="Tutup">
+              <LuX size={16} />
             </button>
           </div>
 
@@ -2414,7 +2415,7 @@ const GrupDetailModal = ({
             <div className="modal-title">👥 Detail Grup — Invoice</div>
             <div className="modal-subtitle" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>{nomorInvoice}</div>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose}>✕</button>
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup"><LuX size={16} /></button>
         </div>
 
         <div className="modal-body">
@@ -2842,16 +2843,11 @@ const AdminPendaftaran = () => {
             className="btn-primary-sm"
             onClick={() => navigate("/admin/tambah-jamaah")}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <LuPlus size={14} />
             Tambah Jamaah
           </button>
           <button type="button" className="btn-outline-sm" onClick={fetchData}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
+            <LuRefreshCw size={14} />
             Refresh
           </button>
         </div>
@@ -3127,11 +3123,10 @@ const AdminPendaftaran = () => {
                           type="button"
                           className="detail-btn"
                           onClick={() => setDetailNomor(p.nomor_pendaftaran)}
+                          title="Lihat detail pendaftaran"
                         >
+                          <LuEye size={13} />
                           Detail
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                          </svg>
                         </button>
                       </td>
                     </tr>
@@ -3295,7 +3290,7 @@ const PICDetailModal = ({
             <div className="modal-title">👤 Detail Jamaah Saya</div>
             <div className="modal-subtitle">{p.nomor_pendaftaran}</div>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose}>✕</button>
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup"><LuX size={16} /></button>
         </div>
 
         {/* Body */}

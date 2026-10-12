@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { LuEye, LuCheck, LuTriangleAlert, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
@@ -450,8 +451,10 @@ export default function VerifikasiManager() {
                             type="button"
                             className="verifikasi-btn-periksa"
                             onClick={() => setSelectedNomor(item.nomor_pendaftaran)}
+                            title="Periksa pendaftaran"
                           >
-                            🔍 Periksa
+                            <LuEye size={13} />
+                            Periksa
                           </button>
                         </td>
                       </>
@@ -479,8 +482,10 @@ export default function VerifikasiManager() {
                             type="button"
                             className="verifikasi-btn-lihat"
                             onClick={() => setSelectedNomor(item.nomor_pendaftaran)}
+                            title="Lihat pendaftaran"
                           >
-                            👁️ Lihat
+                            <LuEye size={13} />
+                            Lihat
                           </button>
                         </td>
                       </>
@@ -503,8 +508,10 @@ export default function VerifikasiManager() {
                             type="button"
                             className="verifikasi-btn-lihat"
                             onClick={() => setSelectedNomor(item.nomor_pendaftaran)}
+                            title="Lihat pendaftaran"
                           >
-                            👁️ Lihat
+                            <LuEye size={13} />
+                            Lihat
                           </button>
                         </td>
                       </>
@@ -734,8 +741,8 @@ function DetailVerifikasiModal({
               {pendaftaran.nomor_pendaftaran} {pendaftaran.nomor_invoice ? `• ${pendaftaran.nomor_invoice}` : ""}
             </div>
           </div>
-          <button type="button" className="verif-modal-close" onClick={onClose}>
-            ✕
+          <button type="button" className="verif-modal-close" onClick={onClose} aria-label="Tutup">
+            <LuX size={16} />
           </button>
         </div>
 
@@ -1056,7 +1063,8 @@ function DetailVerifikasiModal({
             </button>
             {pendaftaran.nomor_invoice && (
               <button type="button" className="verif-btn-invoice" onClick={handleOpenInvoice}>
-                🧾 Lihat Invoice
+                <LuEye size={13} />
+                Lihat Invoice
               </button>
             )}
           </div>
@@ -1073,7 +1081,8 @@ function DetailVerifikasiModal({
                   }}
                   disabled={approving}
                 >
-                  ⚠️ Minta Perbaikan
+                  <LuTriangleAlert size={14} />
+                  Minta Perbaikan
                 </button>
                 <button
                   type="button"
@@ -1081,7 +1090,14 @@ function DetailVerifikasiModal({
                   onClick={handleApprove}
                   disabled={approving}
                 >
-                  {approving ? "Memproses..." : "🛡️ Setujui & Sahkan"}
+                  {approving ? (
+                    "Memproses..."
+                  ) : (
+                    <>
+                      <LuCheck size={15} />
+                      Setujui & Sahkan
+                    </>
+                  )}
                 </button>
               </>
             )}
@@ -1127,7 +1143,14 @@ function DetailVerifikasiModal({
                 onClick={handleSubmitPerbaikan}
                 disabled={submittingNote || !catatan.trim()}
               >
-                {submittingNote ? "Mengirim..." : "Kirim Permintaan Perbaikan"}
+                {submittingNote ? (
+                  "Mengirim..."
+                ) : (
+                  <>
+                    <LuTriangleAlert size={14} />
+                    Kirim Permintaan Perbaikan
+                  </>
+                )}
               </button>
             </div>
           </div>

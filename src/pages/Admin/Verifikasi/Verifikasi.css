@@ -279,24 +279,23 @@
 .verifikasi-btn-periksa {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
-  color: #ffffff;
-  padding: 0.5rem 1rem;
+  gap: 0.35rem;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid #bbf7d0;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(26, 107, 67, 0.25);
+  transition: all 0.15s;
   white-space: nowrap;
 }
 
 .verifikasi-btn-periksa:hover {
-  background: linear-gradient(135deg, #155736, #238257);
-  box-shadow: 0 4px 12px rgba(26, 107, 67, 0.35);
-  transform: translateY(-1px);
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
 }
 
 /* Empty Queue */
@@ -608,11 +607,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0.55rem 1rem;
   border-radius: 8px;
   cursor: pointer;
@@ -620,7 +619,8 @@
 }
 
 .verif-btn-invoice:hover {
-  background: #e2e8f0;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 .verif-action-group {
@@ -634,41 +634,42 @@
   align-items: center;
   gap: 0.4rem;
   background: #fffbeb;
-  border: 1.5px solid #f59e0b;
+  border: 1px solid #fde68a;
   color: #b45309;
   font-size: 0.85rem;
   font-weight: 700;
   padding: 0.6rem 1.25rem;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .verif-btn-perbaikan:hover {
   background: #fef3c7;
-  border-color: #d97706;
+  border-color: #f59e0b;
+  color: #92400e;
 }
 
 .verif-btn-approve {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: linear-gradient(135deg, #059669, #10b981);
-  border: none;
+  background: #1a6b43;
+  border: 1px solid #1a6b43;
   color: #ffffff;
   font-size: 0.85rem;
   font-weight: 700;
   padding: 0.6rem 1.5rem;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(26, 107, 67, 0.2);
 }
 
 .verif-btn-approve:hover {
-  background: linear-gradient(135deg, #047857, #059669);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-  transform: translateY(-1px);
+  background: #155734;
+  border-color: #155734;
+  box-shadow: 0 4px 12px rgba(26, 107, 67, 0.3);
 }
 
 /* Perbaikan Modal Sub-Dialog */
@@ -818,24 +819,23 @@
 .verifikasi-btn-lihat {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: #f8fafc;
-  color: #334155;
-  padding: 0.5rem 0.95rem;
+  gap: 0.35rem;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #bbf7d0;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   white-space: nowrap;
 }
 
 .verifikasi-btn-lihat:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #94a3b8;
-  transform: translateY(-1px);
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
 }
 
 .verif-approver-cell {

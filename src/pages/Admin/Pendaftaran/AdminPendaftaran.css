@@ -366,15 +366,15 @@
 .detail-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.45rem 0.875rem;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
   background: #f0fdf4;
-  color: #1a6b43;
+  color: #166534;
+  border: 1px solid #bbf7d0;
   border-radius: 8px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
-  border: none;
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.15s;
@@ -382,7 +382,8 @@
 
 .detail-btn:hover {
   background: #dcfce7;
-  color: #0f5132;
+  border-color: #86efac;
+  color: #14532d;
 }
 
 /* ── Status pill extra ── */
@@ -887,9 +888,9 @@
 
 .modal-btn-primary {
   padding: 0.6rem 1.5rem;
-  background: linear-gradient(135deg, #1a6b43 0%, #155734 100%);
+  background: #1a6b43;
   color: #ffffff;
-  border: none;
+  border: 1px solid #1a6b43;
   border-radius: 10px;
   font-size: 0.84rem;
   font-weight: 700;
@@ -897,13 +898,14 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  box-shadow: 0 4px 12px rgba(26, 107, 67, 0.25);
+  box-shadow: 0 2px 8px rgba(26, 107, 67, 0.2);
   transition: all 0.15s;
 }
 
 .modal-btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(26, 107, 67, 0.35);
+  background: #155734;
+  border-color: #155734;
+  box-shadow: 0 4px 12px rgba(26, 107, 67, 0.3);
 }
 
 .modal-btn-primary:disabled {

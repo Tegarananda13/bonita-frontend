@@ -1,0 +1,347 @@
+/* ==========================================================================
+   Design System: Standardized Button Component & Utility Classes
+   Bonita Umroh Admin Dashboard
+   ========================================================================== */
+
+/* ── Base Button ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font-family);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all 0.15s ease-in-out;
+  line-height: 1.25;
+  box-sizing: border-box;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none !important;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #1a6b43;
+  outline-offset: 2px;
+}
+
+.btn-full-width {
+  width: 100%;
+}
+
+/* ── Sizes ── */
+.btn-compact {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.76rem;
+  border-radius: 8px;
+  gap: 0.35rem;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  gap: 0.4rem;
+}
+
+.btn-md {
+  padding: 0.52rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 9px;
+  gap: 0.45rem;
+}
+
+.btn-lg {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border-radius: 10px;
+  gap: 0.5rem;
+}
+
+.btn-icon-only {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Variant: Detail / Lihat ───────────────────────────────────────────────
+   Referensi utama: Latar hijau muda, teks hijau tua, border hijau muda, tanpa gradasi
+   ────────────────────────────────────────────────────────────────────────── */
+.btn-detail,
+.detail-btn,
+.action-btn-detail,
+.peng-detail-btn,
+.ma-btn-detail,
+.verifikasi-btn-lihat,
+.verifikasi-btn-periksa,
+.detail-open-btn {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease-in-out;
+  box-shadow: none !important;
+}
+
+.btn-detail:hover:not(:disabled),
+.detail-btn:hover:not(:disabled),
+.action-btn-detail:hover:not(:disabled),
+.peng-detail-btn:hover:not(:disabled),
+.ma-btn-detail:hover:not(:disabled),
+.verifikasi-btn-lihat:hover:not(:disabled),
+.verifikasi-btn-periksa:hover:not(:disabled),
+.detail-open-btn:hover:not(:disabled) {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #14532d !important;
+  transform: translateY(-1px);
+}
+
+/* ── Variant: Primary (Tambah, Simpan, Konfirmasi Utama, Setujui) ───────────
+   Hijau tua solid dengan teks putih, tanpa gradasi
+   ────────────────────────────────────────────────────────────────────────── */
+.btn-primary,
+.btn-primary-sm,
+.action-btn-primary,
+.btn-save,
+.tj-btn-submit,
+.ma-btn-submit,
+.ma-add-btn,
+.modal-btn-primary,
+.laporan-filter-btn,
+.verif-btn-approve,
+.peng-save-btn,
+.verify-btn-terima {
+  background: #1a6b43 !important;
+  color: #ffffff !important;
+  border: 1px solid #1a6b43 !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 2px 6px rgba(26, 107, 67, 0.2) !important;
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-primary-sm:hover:not(:disabled),
+.action-btn-primary:hover:not(:disabled),
+.btn-save:hover:not(:disabled),
+.tj-btn-submit:hover:not(:disabled),
+.ma-btn-submit:hover:not(:disabled),
+.ma-add-btn:hover:not(:disabled),
+.modal-btn-primary:hover:not(:disabled),
+.laporan-filter-btn:hover:not(:disabled),
+.verif-btn-approve:hover:not(:disabled),
+.peng-save-btn:hover:not(:disabled),
+.verify-btn-terima:hover:not(:disabled) {
+  background: #14532d !important;
+  border-color: #14532d !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 107, 67, 0.3) !important;
+}
+
+/* ── Variant: Edit ──────────────────────────────────────────────────────────
+   Biru muda dengan teks biru tua
+   ────────────────────────────────────────────────────────────────────────── */
+.btn-edit,
+.action-btn-edit,
+.ma-btn-edit {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-edit:hover:not(:disabled),
+.action-btn-edit:hover:not(:disabled),
+.ma-btn-edit:hover:not(:disabled) {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1e40af !important;
+  transform: translateY(-1px);
+}
+
+/* ── Variant: Warning (Minta Perbaikan, Peringatan) ──────────────────────────
+   Kuning / oranye muda dengan teks kontras
+   ────────────────────────────────────────────────────────────────────────── */
+.btn-warning,
+.verif-btn-perbaikan {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-warning:hover:not(:disabled),
+.verif-btn-perbaikan:hover:not(:disabled) {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+  transform: translateY(-1px);
+}
+
+/* ── Variant: Danger (Hapus, Nonaktifkan, Tolak) ─────────────────────────────
+   Merah muda dengan teks merah tua
+   ────────────────────────────────────────────────────────────────────────── */
+.btn-danger,
+.action-btn-delete,
+.btn-deactivate,
+.verify-btn-tolak,
+.fasilitas-delete-btn,
+.foto-act-del {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-danger:hover:not(:disabled),
+.action-btn-delete:hover:not(:disabled),
+.btn-deactivate:hover:not(:disabled),
+.verify-btn-tolak:hover:not(:disabled),
+.fasilitas-delete-btn:hover:not(:disabled),
+.foto-act-del:hover:not(:disabled) {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+  transform: translateY(-1px);
+}
+
+/* ── Variant: Secondary (Batal, Tutup, Kembali, Refresh) ────────────────────
+   Abu-abu muda dengan teks abu-abu tua
+   ────────────────────────────────────────────────────────────────────────── */
+.btn-secondary,
+.btn-outline-sm,
+.btn-cancel,
+.tj-btn-cancel,
+.ma-btn-cancel,
+.modal-btn-secondary,
+.modal-close-full-btn,
+.portal-btn-outline,
+.verify-btn-batal,
+.drawer-close-cancel {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-outline-sm:hover:not(:disabled),
+.btn-cancel:hover:not(:disabled),
+.tj-btn-cancel:hover:not(:disabled),
+.ma-btn-cancel:hover:not(:disabled),
+.modal-btn-secondary:hover:not(:disabled),
+.modal-close-full-btn:hover:not(:disabled),
+.portal-btn-outline:hover:not(:disabled),
+.verify-btn-batal:hover:not(:disabled),
+.drawer-close-cancel:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+  transform: translateY(-1px);
+}
+
+/* ── Modal Close 'X' Header Icon ── */
+.modal-close-btn,
+.drawer-close,
+.ma-modal-close,
+.peng-modal-close,
+.verif-modal-close {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.modal-close-btn:hover:not(:disabled),
+.drawer-close:hover:not(:disabled),
+.ma-modal-close:hover:not(:disabled),
+.peng-modal-close:hover:not(:disabled),
+.verif-modal-close:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+/* ── Button Spinners ── */
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.65s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Icon inside button alignment ── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+}

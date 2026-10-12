@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { LuEye, LuCheck, LuX, LuRefreshCw, LuTrash2 } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
@@ -129,9 +130,7 @@ const AdminDokumen = () => {
         </div>
         <div className="page-header-actions">
           <button className="btn-outline-sm" onClick={fetchList}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
-            </svg>
+            <LuRefreshCw size={14} className={loading ? "spin" : ""} />
             Refresh
           </button>
         </div>
@@ -210,11 +209,9 @@ const AdminDokumen = () => {
                     <span className="date-text">{fmtDate(d.tanggal_upload)}</span>
                   </td>
                   <td>
-                    <button className="detail-open-btn" onClick={() => fetchDetail(d.id)}>
+                    <button className="detail-open-btn" onClick={() => fetchDetail(d.id)} title="Tinjau berkas dokumen">
+                      <LuEye size={13} />
                       Tinjau
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
                     </button>
                   </td>
                 </tr>
@@ -237,8 +234,9 @@ const AdminDokumen = () => {
                 className="verify-modal-close"
                 onClick={closeModal}
                 disabled={!!verifying}
+                aria-label="Tutup"
               >
-                ✕
+                <LuX size={16} />
               </button>
             </div>
 
@@ -323,6 +321,7 @@ const AdminDokumen = () => {
                     onClick={() => handleVerify(detailModal!, "ditolak")}
                     disabled={!!verifying || !alasan.trim()}
                   >
+                    <LuTrash2 size={14} />
                     {verifying === detailModal + "ditolak" ? "Menolak..." : "Tolak Dokumen"}
                   </button>
                 </>
@@ -333,14 +332,16 @@ const AdminDokumen = () => {
                     onClick={() => setRejectMode(true)}
                     disabled={!!verifying}
                   >
-                    ✕ Tolak
+                    <LuX size={14} />
+                    Tolak
                   </button>
                   <button
                     className="verify-btn-terima"
                     onClick={() => handleVerify(detailModal!, "diterima")}
                     disabled={!!verifying}
                   >
-                    {verifying === detailModal + "diterima" ? "Menerima..." : "✓ Terima Dokumen"}
+                    <LuCheck size={14} />
+                    {verifying === detailModal + "diterima" ? "Menerima..." : "Terima Dokumen"}
                   </button>
                 </>
               )}

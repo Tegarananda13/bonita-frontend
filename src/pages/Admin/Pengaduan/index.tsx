@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { LuEye, LuCheck, LuRefreshCw, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPengaduan.css";
@@ -139,7 +140,7 @@ const DetailModal = ({
             <div className="peng-modal-title">📋 Detail Pengaduan</div>
             {data && <div className="peng-modal-sub">{data.pendaftaran.nomor_pendaftaran}</div>}
           </div>
-          <button className="peng-modal-close" onClick={onClose}>✕</button>
+          <button className="peng-modal-close" onClick={onClose} aria-label="Tutup"><LuX size={16} /></button>
         </div>
 
         {/* Body */}
@@ -226,7 +227,14 @@ const DetailModal = ({
                   onClick={handleUpdateStatus}
                   disabled={saving || newStatus === data.status}
                 >
-                  {saving ? "Menyimpan..." : "Simpan Status"}
+                  {saving ? (
+                    "Menyimpan..."
+                  ) : (
+                    <>
+                      <LuCheck size={14} />
+                      Simpan Status
+                    </>
+                  )}
                 </button>
               </div>
               {msg && <div className="peng-msg">{msg}</div>}
@@ -304,10 +312,7 @@ const AdminPengaduan = () => {
         </div>
         <div className="page-header-actions">
           <button type="button" className="btn-outline-sm" onClick={load} disabled={loading}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
+            <LuRefreshCw size={14} className={loading ? "spin" : ""} />
             Refresh
           </button>
         </div>
@@ -397,7 +402,9 @@ const AdminPengaduan = () => {
                     <button
                       className="peng-detail-btn"
                       onClick={() => setSelectedId(p.id)}
+                      title="Lihat detail pengaduan"
                     >
+                      <LuEye size={13} />
                       Detail
                     </button>
                   </td>

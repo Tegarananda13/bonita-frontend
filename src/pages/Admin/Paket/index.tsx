@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef, type FormEvent, type ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { LuEye, LuPencil, LuPlus, LuRefreshCw, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPaket.css";
@@ -259,10 +260,8 @@ export const FasilitasPanel = ({
             <div className="fasilitas-panel-title">Fasilitas Paket</div>
             <div className="fasilitas-panel-sub">{paket.NamaPaket}</div>
           </div>
-          <button className="drawer-close" onClick={onClose}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+          <button className="drawer-close" onClick={onClose} aria-label="Tutup">
+            <LuX size={15} />
           </button>
         </div>
         <div className="fasilitas-panel-body">
@@ -815,10 +814,8 @@ const PaketDrawer = ({
           <div className="drawer-title">
             {isEdit ? "✏️ Edit Paket" : "➕ Tambah Paket Baru"}
           </div>
-          <button className="drawer-close" onClick={onClose} disabled={submitting}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+          <button className="drawer-close" onClick={onClose} disabled={submitting} aria-label="Tutup">
+            <LuX size={15} />
           </button>
         </div>
         <form onSubmit={handleSubmit} noValidate>
@@ -1357,9 +1354,7 @@ const AdminPaket = () => {
             className="btn-primary-sm"
             onClick={() => navigate("/admin/paket/tambah")}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <LuPlus size={14} />
             Tambah Paket
           </button>
           <Link to="/paket" target="_blank" className="btn-outline-sm">
@@ -1376,10 +1371,7 @@ const AdminPaket = () => {
             onClick={fetchPaket}
             disabled={loading}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
+            <LuRefreshCw size={14} className={loading ? "spin" : ""} />
             Refresh
           </button>
         </div>
@@ -1572,10 +1564,7 @@ const AdminPaket = () => {
                           onClick={() => navigate(`/admin/paket/${p.ID}`)}
                           title="Lihat detail paket"
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
+                          <LuEye size={13} />
                           Detail
                         </button>
                         <button
@@ -1587,10 +1576,7 @@ const AdminPaket = () => {
                           {loadingEditId === p.ID ? (
                             <div className="mini-spinner" style={{ width: 12, height: 12 }} />
                           ) : (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
-                            </svg>
+                            <LuPencil size={13} />
                           )}
                           Edit
                         </button>

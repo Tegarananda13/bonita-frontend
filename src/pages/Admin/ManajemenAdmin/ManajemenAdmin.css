@@ -36,22 +36,23 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.65rem 1.25rem;
-  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
+  background: #1a6b43;
   color: #fff;
-  border: none;
+  border: 1px solid #1a6b43;
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   white-space: nowrap;
-  box-shadow: 0 3px 12px rgba(26,107,67,0.3);
+  box-shadow: 0 2px 8px rgba(26,107,67,0.2);
   flex-shrink: 0;
 }
 .ma-add-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(26,107,67,0.4);
+  background: #155734;
+  border-color: #155734;
+  box-shadow: 0 4px 12px rgba(26,107,67,0.3);
 }
 
 /* ── Toast ── */
@@ -334,46 +335,73 @@
 .ma-btn-jamaah {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   background: #f0fdf4;
-  color: #15803d;
-  border-color: #86efac;
-  font-weight: 700;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
 }
 .ma-btn-jamaah:hover {
-  background: #15803d;
-  color: #ffffff;
-  border-color: #15803d;
-  transform: translateY(-1px);
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
 }
 
 .ma-btn-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: #f0fdf4;
-  color: #1a6b43;
-  border-color: #bbf7d0;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
-.ma-btn-detail:hover { background: #dcfce7; }
+.ma-btn-detail:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
 
 .ma-btn-edit {
-  background: #f0f9ff;
-  color: #0284c7;
-  border-color: #bae6fd;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
 }
-.ma-btn-edit:hover { background: #bae6fd; }
+.ma-btn-edit:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
 
 .btn-deactivate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: #fef2f2;
   color: #dc2626;
-  border-color: #fecaca;
+  border: 1px solid #fecaca;
 }
-.btn-deactivate:hover:not(:disabled) { background: #fee2e2; }
+.btn-deactivate:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
 
 .btn-reactivate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: #f0fdf4;
-  color: #16a34a;
-  border-color: #bbf7d0;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
-.btn-reactivate:hover:not(:disabled) { background: #dcfce7; }
+.btn-reactivate:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
 
 .ma-btn-toggle:disabled {
   opacity: 0.55;
@@ -528,16 +556,16 @@
 .ma-btn-cancel {
   padding: 0.65rem 1.25rem;
   border-radius: 10px;
-  background: #f1f5f9;
+  background: #f8fafc;
   color: #475569;
-  border: none;
+  border: 1px solid #e2e8f0;
   font-size: 0.875rem;
   font-weight: 600;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
-.ma-btn-cancel:hover:not(:disabled) { background: #e2e8f0; }
+.ma-btn-cancel:hover:not(:disabled) { background: #f1f5f9; color: #1e293b; }
 .ma-btn-cancel:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .ma-btn-submit {
@@ -545,20 +573,21 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.65rem 1.25rem;
-  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
+  background: #1a6b43;
   color: #fff;
-  border: none;
+  border: 1px solid #1a6b43;
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(26,107,67,0.3);
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(26,107,67,0.2);
 }
 .ma-btn-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(26,107,67,0.4);
+  background: #155734;
+  border-color: #155734;
+  box-shadow: 0 4px 12px rgba(26,107,67,0.3);
 }
 .ma-btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
 

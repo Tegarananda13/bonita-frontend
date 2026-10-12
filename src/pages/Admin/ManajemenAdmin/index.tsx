@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { LuEye, LuPencil, LuPlus, LuX, LuCheck } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./ManajemenAdmin.css";
@@ -238,9 +239,7 @@ const ManajemenAdmin = () => {
           <p>Tambah, lihat, dan kelola akun admin Bonita Umroh.</p>
         </div>
         <button className="ma-add-btn" onClick={openAdd}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <LuPlus size={16} />
           Tambah Admin
         </button>
       </div>
@@ -323,6 +322,7 @@ const ManajemenAdmin = () => {
                         onClick={() => navigate(`/admin/pendaftaran?admin_id=${admin.id}`)}
                         title={`Lihat ${admin.total_jamaah ?? 0} jamaah tanggung jawab ${admin.nama}`}
                       >
+                        <LuEye size={13} />
                         Lihat Jamaah
                       </button>
                       <button
@@ -330,6 +330,7 @@ const ManajemenAdmin = () => {
                         onClick={() => openDetail(admin)}
                         title="Lihat detail"
                       >
+                        <LuEye size={13} />
                         Detail
                       </button>
                       <button
@@ -337,6 +338,7 @@ const ManajemenAdmin = () => {
                         onClick={() => openEdit(admin)}
                         title="Edit admin"
                       >
+                        <LuPencil size={13} />
                         Edit
                       </button>
                       <button
@@ -375,7 +377,7 @@ const ManajemenAdmin = () => {
                 </svg>
                 Tambah Admin Baru
               </div>
-              <button className="ma-modal-close" onClick={closeModal} disabled={addSubmitting}>✕</button>
+              <button className="ma-modal-close" onClick={closeModal} disabled={addSubmitting} aria-label="Tutup"><LuX size={16} /></button>
             </div>
 
             <form onSubmit={handleAdd} noValidate>
@@ -467,9 +469,7 @@ const ManajemenAdmin = () => {
                     <><div className="ma-spinner" /> Menyimpan...</>
                   ) : (
                     <>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
+                      <LuPlus size={14} />
                       Tambah Admin
                     </>
                   )}
@@ -496,7 +496,7 @@ const ManajemenAdmin = () => {
                 </svg>
                 Detail Admin
               </div>
-              <button className="ma-modal-close" onClick={closeModal}>✕</button>
+              <button className="ma-modal-close" onClick={closeModal} aria-label="Tutup"><LuX size={16} /></button>
             </div>
 
             <div className="ma-detail-body">
@@ -556,7 +556,8 @@ const ManajemenAdmin = () => {
               <button type="button" className="ma-btn-cancel" onClick={closeModal}>
                 Tutup
               </button>
-              <button type="button" className="ma-btn-submit" onClick={() => openEdit(selectedAdmin)}>
+              <button type="button" className="ma-btn-edit" onClick={() => openEdit(selectedAdmin)}>
+                <LuPencil size={14} />
                 Edit Admin
               </button>
             </div>
@@ -581,7 +582,7 @@ const ManajemenAdmin = () => {
                 </svg>
                 Edit Admin — {selectedAdmin.nama}
               </div>
-              <button className="ma-modal-close" onClick={closeModal} disabled={editSubmitting}>✕</button>
+              <button className="ma-modal-close" onClick={closeModal} disabled={editSubmitting} aria-label="Tutup"><LuX size={16} /></button>
             </div>
 
             <form onSubmit={handleEdit} noValidate>
@@ -663,10 +664,7 @@ const ManajemenAdmin = () => {
                     <><div className="ma-spinner" /> Menyimpan...</>
                   ) : (
                     <>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                        <polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
-                      </svg>
+                      <LuCheck size={14} />
                       Simpan Perubahan
                     </>
                   )}

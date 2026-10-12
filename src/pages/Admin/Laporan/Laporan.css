@@ -136,21 +136,22 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.6rem 1.25rem;
-  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
+  background: #1a6b43;
   color: #fff;
-  border: none;
+  border: 1px solid #1a6b43;
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 3px 10px rgba(26,107,67,0.3);
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(26,107,67,0.2);
   white-space: nowrap;
 }
 .laporan-filter-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 16px rgba(26,107,67,0.4);
+  background: #155734;
+  border-color: #155734;
+  box-shadow: 0 4px 12px rgba(26,107,67,0.3);
 }
 .laporan-filter-btn:disabled {
   opacity: 0.65;

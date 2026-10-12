@@ -332,22 +332,25 @@
 
 /* ── Detail Button ── */
 .peng-detail-btn {
-  background: linear-gradient(135deg, #1a6b43, #0f5132);
-  color: #fff;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
   border-radius: 8px;
-  padding: 0.38rem 0.9rem;
+  padding: 0.4rem 0.75rem;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .peng-detail-btn:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(26, 107, 67, 0.3);
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
 }
 
 /* ── Empty / Loading ── */
@@ -561,19 +564,25 @@
 .peng-status-select:focus { border-color: #1a6b43; }
 
 .peng-save-btn {
-  background: linear-gradient(135deg, #1a6b43, #0f5132);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #1a6b43;
   color: #fff;
-  border: none;
+  border: 1px solid #1a6b43;
   border-radius: 8px;
   padding: 0.55rem 1.25rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.18s;
+  transition: all 0.15s;
 }
 
-.peng-save-btn:hover:not(:disabled) { opacity: 0.88; }
+.peng-save-btn:hover:not(:disabled) {
+  background: #155734;
+  border-color: #155734;
+}
 .peng-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .peng-msg {
