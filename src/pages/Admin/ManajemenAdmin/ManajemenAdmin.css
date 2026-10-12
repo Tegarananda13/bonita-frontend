@@ -294,6 +294,20 @@
   border-radius: 5px;
   background: #e2e8f0;
 }
+.admin-jamaah-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+}
+
 /* ── Action group ── */
 .ma-action-group {
   display: flex;
@@ -304,7 +318,8 @@
 
 .ma-btn-detail,
 .ma-btn-edit,
-.ma-btn-toggle {
+.ma-btn-toggle,
+.ma-btn-jamaah {
   padding: 0.4rem 0.75rem;
   border-radius: 8px;
   font-size: 0.75rem;
@@ -315,6 +330,23 @@
   border: 1px solid transparent;
   white-space: nowrap;
 }
+
+.ma-btn-jamaah {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #86efac;
+  font-weight: 700;
+}
+.ma-btn-jamaah:hover {
+  background: #15803d;
+  color: #ffffff;
+  border-color: #15803d;
+  transform: translateY(-1px);
+}
+
 .ma-btn-detail {
   background: #f0fdf4;
   color: #1a6b43;

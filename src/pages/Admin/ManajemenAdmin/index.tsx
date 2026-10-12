@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./ManajemenAdmin.css";
@@ -13,6 +14,7 @@ interface AdminUser {
   email: string;
   is_active: boolean;
   created_at: string;
+  total_jamaah?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -36,6 +38,7 @@ const getInitials = (nama: string) =>
 // ── ManajemenAdmin ─────────────────────────────────────────────────────────────
 const ManajemenAdmin = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   // ── List state ──
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -277,6 +280,7 @@ const ManajemenAdmin = () => {
               <tr>
                 <th>Admin</th>
                 <th>Role</th>
+                <th>Jamaah Ditangani</th>
                 <th>Status</th>
                 <th>Bergabung</th>
                 <th>Aksi</th>
@@ -300,6 +304,11 @@ const ManajemenAdmin = () => {
                     <span className="admin-role-pill pill-admin">{admin.role}</span>
                   </td>
                   <td>
+                    <span className="admin-jamaah-badge">
+                      👥 {admin.total_jamaah ?? 0} Jamaah
+                    </span>
+                  </td>
+                  <td>
                     <span className={`ma-status-pill ${admin.is_active ? "pill-active" : "pill-inactive"}`}>
                       {admin.is_active ? "Aktif" : "Nonaktif"}
                     </span>
@@ -309,6 +318,13 @@ const ManajemenAdmin = () => {
                   </td>
                   <td>
                     <div className="ma-action-group">
+                      <button
+                        className="ma-btn-jamaah"
+                        onClick={() => navigate(`/admin/pendaftaran?admin_id=${admin.id}`)}
+                        title={`Lihat ${admin.total_jamaah ?? 0} jamaah tanggung jawab ${admin.nama}`}
+                      >
+                        Lihat Jamaah
+                      </button>
                       <button
                         className="ma-btn-detail"
                         onClick={() => openDetail(admin)}
@@ -509,6 +525,25 @@ const ManajemenAdmin = () => {
                 <div className="ma-detail-item">
                   <div className="ma-detail-label">Email</div>
                   <div className="ma-detail-value">{selectedAdmin.email || "-"}</div>
+                </div>
+                <div className="ma-detail-item">
+                  <div className="ma-detail-label">Jamaah Ditangani</div>
+                  <div className="ma-detail-value" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+                    <span style={{ fontWeight: 700, color: "#166534" }}>
+                      👥 {selectedAdmin.total_jamaah ?? 0} Jamaah
+                    </span>
+                    <button
+                      type="button"
+                      className="ma-btn-jamaah"
+                      style={{ padding: "0.3rem 0.75rem", fontSize: "0.78rem" }}
+                      onClick={() => {
+                        closeModal();
+                        navigate(`/admin/pendaftaran?admin_id=${selectedAdmin.id}`);
+                      }}
+                    >
+                      Lihat Daftar Jamaah →
+                    </button>
+                  </div>
                 </div>
                 <div className="ma-detail-item">
                   <div className="ma-detail-label">Bergabung</div>
