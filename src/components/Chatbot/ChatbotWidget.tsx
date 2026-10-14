@@ -213,7 +213,8 @@ const ChatbotWidget = () => {
         try { payload.reg_data = JSON.parse(regDataRaw); } catch { /* ignore */ }
       }
 
-      const res = await axios.post('http://localhost:8080/chatbot', payload);
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const res = await axios.post(`${apiBase}/chatbot`, payload);
       const data = res.data?.data ?? {};
 
       const jawaban       = data.jawaban    ?? 'Maaf, saya tidak bisa menjawab saat ini.';

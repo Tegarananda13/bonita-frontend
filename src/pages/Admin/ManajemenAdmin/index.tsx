@@ -19,6 +19,8 @@ interface AdminUser {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 const formatDate = (iso: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
@@ -87,7 +89,7 @@ const ManajemenAdmin = () => {
   const fetchAdmins = useCallback(async () => {
     try {
       setLoadingList(true);
-      const res = await axios.get("http://localhost:8080/manager/admin", authHeader);
+      const res = await axios.get(`${API_BASE_URL}/manager/admin`, authHeader);
       setAdmins(res.data?.admins ?? []);
     } catch {
       setAdmins([]);
@@ -144,7 +146,7 @@ const ManajemenAdmin = () => {
     setAddSubmitting(true);
     try {
       await axios.post(
-        "http://localhost:8080/manager/admin",
+        `${API_BASE_URL}/manager/admin`,
         { nama: nama.trim(), username: username.trim(), password, no_hp: no_hp.trim(), email: email.trim() },
         authHeader
       );
@@ -175,7 +177,7 @@ const ManajemenAdmin = () => {
     setEditSubmitting(true);
     try {
       await axios.put(
-        `http://localhost:8080/manager/admin/${selectedAdmin.id}`,
+        `${API_BASE_URL}/manager/admin/${selectedAdmin.id}`,
         { nama: nama.trim(), username: username.trim(), no_hp: no_hp.trim(), email: email.trim() },
         authHeader
       );
@@ -200,7 +202,7 @@ const ManajemenAdmin = () => {
     const endpoint = admin.is_active ? "deactivate" : "reactivate";
     try {
       await axios.patch(
-        `http://localhost:8080/manager/admin/${admin.id}/${endpoint}`,
+        `${API_BASE_URL}/manager/admin/${admin.id}/${endpoint}`,
         {},
         authHeader
       );

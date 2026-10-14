@@ -36,14 +36,15 @@ const AdminDashboard = () => {
 
     const fetchDashboard = async () => {
       try {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
         const reqs: Promise<any>[] = [
-          axios.get("http://localhost:8080/admin/dashboard", {
+          axios.get(`${apiBase}/admin/dashboard`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ];
         if (isManager) {
           reqs.push(
-            axios.get("http://localhost:8080/manager/badges", {
+            axios.get(`${apiBase}/manager/badges`, {
               headers: { Authorization: `Bearer ${token}` },
             })
           );

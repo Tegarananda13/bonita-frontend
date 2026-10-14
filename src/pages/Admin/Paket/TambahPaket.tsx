@@ -4,6 +4,8 @@ import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./TambahPaket.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface PaketFormData {
   nama_paket: string;
@@ -341,7 +343,7 @@ const TambahPaket = () => {
       setSubmitting(true);
 
       // 1. Buat Paket
-      const createRes = await axios.post("http://localhost:8080/admin/paket", fd, {
+      const createRes = await axios.post(`${API_BASE_URL}/admin/paket`, fd, {
         headers: multipartHeaders,
       });
       const newPaketId =
@@ -357,7 +359,7 @@ const TambahPaket = () => {
           const fotoFd = new FormData();
           fotoFd.append("foto", nf.file);
           const upRes = await axios.post(
-            `http://localhost:8080/admin/paket/${newPaketId}/foto`,
+            `${API_BASE_URL}/admin/paket/${newPaketId}/foto`,
             fotoFd,
             { headers: multipartHeaders }
           );
@@ -366,7 +368,7 @@ const TambahPaket = () => {
           const uploadedId = upRes.data?.data?.id;
           if (nf.isUtama && uploadedId) {
             await axios.patch(
-              `http://localhost:8080/admin/foto-paket/${uploadedId}/utama`,
+              `${API_BASE_URL}/admin/foto-paket/${uploadedId}/utama`,
               {},
               { headers: authHeaders }
             );
@@ -378,7 +380,7 @@ const TambahPaket = () => {
       if (fasilitasInput.length > 0) {
         for (const fas of fasilitasInput) {
           const fasRes = await axios.post(
-            `http://localhost:8080/admin/paket/${newPaketId}/fasilitas`,
+            `${API_BASE_URL}/admin/paket/${newPaketId}/fasilitas`,
             { nama_fasilitas: fas.nama, deskripsi: fas.deskripsi },
             { headers: authHeaders }
           );
@@ -390,7 +392,7 @@ const TambahPaket = () => {
                 const ffd = new FormData();
                 ffd.append("foto", df.file);
                 await axios.post(
-                  `http://localhost:8080/admin/fasilitas/${createdFasId}/foto`,
+                  `${API_BASE_URL}/admin/fasilitas/${createdFasId}/foto`,
                   ffd,
                   { headers: multipartHeaders }
                 );

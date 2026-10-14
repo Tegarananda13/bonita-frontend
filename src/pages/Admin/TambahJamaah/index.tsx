@@ -4,6 +4,8 @@ import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./TambahJamaah.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface PaketOption {
@@ -239,7 +241,7 @@ const TambahJamaah = () => {
   useEffect(() => {
     const fetchPakets = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/admin/paket", {
+        const res = await axios.get(`${API_BASE_URL}/admin/paket`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const raw = res.data?.paket ?? res.data?.pakets ?? res.data?.data ?? [];
@@ -324,7 +326,7 @@ const TambahJamaah = () => {
     setSubmitting(true);
     try {
       const res = await axios.post(
-        "http://localhost:8080/pendaftaran",
+        `${API_BASE_URL}/pendaftaran`,
         {
           paket_id: paketId,
           registration_source: "admin",

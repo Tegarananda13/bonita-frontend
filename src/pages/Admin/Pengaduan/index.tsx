@@ -4,6 +4,8 @@ import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPengaduan.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PengaduanItem {
@@ -93,7 +95,7 @@ const DetailModal = ({
     const load = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/admin/pengaduan/${pengaduanId}`,
+          `${API_BASE_URL}/admin/pengaduan/${pengaduanId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setData(res.data);
@@ -112,7 +114,7 @@ const DetailModal = ({
     setSaving(true); setMsg("");
     try {
       const res = await axios.patch(
-        `http://localhost:8080/admin/pengaduan/${pengaduanId}/status`,
+        `${API_BASE_URL}/admin/pengaduan/${pengaduanId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -260,7 +262,7 @@ const AdminPengaduan = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/admin/pengaduan", {
+      const res = await axios.get(`${API_BASE_URL}/admin/pengaduan`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setList(res.data?.data ?? []);

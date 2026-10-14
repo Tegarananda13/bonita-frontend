@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "./AdminLayout.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 interface NavItem {
   to: string;
   label: string;
@@ -149,7 +151,7 @@ const AdminLayout = () => {
   const fetchBadges = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await axios.get("http://localhost:8080/admin/badges", {
+      const res = await axios.get(`${API_BASE_URL}/admin/badges`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBadgeDokumen(Number(res.data?.dokumen ?? 0));
@@ -160,13 +162,13 @@ const AdminLayout = () => {
       // Fallback ke endpoint individual
       try {
         const [dokRes, bayarRes, pengRes] = await Promise.all([
-          axios.get("http://localhost:8080/admin/dokumen/pending", {
+          axios.get(`${API_BASE_URL}/admin/dokumen/pending`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get("http://localhost:8080/admin/pembayaran/pending", {
+          axios.get(`${API_BASE_URL}/admin/pembayaran/pending`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get("http://localhost:8080/admin/pengaduan", {
+          axios.get(`${API_BASE_URL}/admin/pengaduan`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

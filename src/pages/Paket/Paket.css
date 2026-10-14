@@ -674,7 +674,7 @@
   border-radius: 24px 24px 0 0;
 }
 
-.modal-section-title {
+.modal-container .modal-section-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;

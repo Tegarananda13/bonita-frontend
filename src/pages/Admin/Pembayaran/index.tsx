@@ -5,6 +5,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import "./AdminPembayaran.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 interface PembayaranItem {
   id: string;
   nomor_pendaftaran: string;
@@ -50,7 +52,7 @@ const AdminPembayaran = () => {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/admin/pembayaran/pending", {
+      const res = await axios.get(`${API_BASE_URL}/admin/pembayaran/pending`, {
         headers: authH(),
       });
       const items: PembayaranItem[] = res.data?.data ?? [];
@@ -72,7 +74,7 @@ const AdminPembayaran = () => {
     setDetailModal(id);
     setDetailData(null);
     try {
-      const res = await axios.get(`http://localhost:8080/admin/pembayaran/${id}`, {
+      const res = await axios.get(`${API_BASE_URL}/admin/pembayaran/${id}`, {
         headers: authH(),
       });
       const p = res.data?.pembayaran;
@@ -109,7 +111,7 @@ const AdminPembayaran = () => {
     }
     try {
       setVerifying(id + status);
-      await axios.put(`http://localhost:8080/admin/pembayaran/${id}/verifikasi`,
+      await axios.put(`${API_BASE_URL}/admin/pembayaran/${id}/verifikasi`,
         status === "ditolak" ? { status, alasan: reason } : { status }, {
         headers: authH(),
       });

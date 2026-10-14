@@ -3,6 +3,8 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import "./Paket.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface FotoFasilitasItem {
@@ -95,7 +97,7 @@ export const PaketModal = ({
       try {
         setLoadingDetail(true);
         setFetchError(false);
-        const res = await axios.get(`http://localhost:8080/paket/${paketId}`);
+        const res = await axios.get(`${API_BASE_URL}/paket/${paketId}`);
         setDetail(res.data);
       } catch {
         setFetchError(true);
@@ -309,7 +311,7 @@ const Paket = () => {
     try {
       setLoading(true);
       setError(false);
-      const res = await axios.get("http://localhost:8080/paket");
+      const res = await axios.get(`${API_BASE_URL}/paket`);
       const data = res.data?.paket;
       setPaketList(Array.isArray(data) ? data : []);
     } catch {

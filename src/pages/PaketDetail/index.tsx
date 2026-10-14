@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import "./PaketDetail.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface GambarPaket {
   id: string | null;
@@ -111,7 +113,7 @@ const PaketDetail = () => {
     if (!id) return;
     setLoading(true);
     axios
-      .get(`http://localhost:8080/paket/${id}`)
+      .get(`${API_BASE_URL}/paket/${id}`)
       .then((res) => {
         const data = res.data as PaketDetail;
         // Normalise: if no gambar_paket but has foto_paket string, synthesise array

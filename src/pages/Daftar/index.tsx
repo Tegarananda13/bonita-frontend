@@ -3,6 +3,8 @@ import { useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
 import "./Daftar.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface PaketPublic {
@@ -239,7 +241,7 @@ const Daftar = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/paket");
+        const res = await axios.get(`${API_BASE_URL}/paket`);
         const list: PaketPublic[] = res.data?.paket ?? [];
         setPaketList(list.filter((p) => p.sisa_kuota > 0));
         if (preselectedId) {
@@ -330,7 +332,7 @@ const Daftar = () => {
     setError("");
     try {
       setSubmitting(true);
-      const res = await axios.post("http://localhost:8080/pendaftaran", {
+      const res = await axios.post(`${API_BASE_URL}/pendaftaran`, {
         paket_id: selectedPaket!.id,
         jamaah: jamaahList.map(j => ({
           nik: j.nik.trim(), nama: j.nama.trim(),

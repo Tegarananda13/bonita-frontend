@@ -26,6 +26,10 @@ interface PendaftaranItem {
   user_id?: string | null;
   admin_id?: string | null;
   admin_pic?: string | null;
+  alasan_pembatalan?: string;
+  dibatalkan_pada?: string;
+  dibatalkan_oleh?: string;
+  dibatalkan_oleh_nama?: string;
 }
 
 interface DetailPendaftaran {
@@ -60,6 +64,10 @@ interface DetailPendaftaran {
   approved_at?: string;
   approver_nama?: string;
   approver?: { id?: string; nama?: string; Nama?: string; username?: string; role?: string };
+  alasan_pembatalan?: string;
+  dibatalkan_pada?: string;
+  dibatalkan_oleh?: string;
+  dibatalkan_oleh_nama?: string;
   admin_pic?: string;
   user_id?: string | null;
   admin_id?: string | null;
@@ -71,9 +79,16 @@ interface DetailPendaftaran {
     nomor_pendaftaran: string;
     nama: string;
     nik: string;
+    status?: string;
+    alasan_pembatalan?: string;
     ambil_perlengkapan: boolean;
     harga_perlengkapan: number;
   }[];
+  info_perlengkapan?: {
+    harga: number;
+    nama: string;
+    items: string[];
+  };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -95,7 +110,7 @@ const fmtDateTime = (d?: string) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  }) + " WIB";
 };
 
 const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
@@ -108,7 +123,7 @@ const TRAVEL_DOC_TYPES = [
 
 const isTravelDoc = (jenis: string) => ["visa", "tiket_pesawat", "nusuk"].includes(jenis?.toLowerCase());
 
-const getFileName = (url: string = ""): string => {
+export const getFileName = (url: string = ""): string => {
   try {
     const cleanUrl = url.split("?")[0];
     const rawName = cleanUrl.substring(cleanUrl.lastIndexOf("/") + 1);
@@ -119,7 +134,7 @@ const getFileName = (url: string = ""): string => {
   }
 };
 
-const getFileExt = (url: string = ""): string => {
+export const getFileExt = (url: string = ""): string => {
   try {
     const cleanUrl = url.split("?")[0];
     const ext = cleanUrl.split(".").pop();
@@ -130,7 +145,7 @@ const getFileExt = (url: string = ""): string => {
   }
 };
 
-const downloadFile = async (url: string, filename: string) => {
+export const downloadFile = async (url: string, filename: string) => {
   try {
     const res = await fetch(url);
     const blob = await res.blob();
@@ -178,7 +193,7 @@ const StatusPill = ({ value }: { value: string }) => {
 
 // ── Detail Modal ───────────────────────────────────────────────────────────────
 
-const API = "http://localhost:8080";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const JENIS_DOKUMEN = [
   { value: "paspor", label: "Paspor", required: true },
@@ -194,12 +209,25 @@ type PayItem = { id: string; jumlah: number; status: string; tanggal: string; bu
 type DocItem = { id: string; jenis: string; status: string; file_path: string; created_at?: string };
 
 // Set jenis dokumen yang wajib (required)
-const REQUIRED_JENIS = new Set(JENIS_DOKUMEN.filter(j => j.required).map(j => j.value));
+export const REQUIRED_JENIS = new Set(JENIS_DOKUMEN.filter(j => j.required).map(j => j.value));
 // Lookup label dari value (backward-compat: "foto"/"akte_lahir" lama → label baru)
 const JENIS_LABEL_MAP: Record<string, string> = Object.fromEntries(
   [...JENIS_DOKUMEN.map(j => [j.value, j.label]), ["foto", "Pas Foto"], ["akte_lahir", "Akta Lahir"]]
 );
 const getDocLabel = (jenis: string) => JENIS_LABEL_MAP[jenis] ?? jenis;
+
+const JENIS_ICON_MAP: Record<string, string> = {
+  paspor: "🛂",
+  ktp: "🪪",
+  kartu_keluarga: "👨‍👩‍👧",
+  akta_lahir: "📜",
+  akte_lahir: "📜",
+  vaksin: "💉",
+  pas_foto: "🖼️",
+  foto: "🖼️",
+  lainnya: "📄",
+};
+const getDocIcon = (jenis: string) => JENIS_ICON_MAP[jenis?.toLowerCase()] ?? "📄";
 
 // ── Modal Assign Pendaftaran ─────────────────────────────────────────────────
 
@@ -533,7 +561,7 @@ const AssignModal = ({
 
 // ── Detail Modal ─────────────────────────────────────────────────────────────
 
-const DetailModal = ({
+export const DetailModal = ({
   nomor,
   token,
   onClose,
@@ -542,7 +570,7 @@ const DetailModal = ({
   nomor: string;
   token: string;
   onClose: () => void;
-  onAssigned: () => void;
+  onAssigned?: () => void;
 }) => {
   const { nama: authNama, role } = useAuth();
   const isManager = role === "owner" || role === "manager" || role === "administration_manager";
@@ -577,6 +605,104 @@ const DetailModal = ({
   const [deletingPayId, setDeletingPayId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [submittingAjukan, setSubmittingAjukan] = useState(false);
+
+  // ── Modal Pembatalan Pendaftaran ──
+  const [showBatalModal, setShowBatalModal] = useState(false);
+  const [batalAlasan, setBatalAlasan] = useState("");
+  const [batalSubmitting, setBatalSubmitting] = useState(false);
+  const [batalError, setBatalError] = useState("");
+
+  const handleConfirmBatal = async () => {
+    const trimmed = batalAlasan.trim();
+    if (!trimmed) {
+      setBatalError("Alasan pembatalan wajib diisi dan tidak boleh hanya berupa spasi.");
+      return;
+    }
+    if (!data) return;
+    setBatalSubmitting(true);
+    setBatalError("");
+    try {
+      const res = await axios.post(
+        `${API}/admin/pendaftaran/${data.nomor_pendaftaran}/batal`,
+        { alasan: trimmed },
+        { headers: authH }
+      );
+      showToast("success", res.data?.message || "✓ Pendaftaran jamaah berhasil dibatalkan.");
+      setShowBatalModal(false);
+      setBatalAlasan("");
+      await fetchData();
+      window.dispatchEvent(new Event("admin-badge-refresh"));
+      onAssigned?.();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.error ?? "Gagal membatalkan pendaftaran.")
+        : "Gagal membatalkan pendaftaran.";
+      setBatalError(msg);
+      showToast("error", msg);
+    } finally {
+      setBatalSubmitting(false);
+    }
+  };
+
+  // ── Modal Ubah Perlengkapan ──
+  const [showPerlengkapanModal, setShowPerlengkapanModal] = useState(false);
+  const [perlengkapanSelectedNomor, setPerlengkapanSelectedNomor] = useState("");
+  const [perlengkapanChoice, setPerlengkapanChoice] = useState(false);
+  const [perlengkapanSubmitting, setPerlengkapanSubmitting] = useState(false);
+  const [perlengkapanError, setPerlengkapanError] = useState("");
+
+  const openEditPerlengkapan = (targetNomor?: string) => {
+    const chosenNomor = targetNomor || data?.nomor_pendaftaran || "";
+    setPerlengkapanSelectedNomor(chosenNomor);
+    if (data?.grup_jamaah && data.grup_jamaah.length > 0) {
+      const found = data.grup_jamaah.find((g) => g.nomor_pendaftaran === chosenNomor);
+      if (found) {
+        setPerlengkapanChoice(found.ambil_perlengkapan);
+      } else {
+        setPerlengkapanChoice(data.ambil_perlengkapan);
+      }
+    } else {
+      setPerlengkapanChoice(data?.ambil_perlengkapan ?? false);
+    }
+    setPerlengkapanError("");
+    setShowPerlengkapanModal(true);
+  };
+
+  const handleSelectJamaahPerlengkapan = (nomorDipilih: string) => {
+    setPerlengkapanSelectedNomor(nomorDipilih);
+    if (data?.grup_jamaah) {
+      const found = data.grup_jamaah.find((g) => g.nomor_pendaftaran === nomorDipilih);
+      if (found) {
+        setPerlengkapanChoice(found.ambil_perlengkapan);
+      }
+    }
+  };
+
+  const submitPerlengkapan = async () => {
+    if (!perlengkapanSelectedNomor) return;
+    setPerlengkapanSubmitting(true);
+    setPerlengkapanError("");
+    try {
+      const res = await axios.put(
+        `${API}/admin/pendaftaran/${perlengkapanSelectedNomor}/perlengkapan`,
+        { ambil_perlengkapan: perlengkapanChoice },
+        { headers: authH }
+      );
+      showToast("success", res.data?.message || "✓ Pilihan perlengkapan berhasil diperbarui.");
+      setShowPerlengkapanModal(false);
+      await fetchData();
+      window.dispatchEvent(new Event("admin-badge-refresh"));
+      onAssigned?.();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.error ?? "Gagal memperbarui pilihan perlengkapan.")
+        : "Gagal memperbarui pilihan perlengkapan.";
+      setPerlengkapanError(msg);
+      showToast("error", msg);
+    } finally {
+      setPerlengkapanSubmitting(false);
+    }
+  };
 
   const authH = { Authorization: `Bearer ${token}` };
 
@@ -657,6 +783,10 @@ const DetailModal = ({
         approved_at: p?.ApprovedAt ?? p?.approved_at,
         approver: p?.Approver ?? p?.approver,
         approver_nama: p?.approver_nama ?? p?.Approver?.Nama ?? p?.approver?.nama ?? p?.Approver?.nama,
+        alasan_pembatalan: p?.alasan_pembatalan ?? p?.AlasanPembatalan,
+        dibatalkan_pada: p?.dibatalkan_pada ?? p?.DibatalkanPada,
+        dibatalkan_oleh: p?.dibatalkan_oleh ?? p?.DibatalkanOleh,
+        dibatalkan_oleh_nama: p?.dibatalkan_oleh_nama ?? p?.Pembatal?.Nama ?? p?.Pembatal?.nama,
         admin_pic: p?.User?.Nama ?? p?.User?.nama ?? null,
         user_id: p?.user_id ?? p?.UserID ?? p?.User?.ID ?? p?.User?.id ?? null,
         admin_id: p?.admin_id ?? p?.user_id ?? p?.UserID ?? p?.User?.ID ?? p?.User?.id ?? null,
@@ -669,10 +799,13 @@ const DetailModal = ({
               nomor_pendaftaran: String(g.nomor_pendaftaran ?? ""),
               nama: String(g.nama ?? ""),
               nik: String(g.nik ?? "-"),
+              status: String(g.status ?? ""),
+              alasan_pembatalan: g.alasan_pembatalan ? String(g.alasan_pembatalan) : undefined,
               ambil_perlengkapan: Boolean(g.ambil_perlengkapan),
               harga_perlengkapan: Number(g.harga_perlengkapan ?? 0),
             }))
           : [],
+        info_perlengkapan: res.data?.info_perlengkapan,
       });
       const rawBayar = res.data?.pembayaran ?? [];
       const mappedBayar: PayItem[] = rawBayar.map((b: Record<string, unknown>) => ({
@@ -720,7 +853,7 @@ const DetailModal = ({
       showToast("success", "✓ Berhasil mengambil tanggung jawab sebagai PIC pendaftaran ini.");
       setData((prev) => (prev ? { ...prev, admin_pic: authNama || "Saya" } : null));
       await fetchData();
-      onAssigned();
+      onAssigned?.();
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal mengambil pendaftaran.") : "Gagal mengambil pendaftaran.";
       setAssignError(msg);
@@ -810,13 +943,6 @@ const DetailModal = ({
     setShowDocModal(true);
   };
 
-  const openUploadTravelDoc = (jenis: string, existingDoc?: DocItem) => {
-    setEditDoc(existingDoc || null);
-    setDocJenis(jenis);
-    setDocFile(null);
-    setDocError("");
-    setShowDocModal(true);
-  };
 
   const openEditDoc = (doc: DocItem) => {
     setEditDoc(doc);
@@ -1247,6 +1373,446 @@ const DetailModal = ({
         </div>
       )}
 
+      {/* ── Modal Ubah Perlengkapan ── */}
+      {showPerlengkapanModal && (() => {
+        const currentJamaah = data?.grup_jamaah?.find((g) => g.nomor_pendaftaran === perlengkapanSelectedNomor);
+        const currentJamaahChoice = currentJamaah ? currentJamaah.ambil_perlengkapan : data?.ambil_perlengkapan ?? false;
+        const currentJamaahName = currentJamaah ? currentJamaah.nama : data?.nama_customer ?? "-";
+        const defaultPrice = data?.info_perlengkapan?.harga ?? (data?.harga_perlengkapan && data.harga_perlengkapan > 0 ? data.harga_perlengkapan : 1450000);
+        const defaultItems = data?.info_perlengkapan?.items ?? [
+          'Koper 22"',
+          'Koper 24"',
+          'Kain Ihram / Mukena',
+          'Ikat Pinggang',
+          'Buku Doa',
+          'Tas Paspor / Tas Pinggang',
+        ];
+
+        const deltaPrice = (perlengkapanChoice ? defaultPrice : 0) - (currentJamaahChoice ? defaultPrice : 0);
+        const currentTotalTagihan = data?.total_tagihan ?? (data?.harga ?? 0) * (data?.grup_count ?? 1);
+        const simulatedTotalTagihan = Math.max(0, currentTotalTagihan + deltaPrice);
+        const currentTotalPembayaran = data?.total_pembayaran ?? 0;
+        const simulatedSisaTagihan = Math.max(0, simulatedTotalTagihan - currentTotalPembayaran);
+        const simulatedStatus = currentTotalPembayaran >= simulatedTotalTagihan && simulatedTotalTagihan > 0
+          ? "lunas"
+          : currentTotalPembayaran > 0
+          ? "dp"
+          : "belum";
+
+        return (
+          <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !perlengkapanSubmitting && setShowPerlengkapanModal(false)}>
+            <div style={{ ...inlineBox, maxWidth: "520px" }}>
+              {/* Header gradient */}
+              <div style={{
+                background: "linear-gradient(135deg, #15803d 0%, #166534 100%)",
+                padding: "1.25rem 1.5rem",
+                display: "flex", alignItems: "center", gap: "0.75rem",
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: "12px",
+                  background: "rgba(255,255,255,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.3rem",
+                }}>
+                  🧳
+                </div>
+                <div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>
+                    Ubah Pilihan Perlengkapan
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.78rem", marginTop: "2px" }}>
+                    {data?.paket} {data?.nomor_invoice ? `• ${data.nomor_invoice}` : ""}
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: "1.25rem 1.5rem", maxHeight: "75vh", overflowY: "auto" }}>
+                {perlengkapanError && (
+                  <div style={{
+                    background: "#fef2f2", color: "#dc2626", borderRadius: "10px",
+                    padding: "0.65rem 1rem", fontSize: "0.82rem", marginBottom: "0.75rem",
+                    border: "1.5px solid #fecaca", display: "flex", alignItems: "center", gap: "0.5rem",
+                  }}>
+                    <span>⚠️</span> {perlengkapanError}
+                  </div>
+                )}
+
+                {/* Selector Jamaah jika pendaftaran grup */}
+                {data?.grup_jamaah && data.grup_jamaah.length > 1 && (
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label style={inlineLabel}>Pilih Jamaah Yang Ingin Diubah</label>
+                    <select
+                      style={inlineInput}
+                      value={perlengkapanSelectedNomor}
+                      onChange={(e) => handleSelectJamaahPerlengkapan(e.target.value)}
+                      disabled={perlengkapanSubmitting}
+                    >
+                      {data.grup_jamaah.map((g, idx) => (
+                        <option key={g.nomor_pendaftaran} value={g.nomor_pendaftaran}>
+                          #{idx + 1} {g.nama} ({g.nomor_pendaftaran}) — {g.ambil_perlengkapan ? "Mengambil Perlengkapan" : "Tidak Mengambil"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Info Jamaah Terpilih */}
+                <div style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  padding: "0.75rem 1rem",
+                  marginBottom: "1rem",
+                }}>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, letterSpacing: "0.04em" }}>JAMAAH TERPILIH</div>
+                  <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>
+                    {currentJamaahName}
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "#64748b", fontFamily: "monospace" }}>
+                    {perlengkapanSelectedNomor}
+                  </div>
+                </div>
+
+                {/* Pilihan Toggle / Checkbox Perlengkapan */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "0.85rem",
+                    padding: "1rem 1.15rem",
+                    borderRadius: "12px",
+                    border: `2px solid ${perlengkapanChoice ? "#22c55e" : "#cbd5e1"}`,
+                    background: perlengkapanChoice ? "#f0fdf4" : "#ffffff",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={perlengkapanChoice}
+                    onChange={(e) => setPerlengkapanChoice(e.target.checked)}
+                    disabled={perlengkapanSubmitting}
+                    style={{ width: "1.2rem", height: "1.2rem", marginTop: "2px", accentColor: "#16a34a", cursor: "pointer" }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <span style={{ fontWeight: 700, fontSize: "0.92rem", color: perlengkapanChoice ? "#15803d" : "#1e293b" }}>
+                        Ambil Perlengkapan Tambahan
+                      </span>
+                      <span style={{
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        color: "#166534",
+                        background: "#dcfce7",
+                        padding: "0.2rem 0.6rem",
+                        borderRadius: 6,
+                      }}>
+                        + {fmtRupiah(defaultPrice)} / orang
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "4px", lineHeight: "1.4" }}>
+                      Menyediakan paket koper resmi Bonita Umroh dan seragam ibadah lengkap untuk jamaah ini.
+                    </div>
+                  </div>
+                </label>
+
+                {/* Rincian item perlengkapan */}
+                <div style={{
+                  marginTop: "0.85rem",
+                  padding: "0.85rem 1rem",
+                  borderRadius: "10px",
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <span>📦</span> Rincian Perlengkapan Termasuk:
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                    {defaultItems.map((item, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          padding: "0.25rem 0.6rem",
+                          borderRadius: "6px",
+                          background: perlengkapanChoice ? "#dcfce7" : "#e2e8f0",
+                          color: perlengkapanChoice ? "#166534" : "#475569",
+                          border: perlengkapanChoice ? "1px solid #bbf7d0" : "1px solid #cbd5e1",
+                        }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Simulasi & Penyesuaian Tagihan Invoice */}
+                <div style={{
+                  marginTop: "1rem",
+                  padding: "0.9rem 1.15rem",
+                  borderRadius: "12px",
+                  background: "#f1f5f9",
+                  border: "1.5px solid #cbd5e1",
+                }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.6rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>💳 Penyesuaian Tagihan Invoice</span>
+                    <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 500 }}>
+                      {data?.nomor_invoice ? `Invoice: ${data.nomor_invoice}` : ""}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", fontSize: "0.82rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
+                      <span>Perubahan Biaya Perlengkapan:</span>
+                      <strong style={{ color: deltaPrice > 0 ? "#16a34a" : deltaPrice < 0 ? "#dc2626" : "#64748b" }}>
+                        {deltaPrice > 0 ? `+ ${fmtRupiah(deltaPrice)}` : deltaPrice < 0 ? `- ${fmtRupiah(Math.abs(deltaPrice))}` : "Tidak berubah"}
+                      </strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#0f172a", borderTop: "1px dashed #cbd5e1", paddingTop: "0.4rem" }}>
+                      <span>Total Tagihan Baru:</span>
+                      <strong style={{ fontSize: "0.92rem", color: "#1e293b" }}>{fmtRupiah(simulatedTotalTagihan)}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#059669" }}>
+                      <span>Total Pembayaran Masuk (Tetap):</span>
+                      <strong>{fmtRupiah(currentTotalPembayaran)}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#b91c1c", fontWeight: 600 }}>
+                      <span>Sisa Tagihan Setelah Perubahan:</span>
+                      <strong>{fmtRupiah(simulatedSisaTagihan)}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                      <span style={{ color: "#475569" }}>Status Pembayaran Baru:</span>
+                      <StatusPill value={simulatedStatus} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={inlineActions}>
+                <button style={btnCancel} onClick={() => setShowPerlengkapanModal(false)} disabled={perlengkapanSubmitting}>
+                  Batal
+                </button>
+                <button
+                  style={{
+                    ...btnSubmit,
+                    background: "linear-gradient(135deg, #15803d 0%, #166534 100%)",
+                    boxShadow: "0 4px 15px rgba(22,101,52,0.35)",
+                    opacity: perlengkapanSubmitting ? 0.7 : 1,
+                  }}
+                  onClick={submitPerlengkapan}
+                  disabled={perlengkapanSubmitting}
+                >
+                  {perlengkapanSubmitting ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ animation: "spin 0.7s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                      Menyimpan...
+                    </span>
+                  ) : "💾 Simpan Perubahan"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Modal Konfirmasi Pembatalan ── */}
+      {showBatalModal && data && (
+        <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !batalSubmitting && setShowBatalModal(false)}>
+          <div style={{ ...inlineBox, maxWidth: "520px" }}>
+            {/* Header warning / red gradient */}
+            <div style={{
+              background: "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
+              padding: "1.25rem 1.5rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: "12px",
+                  background: "rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.3rem",
+                  color: "#fff",
+                }}>
+                  ⚠️
+                </div>
+                <div>
+                  <div style={{ color: "#fff", fontWeight: 800, fontSize: "1.05rem" }}>
+                    Konfirmasi Pembatalan Pendaftaran
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.78rem", marginTop: "2px" }}>
+                    Tindakan ini akan membatalkan keberangkatan jamaah
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !batalSubmitting && setShowBatalModal(false)}
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  width: 32,
+                  height: 32,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <LuX size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "1.35rem 1.5rem" }}>
+              {/* Notice no-refund */}
+              <div style={{
+                background: "#fff1f2",
+                border: "1.5px solid #fecdd3",
+                borderRadius: "10px",
+                padding: "0.75rem 1rem",
+                marginBottom: "1rem",
+                fontSize: "0.82rem",
+                color: "#9f1239",
+                lineHeight: 1.45,
+              }}>
+                <strong>Perhatian:</strong> Bonita Umroh tidak memiliki kebijakan pengembalian dana (refund). Pembatalan hanya mengubah status pendaftaran dan mengembalikan kuota kursi. Invoice dan riwayat pembayaran tetap tersimpan.
+              </div>
+
+              {batalError && (
+                <div style={{
+                  background: "#fef2f2",
+                  color: "#dc2626",
+                  borderRadius: "10px",
+                  padding: "0.65rem 1rem",
+                  fontSize: "0.82rem",
+                  marginBottom: "1rem",
+                  border: "1.5px solid #fecaca",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}>
+                  <span>⚠️</span> {batalError}
+                </div>
+              )}
+
+              {/* Data Identitas Jamaah */}
+              <div style={{
+                background: "#f8fafc",
+                borderRadius: "12px",
+                border: "1px solid #e2e8f0",
+                padding: "1rem 1.25rem",
+                marginBottom: "1.25rem",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "0.75rem 1rem",
+              }}>
+                <div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>Nomor Pendaftaran</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1e293b", fontFamily: "monospace", marginTop: "2px" }}>
+                    {data.nomor_pendaftaran}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>Nama Jamaah</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1e293b", marginTop: "2px" }}>
+                    {data.nama_customer}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>Paket Umroh</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1e293b", marginTop: "2px" }}>
+                    {data.paket}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>Status Pembayaran</div>
+                  <div style={{ marginTop: "4px" }}>
+                    <StatusPill value={data.payment_status} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Alasan Pembatalan Input */}
+              <label style={{ ...inlineLabel, marginTop: 0 }}>
+                Alasan Pembatalan <span style={{ color: "#dc2626" }}>*</span>
+              </label>
+              <textarea
+                style={{
+                  ...inlineInput,
+                  minHeight: "90px",
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  lineHeight: 1.5,
+                }}
+                placeholder="Contoh: Jamaah mengalami kendala kesehatan mendadak sehingga tidak memungkinkan untuk berangkat."
+                value={batalAlasan}
+                onChange={(e) => {
+                  setBatalAlasan(e.target.value);
+                  if (batalError) setBatalError("");
+                }}
+                disabled={batalSubmitting}
+              />
+              <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>
+                Alasan ini wajib diisi dan akan disimpan di basis data.
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={inlineActions}>
+              <button
+                type="button"
+                style={btnCancel}
+                onClick={() => setShowBatalModal(false)}
+                disabled={batalSubmitting}
+              >
+                Kembali
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBatal}
+                disabled={batalSubmitting || !batalAlasan.trim()}
+                style={{
+                  padding: "0.55rem 1.4rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  boxShadow: "0 4px 15px rgba(220,38,38,0.35)",
+                  transition: "all 0.15s",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  opacity: batalSubmitting || !batalAlasan.trim() ? 0.6 : 1,
+                }}
+              >
+                {batalSubmitting ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ animation: "spin 0.7s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                    Membatalkan...
+                  </>
+                ) : (
+                  <>
+                    <span>🚫</span> Konfirmasi Pembatalan
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Main Modal ── */}
       <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
         <div className="modal-panel">
@@ -1280,6 +1846,64 @@ const DetailModal = ({
               </div>
             ) : (
               <>
+                {/* ── Bagian Informasi Pembatalan (Jika Status Batal) ── */}
+                {data.status === "batal" && (
+                  <div style={{
+                    background: "linear-gradient(135deg, #fff1f2, #ffe4e6)",
+                    border: "1.5px solid #fecdd3",
+                    borderRadius: 14,
+                    padding: "1.25rem 1.5rem",
+                    marginBottom: "1.25rem",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                        <span style={{ fontSize: "1.4rem" }}>🚫</span>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "1.05rem", color: "#9f1239" }}>
+                            Informasi Pembatalan
+                          </div>
+                          <div style={{ fontSize: "0.78rem", color: "#be123c" }}>
+                            Pendaftaran jamaah ini telah dibatalkan
+                          </div>
+                        </div>
+                      </div>
+                      <span className="status-pill status-batal" style={{ fontSize: "0.82rem", padding: "4px 12px", fontWeight: 800 }}>
+                        Status: Batal
+                      </span>
+                    </div>
+
+                    <div style={{
+                      background: "#ffffff",
+                      borderRadius: "10px",
+                      padding: "1rem 1.25rem",
+                      border: "1px solid #ffe4e6",
+                    }}>
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#9f1239", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>
+                          Alasan Pembatalan:
+                        </div>
+                        <div style={{ fontSize: "0.92rem", color: "#1e293b", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                          {data.alasan_pembatalan || "(Tidak ada alasan dicatat)"}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #fecdd3" }}>
+                        <div>
+                          <div style={{ fontSize: "0.72rem", color: "#9f1239", fontWeight: 600 }}>Dibatalkan Pada:</div>
+                          <div style={{ fontSize: "0.85rem", color: "#1e293b", fontWeight: 700, marginTop: "2px" }}>
+                            {data.dibatalkan_pada ? fmtDateTime(data.dibatalkan_pada) : "-"}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "0.72rem", color: "#9f1239", fontWeight: 600 }}>Dibatalkan Oleh:</div>
+                          <div style={{ fontSize: "0.85rem", color: "#1e293b", fontWeight: 700, marginTop: "2px" }}>
+                            {data.dibatalkan_oleh_nama || "Admin Bonita"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* ── Banner Siap Berangkat (Pengesahan Manager) ── */}
                 {data.status === "siap_berangkat" && (
                   <div className="verif-stamp-banner">
@@ -1447,19 +2071,22 @@ const DetailModal = ({
                                     ({j.nomor_pendaftaran})
                                   </span>
                                 </div>
-                                <span
-                                  style={{
-                                    fontSize: "0.72rem",
-                                    fontWeight: 700,
-                                    padding: "0.2rem 0.6rem",
-                                    borderRadius: 999,
-                                    background: isCurrent ? "#dcfce7" : "#f1f5f9",
-                                    color: isCurrent ? "#166534" : "#64748b",
-                                    border: isCurrent ? "1px solid #86efac" : "1px solid #e2e8f0",
-                                  }}
-                                >
-                                  {isCurrent ? "Sedang Dilihat" : "Anggota Grup"}
-                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                  {j.status && <StatusPill value={j.status} />}
+                                  <span
+                                    style={{
+                                      fontSize: "0.72rem",
+                                      fontWeight: 700,
+                                      padding: "0.2rem 0.6rem",
+                                      borderRadius: 999,
+                                      background: isCurrent ? "#dcfce7" : "#f1f5f9",
+                                      color: isCurrent ? "#166534" : "#64748b",
+                                      border: isCurrent ? "1px solid #86efac" : "1px solid #e2e8f0",
+                                    }}
+                                  >
+                                    {isCurrent ? "Sedang Dilihat" : "Anggota Grup"}
+                                  </span>
+                                </div>
                               </div>
                               <div className="modal-grid-3">
                                 <div className="modal-info-item">
@@ -1470,9 +2097,28 @@ const DetailModal = ({
                                 </div>
                                 <div className="modal-info-item">
                                   <span className="modal-info-label">Perlengkapan Tambahan</span>
-                                  <span className="modal-info-val">
-                                    {j.ambil_perlengkapan ? `Ya (${fmtRupiah(j.harga_perlengkapan)})` : "Tidak"}
-                                  </span>
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.4rem" }}>
+                                    <span className="modal-info-val">
+                                      {j.ambil_perlengkapan ? `Ya (${fmtRupiah(j.harga_perlengkapan)})` : "Tidak"}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditPerlengkapan(j.nomor_pendaftaran)}
+                                      style={{
+                                        background: "#f0fdf4",
+                                        border: "1px solid #86efac",
+                                        borderRadius: 6,
+                                        padding: "1px 6px",
+                                        fontSize: "0.72rem",
+                                        fontWeight: 700,
+                                        color: "#166534",
+                                        cursor: "pointer",
+                                      }}
+                                      title="Ubah perlengkapan jamaah ini"
+                                    >
+                                      ✏️ Ubah
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="modal-info-item">
                                   <span className="modal-info-label">Nomor Pendaftaran</span>
@@ -1481,6 +2127,27 @@ const DetailModal = ({
                                   </span>
                                 </div>
                               </div>
+                              {j.status === "batal" && (
+                                <div
+                                  style={{
+                                    marginTop: "0.6rem",
+                                    padding: "0.5rem 0.75rem",
+                                    background: "#fef2f2",
+                                    border: "1px solid #fecaca",
+                                    borderRadius: "8px",
+                                    fontSize: "0.75rem",
+                                    color: "#991b1b",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.4rem",
+                                  }}
+                                >
+                                  <span>⚠️</span>
+                                  <span>
+                                    <strong>Dibatalkan:</strong> {j.alasan_pembatalan || "Tanpa alasan tercatat"}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -1684,232 +2351,48 @@ const DetailModal = ({
                           )}
                         </div>
                       </div>
-                      {data.total_perlengkapan > 0 && (
-                        <span
-                          style={{
-                            fontSize: "0.78rem",
-                            fontWeight: 600,
-                            color: "#166534",
-                            background: "#dcfce7",
-                            padding: "0.2rem 0.6rem",
-                            borderRadius: 8,
-                          }}
-                        >
-                          Total Invoice: {fmtRupiah(data.total_perlengkapan)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── 4. Dokumen Persyaratan ── */}
-                <div className="modal-section">
-                  <div className="modal-section-title">
-                    <span>📄 Dokumen Persyaratan</span>
-                    <button style={addBtn} onClick={openAddDoc}>
-                      + Upload Dokumen
-                    </button>
-                  </div>
-
-                  {docs.filter((d) => !isTravelDoc(d.jenis)).length === 0 ? (
-                    <div style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", padding: "0.6rem 0" }}>
-                      Belum ada dokumen persyaratan yang diunggah.
-                    </div>
-                  ) : (
-                    <div className="modal-docs-grid">
-                      {docs
-                        .filter((d) => !isTravelDoc(d.jenis))
-                        .map((dok, i) => (
-                          <div key={dok.id || i} className="modal-doc-item">
-                            <div className="modal-doc-info">
-                              <span className="modal-doc-name">
-                                {getDocLabel(dok.jenis)}{" "}
-                                {REQUIRED_JENIS.has(dok.jenis) && <span style={{ color: "#ef4444" }}>★</span>}
-                              </span>
-                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                                <StatusPill value={dok.status} />
-                              </span>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                              {dok.file_path && (
-                                <a
-                                  href={dok.file_path}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="modal-doc-btn-preview"
-                                  title="Lihat file dokumen"
-                                >
-                                  👁️ Lihat
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                style={actionBtn("#1a6b43")}
-                                onClick={() => openEditDoc(dok)}
-                                title="Edit dokumen"
-                              >
-                                ✏
-                              </button>
-                              <button
-                                type="button"
-                                style={actionBtn("#ef4444")}
-                                onClick={() => deleteDoc(dok.id)}
-                                disabled={deletingDocId === dok.id}
-                                title="Hapus dokumen"
-                              >
-                                {deletingDocId === dok.id ? "⏳" : "🗑"}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* ── 5. Dokumen Perjalanan ── */}
-                <div className="modal-section">
-                  <div className="modal-section-title">
-                    <span>✈️ Dokumen Perjalanan (Visa, Tiket, Nusuk)</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
-                    {(() => {
-                      const travelDocsMap = new Map(
-                        docs.filter((d) => isTravelDoc(d.jenis)).map((d) => [d.jenis, d])
-                      );
-                      return TRAVEL_DOC_TYPES.map((td) => {
-                        const doc = travelDocsMap.get(td.key);
-                        const isAvailable = !!(doc && doc.file_path);
-                        const fileName = isAvailable ? getFileName(doc.file_path) : "";
-
-                        return (
-                          <div
-                            key={td.key}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                        {data.total_perlengkapan > 0 && (
+                          <span
                             style={{
-                              background: isAvailable ? "#f0fdf4" : "#ffffff",
-                              border: `1.5px solid ${isAvailable ? "#86efac" : "#e2e8f0"}`,
-                              borderRadius: "12px",
-                              padding: "0.85rem 1rem",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: "0.75rem",
-                              flexWrap: "wrap",
+                              fontSize: "0.78rem",
+                              fontWeight: 600,
+                              color: "#166534",
+                              background: "#dcfce7",
+                              padding: "0.2rem 0.6rem",
+                              borderRadius: 8,
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 200, flex: 1 }}>
-                              <div
-                                style={{
-                                  width: 40,
-                                  height: 40,
-                                  borderRadius: "10px",
-                                  background: isAvailable ? "#dcfce7" : "#f1f5f9",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: "1.3rem",
-                                  flexShrink: 0,
-                                }}
-                              >
-                                {td.icon}
-                              </div>
-                              <div>
-                                <div
-                                  style={{
-                                    fontWeight: 700,
-                                    fontSize: "0.9rem",
-                                    color: "#1e293b",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                  }}
-                                >
-                                  {td.label}
-                                  <span
-                                    style={{
-                                      fontSize: "0.72rem",
-                                      fontWeight: 600,
-                                      padding: "0.15rem 0.55rem",
-                                      borderRadius: "999px",
-                                      background: isAvailable ? "#d1fae5" : "#f1f5f9",
-                                      color: isAvailable ? "#065f46" : "#64748b",
-                                      border: isAvailable ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
-                                    }}
-                                  >
-                                    {isAvailable ? "✓ Tersedia" : "Belum diunggah"}
-                                  </span>
-                                </div>
-                                {isAvailable ? (
-                                  <div
-                                    style={{
-                                      fontSize: "0.76rem",
-                                      color: "#64748b",
-                                      marginTop: "0.2rem",
-                                      wordBreak: "break-all",
-                                    }}
-                                  >
-                                    📎 {fileName} {doc.created_at ? `• ${fmtDate(doc.created_at)}` : ""}
-                                  </div>
-                                ) : (
-                                  <div style={{ fontSize: "0.76rem", color: "#94a3b8", marginTop: "0.2rem" }}>
-                                    {td.desc}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                              {!isAvailable ? (
-                                <button
-                                  type="button"
-                                  className="modal-btn-secondary"
-                                  style={{ padding: "0.45rem 0.85rem", fontSize: "0.78rem" }}
-                                  onClick={() => openUploadTravelDoc(td.key)}
-                                >
-                                  📤 Upload
-                                </button>
-                              ) : (
-                                <>
-                                  <a
-                                    href={doc.file_path}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="modal-doc-btn-preview"
-                                    style={{ padding: "0.45rem 0.75rem", fontSize: "0.78rem" }}
-                                  >
-                                    👁️ Lihat
-                                  </a>
-                                  <button
-                                    type="button"
-                                    className="modal-btn-secondary"
-                                    style={{ padding: "0.45rem 0.75rem", fontSize: "0.78rem" }}
-                                    onClick={() =>
-                                      downloadFile(
-                                        doc.file_path,
-                                        `${td.key}_${data.nomor_pendaftaran}.${getFileExt(doc.file_path)}`
-                                      )
-                                    }
-                                  >
-                                    📥 Unduh
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="modal-btn-secondary"
-                                    style={{ padding: "0.45rem 0.75rem", fontSize: "0.78rem" }}
-                                    onClick={() => openUploadTravelDoc(td.key, doc)}
-                                  >
-                                    🔄 Ganti
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
+                            Total Invoice: {fmtRupiah(data.total_perlengkapan)}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEditPerlengkapan(data.nomor_pendaftaran)}
+                          style={{
+                            background: "#ffffff",
+                            border: "1.5px solid #16a34a",
+                            color: "#15803d",
+                            borderRadius: 8,
+                            padding: "0.3rem 0.75rem",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          ✏️ Ubah Perlengkapan
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* ── 6. Riwayat & Ringkasan Pembayaran ── */}
+                {/* ── 4. Riwayat & Ringkasan Pembayaran ── */}
                 <div className="modal-section">
                   <div className="modal-section-title">
                     <span>💳 Riwayat &amp; Ringkasan Pembayaran</span>
@@ -1927,7 +2410,7 @@ const DetailModal = ({
                             background: "#ffffff",
                             border: "1.5px dashed #cbd5e1",
                             borderRadius: 12,
-                            padding: "1.25rem",
+                            padding: "1rem 1.25rem",
                             textAlign: "center",
                             color: "#94a3b8",
                             fontSize: "0.84rem",
@@ -1949,7 +2432,7 @@ const DetailModal = ({
                         style={{
                           background: "linear-gradient(135deg, #0f172a 0%, #0a2e1c 100%)",
                           borderRadius: 14,
-                          padding: "1.25rem 1.5rem",
+                          padding: "1rem 1.25rem",
                           color: "#ffffff",
                           marginBottom: "1rem",
                           boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
@@ -2127,6 +2610,70 @@ const DetailModal = ({
                   )}
                 </div>
 
+                {/* ── 5. Dokumen Persyaratan ── */}
+                <div className="modal-section">
+                  <div className="modal-section-title">
+                    <span>📄 Dokumen Persyaratan</span>
+                    <button style={addBtn} onClick={openAddDoc}>
+                      + Upload Dokumen
+                    </button>
+                  </div>
+
+                  {docs.filter((d) => !isTravelDoc(d.jenis)).length === 0 ? (
+                    <div style={{ fontSize: "0.82rem", color: "#94a3b8", fontStyle: "italic", padding: "0.6rem 0" }}>
+                      Belum ada dokumen persyaratan yang diunggah.
+                    </div>
+                  ) : (
+                    <div className="modal-docs-grid">
+                      {docs
+                        .filter((d) => !isTravelDoc(d.jenis))
+                        .map((dok, i) => (
+                          <div key={dok.id || i} className="modal-doc-item">
+                            <div className="modal-doc-info">
+                              <span className="modal-doc-name" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <span style={{ fontSize: "1.1rem" }}>{getDocIcon(dok.jenis)}</span>
+                                <span>{getDocLabel(dok.jenis)}</span>
+                              </span>
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                                <StatusPill value={dok.status} />
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                              {dok.file_path && (
+                                <a
+                                  href={dok.file_path}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="modal-doc-btn-preview"
+                                  title="Lihat file dokumen"
+                                >
+                                  👁️ Lihat
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                style={actionBtn("#1a6b43")}
+                                onClick={() => openEditDoc(dok)}
+                                title="Edit dokumen"
+                              >
+                                ✏
+                              </button>
+                              <button
+                                type="button"
+                                style={actionBtn("#ef4444")}
+                                onClick={() => deleteDoc(dok.id)}
+                                disabled={deletingDocId === dok.id}
+                                title="Hapus dokumen"
+                              >
+                                {deletingDocId === dok.id ? "⏳" : "🗑"}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* ── 7. Admin PIC / Penanggung Jawab ── */}
                 <div className="modal-assign-section">
                   <div className="modal-section-title" style={{ color: "#166534" }}>
@@ -2227,7 +2774,7 @@ const DetailModal = ({
 
           {/* Footer */}
           <div className="modal-footer">
-            <div>
+            <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
               {data?.nomor_invoice && (
                 <button
                   type="button"
@@ -2235,6 +2782,27 @@ const DetailModal = ({
                   onClick={handleOpenInvoice}
                 >
                   📄 Buka Lembar Invoice
+                </button>
+              )}
+              {data && data.status !== "batal" && data.status !== "selesai" && data.status !== "kadaluarsa" && (
+                <button
+                  type="button"
+                  className="modal-btn-danger"
+                  style={{
+                    backgroundColor: "#ef4444",
+                    color: "#ffffff",
+                    border: "none",
+                    padding: "0.55rem 1rem",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem"
+                  }}
+                  onClick={() => setShowBatalModal(true)}
+                >
+                  <span>⚠️</span> Batalkan Pendaftaran
                 </button>
               )}
             </div>
@@ -2267,7 +2835,7 @@ const DetailModal = ({
           onAssigned={() => {
             setShowAssignModal(false);
             fetchData();
-            onAssigned();
+            onAssigned?.();
           }}
         />
       )}
@@ -2348,7 +2916,7 @@ const GrupDetailModal = ({
     if (!first) return;
     const fetch = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/admin/pendaftaran/${first.nomor_pendaftaran}`, {
+        const res = await axios.get(`${API}/admin/pendaftaran/${first.nomor_pendaftaran}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const p = res.data?.pendaftaran;
@@ -2385,7 +2953,7 @@ const GrupDetailModal = ({
     if (!first) return;
     setSubmittingAjukanGrup(true);
     try {
-      const res = await axios.post(`http://localhost:8080/admin/pendaftaran/${first.nomor_pendaftaran}/ajukan-verifikasi`, {}, {
+      const res = await axios.post(`${API}/admin/pendaftaran/${first.nomor_pendaftaran}/ajukan-verifikasi`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       showToast("success", res.data?.message || "✓ Pendaftaran grup berhasil diajukan ulang ke Administration Manager.");
@@ -2573,13 +3141,36 @@ const GrupDetailModal = ({
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
                       <StatusPill value={j.document_status} />
                       <StatusPill value={j.status} />
-                      <button
-                        type="button"
-                        style={{ padding: "0.3rem 0.75rem", borderRadius: 8, border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#1a6b43", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
-                        onClick={() => onOpenDetail(j.nomor_pendaftaran)}
-                      >
-                        Detail →
-                      </button>
+                      {j.status === "batal" ? (
+                        <button
+                          type="button"
+                          style={{
+                            padding: "0.3rem 0.75rem",
+                            borderRadius: 8,
+                            border: "1.5px solid #fca5a5",
+                            background: "#fef2f2",
+                            color: "#b91c1c",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.3rem",
+                          }}
+                          onClick={() => onOpenDetail(j.nomor_pendaftaran)}
+                          title="Lihat alasan pembatalan"
+                        >
+                          Lihat Alasan →
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          style={{ padding: "0.3rem 0.75rem", borderRadius: 8, border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#1a6b43", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+                          onClick={() => onOpenDetail(j.nomor_pendaftaran)}
+                        >
+                          Detail →
+                        </button>
+                      )}
                     </div>
                   </div>
                   {/* Per-jamaah perlengkapan indicator */}
@@ -2768,7 +3359,7 @@ const AdminPendaftaran = () => {
     if (!isManager || !token) return;
     const fetchManagerAdmins = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/manager/admin", {
+        const res = await axios.get(`${API}/manager/admin`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setManagerAdmins(res.data?.admins ?? []);
@@ -2793,8 +3384,8 @@ const AdminPendaftaran = () => {
     setLoading(true);
     try {
       const url = filterAdminId
-        ? `http://localhost:8080/admin/pendaftaran?admin_id=${encodeURIComponent(filterAdminId)}`
-        : "http://localhost:8080/admin/pendaftaran";
+        ? `${API}/admin/pendaftaran?admin_id=${encodeURIComponent(filterAdminId)}`
+        : `${API}/admin/pendaftaran`;
       const res = await axios.get(url, {
         headers: authH(),
       });
@@ -3119,15 +3710,32 @@ const AdminPendaftaran = () => {
                         <span className="date-cell">{fmtDate(p.tanggal_daftar)}</span>
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="detail-btn"
-                          onClick={() => setDetailNomor(p.nomor_pendaftaran)}
-                          title="Lihat detail pendaftaran"
-                        >
-                          <LuEye size={13} />
-                          Detail
-                        </button>
+                        {p.status === "batal" ? (
+                          <button
+                            type="button"
+                            className="detail-btn"
+                            style={{
+                              borderColor: "#fca5a5",
+                              background: "#fef2f2",
+                              color: "#b91c1c",
+                            }}
+                            onClick={() => setDetailNomor(p.nomor_pendaftaran)}
+                            title="Lihat alasan pembatalan"
+                          >
+                            <LuEye size={13} />
+                            Lihat Alasan
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="detail-btn"
+                            onClick={() => setDetailNomor(p.nomor_pendaftaran)}
+                            title="Lihat detail pendaftaran"
+                          >
+                            <LuEye size={13} />
+                            Detail
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -3217,7 +3825,7 @@ const PICDetailModal = ({
     const fetchDetail = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/admin/pendaftaran/${p.nomor_pendaftaran}`,
+          `${API}/admin/pendaftaran/${p.nomor_pendaftaran}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const dp = res.data?.pendaftaran;
@@ -3243,6 +3851,9 @@ const PICDetailModal = ({
           nomor_invoice: dp?.NomorInvoice ?? dp?.nomor_invoice ?? "",
           document_status: dp?.DocumentStatus ?? dp?.document_status,
           status: dp?.Status ?? dp?.status,
+          alasan_pembatalan: dp?.alasan_pembatalan ?? dp?.AlasanPembatalan ?? null,
+          dibatalkan_pada: dp?.dibatalkan_pada ?? dp?.DibatalkanPada ?? null,
+          dibatalkan_oleh_nama: dp?.dibatalkan_oleh_nama ?? dp?.DibatalkanOlehNama ?? dp?.Pembatal?.Nama ?? dp?.pembatal?.nama ?? null,
           admin_pic: dp?.User?.Nama ?? dp?.User?.nama ?? null,
         });
         // Pembayaran: Go model → field PascalCase
@@ -3323,6 +3934,45 @@ const PICDetailModal = ({
                   <StatusPill value={data.document_status} />
                 </div>
               </div>
+
+              {/* Informasi Pembatalan jika status batal */}
+              {data.status === "batal" && (
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: "1.5px solid #fca5a5",
+                    borderRadius: "12px",
+                    padding: "1rem",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      color: "#991b1b",
+                      fontWeight: 700,
+                      fontSize: "0.95rem",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    <span>⚠️</span>
+                    <span>Pendaftaran Telah Dibatalkan</span>
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "#7f1d1d", marginBottom: "0.4rem" }}>
+                    <strong>Alasan Pembatalan:</strong> {data.alasan_pembatalan || "-"}
+                  </div>
+                  <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.78rem", color: "#991b1b", flexWrap: "wrap" }}>
+                    <span>
+                      <strong>Dibatalkan Pada:</strong> {data.dibatalkan_pada ? fmtDateTime(data.dibatalkan_pada) : "-"}
+                    </span>
+                    <span>
+                      <strong>Dibatalkan Oleh:</strong> {data.dibatalkan_oleh_nama || "Admin Bonita"}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Info Jamaah */}
               <div className="modal-section-title">👤 Informasi Jamaah</div>
@@ -3409,106 +4059,6 @@ const PICDetailModal = ({
                 </>
               )}
 
-              {/* ── Dokumen Perjalanan ── */}
-              {(() => {
-                const travelDocsMap = new Map(
-                  docs.filter(d => isTravelDoc(d.jenis)).map(d => [d.jenis, d])
-                );
-
-                return (
-                  <div style={{ marginTop: "1rem" }}>
-                    <div className="modal-section-title" style={{ margin: "0 0 0.5rem 0" }}>✈️ Dokumen Perjalanan</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {TRAVEL_DOC_TYPES.map(td => {
-                        const doc = travelDocsMap.get(td.key);
-                        const isAvailable = !!(doc && doc.file_path);
-                        const fileName = isAvailable ? getFileName(doc.file_path) : "";
-
-                        return (
-                          <div key={td.key} style={{
-                            background: isAvailable ? "#f0fdf4" : "#f8fafc",
-                            border: `1.5px solid ${isAvailable ? "#bbf7d0" : "#e2e8f0"}`,
-                            borderRadius: "10px",
-                            padding: "0.65rem 0.875rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "0.5rem",
-                            flexWrap: "wrap",
-                          }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                              <span style={{ fontSize: "1.2rem" }}>{td.icon}</span>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: "0.84rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                  {td.label}
-                                  <span style={{
-                                    fontSize: "0.68rem", fontWeight: 600, padding: "0.1rem 0.45rem", borderRadius: 999,
-                                    background: isAvailable ? "#d1fae5" : "#f1f5f9",
-                                    color: isAvailable ? "#065f46" : "#64748b",
-                                  }}>
-                                    {isAvailable ? "✓ Tersedia" : "Belum tersedia"}
-                                  </span>
-                                </div>
-                                {isAvailable && (
-                                  <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                                    📎 {fileName}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {isAvailable && (
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                                <a
-                                  href={doc.file_path}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  style={{
-                                    fontSize: "0.74rem",
-                                    fontWeight: 600,
-                                    color: "#059669",
-                                    background: "transparent",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    padding: "0.3rem 0.6rem",
-                                    borderRadius: "6px",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "3px",
-                                    textDecoration: "none",
-                                  }}
-                                >
-                                  👁 Lihat
-                                </a>
-                                <button
-                                  type="button"
-                                  style={{
-                                    fontSize: "0.74rem",
-                                    fontWeight: 600,
-                                    color: "#1a6b43",
-                                    background: "transparent",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    padding: "0.3rem 0.6rem",
-                                    borderRadius: "6px",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "3px",
-                                  }}
-                                  onClick={() => downloadFile(doc.file_path, `${td.key}_${data?.nomor_pendaftaran || p.nomor_pendaftaran}.${getFileExt(doc.file_path)}`)}
-                                >
-                                  📥 Download
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
               {/* ── Dokumen Persyaratan ── */}
               {(() => {
                 const reqDocs = docs.filter(d => !isTravelDoc(d.jenis));
@@ -3519,11 +4069,9 @@ const PICDetailModal = ({
                     {reqDocs.map((dok, i) => (
                       <div key={dok.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
-                          <span style={{ color: "#374151", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <span style={{ color: "#374151", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                            <span style={{ fontSize: "1.05rem" }}>{getDocIcon(dok.jenis)}</span>
                             <span style={{ textTransform: "capitalize" }}>{getDocLabel(dok.jenis)}</span>
-                            {REQUIRED_JENIS.has(dok.jenis) && (
-                              <span style={{ color: "#ef4444", fontSize: "0.72rem", fontWeight: 700 }}>★</span>
-                            )}
                             {dok.created_at ? <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 400 }}>({fmtDate(dok.created_at)})</span> : null}
                           </span>
                           <StatusPill value={dok.status} />
@@ -3593,7 +4141,7 @@ const JamaahSayaView = ({
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/admin/pendaftaran/saya", {
+      const res = await axios.get(`${API}/admin/pendaftaran/saya`, {
         headers: authH(),
       });
       setList(res.data?.data ?? []);

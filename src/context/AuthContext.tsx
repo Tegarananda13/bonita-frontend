@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!token) return;
     if (!nama) {
       axios
-        .get("http://localhost:8080/admin/me", {
+        .get(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"}/admin/me`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {

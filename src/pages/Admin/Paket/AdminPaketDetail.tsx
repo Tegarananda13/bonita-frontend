@@ -2,9 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { DetailModal } from "../Pendaftaran";
 import "./AdminPaketDetail.css";
+import "../Pendaftaran/AdminPendaftaran.css";
 
-const API = "http://localhost:8080";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -122,6 +124,7 @@ const AdminPaketDetail = () => {
   const [error, setError] = useState("");
 
   // Modal actions
+  const [selectedNomor, setSelectedNomor] = useState<string | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [toggleError, setToggleError] = useState("");
@@ -556,10 +559,11 @@ const AdminPaketDetail = () => {
                       <td>
                         <button
                           className="apd-detail-btn"
-                          onClick={() => navigate(`/admin/pendaftaran?nomor=${j.nomor_pendaftaran}`)}
-                          title="Lihat detail jamaah"
+                          style={j.status === "batal" ? { borderColor: "#fca5a5", background: "#fef2f2", color: "#b91c1c" } : undefined}
+                          onClick={() => setSelectedNomor(j.nomor_pendaftaran)}
+                          title={j.status === "batal" ? "Lihat alasan pembatalan" : "Lihat detail jamaah"}
                         >
-                          Lihat Detail
+                          {j.status === "batal" ? "Lihat Alasan" : "Lihat Detail"}
                         </button>
                       </td>
                     </tr>
@@ -659,6 +663,18 @@ const AdminPaketDetail = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Modal Detail Pendaftaran ── */}
+      {selectedNomor && (
+        <DetailModal
+          nomor={selectedNomor}
+          token={token ?? ""}
+          onClose={() => setSelectedNomor(null)}
+          onAssigned={() => {
+            fetchDetail();
+          }}
+        />
       )}
 
     </div>

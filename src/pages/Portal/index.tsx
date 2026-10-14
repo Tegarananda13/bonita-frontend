@@ -58,6 +58,8 @@ interface PendaftaranData {
   document_status: string;
   batas_waktu_dp?: string;
   total_orang?: number;
+  alasan_pembatalan?: string;
+  dibatalkan_pada?: string;
 }
 
 interface InvoiceData {
@@ -84,6 +86,8 @@ interface DashboardData {
   document_status: string;
   status: string;
   catatan_verifikasi_manager?: string;
+  alasan_pembatalan?: string;
+  dibatalkan_pada?: string;
   batas_waktu_dp?: string;
   tanggal_daftar?: string;
   customer?: CustomerData;
@@ -94,7 +98,7 @@ interface DashboardData {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const API = "http://localhost:8080";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const STORAGE_KEY = "customer_session";
 const FALLBACK_PAKET_IMG = "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=800&q=80";
 
@@ -444,12 +448,14 @@ const TabPembayaran = ({
   paymentStatus,
   documentStatus,
   onOpenInvoice,
+  isBatal = false,
 }: {
   token: string;
   harga: number;
   paymentStatus: string;
   documentStatus: string;
   onOpenInvoice?: () => void;
+  isBatal?: boolean;
 }) => {
   const [riwayat, setRiwayat] = useState<PembayaranItem[]>([]);
   const [totalDibayar, setTotalDibayar] = useState(0);
@@ -616,8 +622,24 @@ const TabPembayaran = ({
       </div>
 
 
-      {/* ─── Form All-in-One ─── */}
-      {!isLunas && (
+      {/* ─── Form All-in-One / Notifikasi Pembatalan ─── */}
+      {isBatal ? (
+        <div style={{
+          background: "#fef2f2",
+          border: "1.5px dashed #fca5a5",
+          borderRadius: 14,
+          padding: "1.25rem",
+          marginBottom: "1.5rem"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#991b1b", fontWeight: 700, marginBottom: "0.4rem" }}>
+            <span>🚫</span>
+            <span>Pendaftaran Dibatalkan</span>
+          </div>
+          <div style={{ fontSize: "0.85rem", color: "#b91c1c", lineHeight: 1.5 }}>
+            Pendaftaran telah dibatalkan. Pembayaran baru tidak dapat diajukan. Seluruh riwayat transaksi pembayaran dan dokumen invoice resmi di bawah ini tetap tersimpan secara permanen.
+          </div>
+        </div>
+      ) : !isLunas && (
         <form className="bayar-new-form" onSubmit={handleBayar} noValidate>
           <div className="bayar-new-title">💳 Buat Pembayaran</div>
           <div className="bayar-new-sub">Transfer ke rekening berikut, lalu isi form dan upload bukti transfer.</div>
@@ -730,12 +752,12 @@ const TabPembayaran = ({
                     <a href={p.bukti} target="_blank" rel="noreferrer" className="bukti-link">
                       👁 Lihat
                     </a>
-                  ) : p.status === "pending" ? (
+                  ) : p.status === "pending" && !isBatal ? (
                     <button type="button" className="upload-bukti-btn" onClick={() => setUploadModalId(p.id)}>
                       📤 Upload Bukti
                     </button>
                   ) : null}
-                  {p.status === "ditolak" && (
+                  {p.status === "ditolak" && !isBatal && (
                     <button type="button" className="btn-ganti" onClick={() => setUploadModalId(p.id)}>
                       ↻ Ganti
                     </button>
@@ -768,7 +790,15 @@ const TabPembayaran = ({
 
 // ── Tab Dokumen ───────────────────────────────────────────────────────────────
 
-const TabDokumen = ({ token, onRefreshDashboard }: { token: string; onRefreshDashboard?: () => void }) => {
+const TabDokumen = ({
+  token,
+  onRefreshDashboard,
+  isBatal = false,
+}: {
+  token: string;
+  onRefreshDashboard?: () => void;
+  isBatal?: boolean;
+}) => {
   const [dokumenList, setDokumenList] = useState<DokumenItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dpDiterima, setDpDiterima] = useState(false);
@@ -1016,59 +1046,71 @@ const TabDokumen = ({ token, onRefreshDashboard }: { token: string; onRefreshDas
           </div>
 
           {/* Upload dokumen baru (Hanya jenis dokumen persyaratan) */}
-          <div className="dokumen-upload-card" style={!dpDiterima ? { opacity: 0.85 } : {}}>
-            <div className="dokumen-upload-title">📤 Upload Dokumen Persyaratan</div>
-
-            {!dpDiterima && (
-              <div style={{
-                background: "#fef9c3", border: "1px solid #fbbf24", borderRadius: "10px",
-                padding: "0.7rem 1rem", fontSize: "0.82rem", color: "#92400e",
-                marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem",
-              }}>
-                🔒 Dokumen baru dapat diunggah setelah pembayaran DP pertama diverifikasi oleh admin.
+          {isBatal ? (
+            <div className="dokumen-upload-card" style={{ background: "#fef2f2", border: "1.5px dashed #fca5a5" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#991b1b", fontWeight: 700, marginBottom: "0.4rem" }}>
+                <span>🚫</span>
+                <span>Pendaftaran Telah Dibatalkan</span>
               </div>
-            )}
-
-            <div className="section-title" style={{ marginBottom: "0.5rem" }}>Jenis Dokumen</div>
-            <div className="dokumen-type-selector">
-              {DOK_TYPES.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  className={`dok-type-btn ${selectedType === t.key ? "selected" : ""}`}
-                  onClick={() => setSelectedType(t.key)}
-                  disabled={!dpDiterima}
-                >
-                  {t.icon} {t.label}
-                  {t.wajib && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
-                </button>
-              ))}
+              <div style={{ fontSize: "0.85rem", color: "#b91c1c", lineHeight: 1.5 }}>
+                Pengunggahan atau pembaruan berkas dokumen telah dinonaktifkan karena pendaftaran telah dibatalkan. Berkas yang sudah diunggah sebelumnya tetap dapat Anda akses dan unduh di bawah ini.
+              </div>
             </div>
+          ) : (
+            <div className="dokumen-upload-card" style={!dpDiterima ? { opacity: 0.85 } : {}}>
+              <div className="dokumen-upload-title">📤 Upload Dokumen Persyaratan</div>
 
-            <div className="dokumen-drop-area" style={!dpDiterima ? { pointerEvents: "none", opacity: 0.5 } : {}}>
-              <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileRef} disabled={!dpDiterima} />
-              {file ? (
-                <div className="dokumen-file-selected">📎 {file.name}</div>
-              ) : (
-                <>
-                  <div className="dokumen-drop-icon">📁</div>
-                  <div className="dokumen-drop-text">Klik untuk pilih file (JPG, PNG, PDF)</div>
-                </>
+              {!dpDiterima && (
+                <div style={{
+                  background: "#fef9c3", border: "1px solid #fbbf24", borderRadius: "10px",
+                  padding: "0.7rem 1rem", fontSize: "0.82rem", color: "#92400e",
+                  marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem",
+                }}>
+                  🔒 Dokumen baru dapat diunggah setelah pembayaran DP pertama diverifikasi oleh admin.
+                </div>
               )}
+
+              <div className="section-title" style={{ marginBottom: "0.5rem" }}>Jenis Dokumen</div>
+              <div className="dokumen-type-selector">
+                {DOK_TYPES.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className={`dok-type-btn ${selectedType === t.key ? "selected" : ""}`}
+                    onClick={() => setSelectedType(t.key)}
+                    disabled={!dpDiterima}
+                  >
+                    {t.icon} {t.label}
+                    {t.wajib && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
+                  </button>
+                ))}
+              </div>
+
+              <div className="dokumen-drop-area" style={!dpDiterima ? { pointerEvents: "none", opacity: 0.5 } : {}}>
+                <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileRef} disabled={!dpDiterima} />
+                {file ? (
+                  <div className="dokumen-file-selected">📎 {file.name}</div>
+                ) : (
+                  <>
+                    <div className="dokumen-drop-icon">📁</div>
+                    <div className="dokumen-drop-text">Klik untuk pilih file (JPG, PNG, PDF)</div>
+                  </>
+                )}
+              </div>
+
+              {uploadError && <div className="portal-error" style={{ marginBottom: "0.875rem" }}>{uploadError}</div>}
+              {uploadSuccess && <div className="portal-success-msg" style={{ marginBottom: "0.875rem" }}>✓ {uploadSuccess}</div>}
+
+              <button
+                className="dokumen-submit-btn"
+                onClick={handleUpload}
+                disabled={uploading || !file || !dpDiterima}
+                style={!dpDiterima ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+              >
+                {uploading ? <><div className="mini-spin" />Mengupload...</> : <>📤 Upload Dokumen</>}
+              </button>
             </div>
-
-            {uploadError && <div className="portal-error" style={{ marginBottom: "0.875rem" }}>{uploadError}</div>}
-            {uploadSuccess && <div className="portal-success-msg" style={{ marginBottom: "0.875rem" }}>✓ {uploadSuccess}</div>}
-
-            <button
-              className="dokumen-submit-btn"
-              onClick={handleUpload}
-              disabled={uploading || !file || !dpDiterima}
-              style={!dpDiterima ? { opacity: 0.6, cursor: "not-allowed" } : {}}
-            >
-              {uploading ? <><div className="mini-spin" />Mengupload...</> : <>📤 Upload Dokumen</>}
-            </button>
-          </div>
+          )}
 
           {/* Daftar dokumen persyaratan */}
           <div>
@@ -1109,7 +1151,7 @@ const TabDokumen = ({ token, onRefreshDashboard }: { token: string; onRefreshDas
                         👁 Lihat
                       </a>
                     )}
-                    {d.status === "ditolak" && (
+                    {d.status === "ditolak" && !isBatal && (
                       <button
                         type="button"
                         className="btn-ganti"
@@ -1646,6 +1688,20 @@ const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
             </div>
           </div>
         </div>
+
+        {statusPendaftaran === "batal" && (
+          <div style={{
+            margin: "0 1.25rem 1.25rem",
+            padding: "0.85rem 1rem",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: 10,
+            fontSize: "0.82rem",
+            color: "#991b1b"
+          }}>
+            <strong>Alasan Pembatalan:</strong> {dashData?.alasan_pembatalan || dashData?.pendaftaran?.alasan_pembatalan || "Pendaftaran dibatalkan oleh pihak administrasi."}
+          </div>
+        )}
       </div>
 
       {/* ── 2. Paket Umroh yang Diambil ── */}
@@ -2188,6 +2244,40 @@ const Portal = () => {
             </div>
           )}
 
+          {/* Banner Pendaftaran Dibatalkan */}
+          {!loadingDash && pendaftaranStatus === "batal" && (
+            <div style={{
+              margin: "0.75rem 1.75rem 0",
+              padding: "1.1rem 1.25rem",
+              background: "linear-gradient(135deg, #fef2f2, #fff1f2)",
+              border: "1.5px solid #fca5a5",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.35rem", lineHeight: 1 }}>🚫</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#991b1b", marginBottom: 3 }}>
+                  Pendaftaran Dibatalkan
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#b91c1c", lineHeight: 1.5, marginBottom: 6 }}>
+                  <strong>Alasan Pembatalan:</strong> {dashData?.alasan_pembatalan || dashData?.pendaftaran?.alasan_pembatalan || "Pendaftaran telah dibatalkan oleh pihak administrasi."}
+                </div>
+                {dashData?.dibatalkan_pada && (
+                  <div style={{ fontSize: "0.78rem", color: "#dc2626", marginBottom: 6 }}>
+                    Dibatalkan pada: {new Date(dashData.dibatalkan_pada).toLocaleString("id-ID", {
+                      day: "2-digit", month: "long", year: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                      timeZone: "Asia/Jakarta",
+                    })} WIB
+                  </div>
+                )}
+                <div style={{ fontSize: "0.8rem", color: "#7f1d1d", background: "rgba(254, 226, 226, 0.6)", padding: "0.5rem 0.75rem", borderRadius: 8, border: "1px solid #fecaca" }}>
+                  ℹ️ Anda tetap dapat mengakses rincian tagihan invoice dan riwayat transaksi pembayaran Anda melalui tombol <strong>Lihat Invoice</strong> atau tab <strong>Pembayaran</strong> di bawah ini.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Banner Perlu Perbaikan */}
           {!loadingDash && pendaftaranStatus === "perlu_perbaikan" && (
             <div style={{
@@ -2298,15 +2388,20 @@ const Portal = () => {
                 paymentStatus={paymentStatus}
                 documentStatus={documentStatus}
                 onOpenInvoice={() => setShowInvoiceModal(true)}
+                isBatal={pendaftaranStatus === "batal"}
               />
             ) : (
-              <TabDokumen token={token} onRefreshDashboard={() => fetchDashboard(token)} />
+              <TabDokumen
+                token={token}
+                onRefreshDashboard={() => fetchDashboard(token)}
+                isBatal={pendaftaranStatus === "batal"}
+              />
             )}
           </div>
         </div>
 
         {/* Info waiting */}
-        {!loadingDash && paymentStatus === "lunas" && documentStatus === "lengkap" && (
+        {!loadingDash && paymentStatus === "lunas" && documentStatus === "lengkap" && pendaftaranStatus !== "batal" && (
           <div className="portal-waiting-card" style={{ marginTop: "1.5rem" }}>
             <div className="portal-waiting-icon">⏳</div>
             <div className="portal-waiting-title">Sedang dalam Proses Verifikasi</div>

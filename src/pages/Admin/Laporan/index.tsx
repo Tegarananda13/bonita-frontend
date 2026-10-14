@@ -106,7 +106,8 @@ const Laporan = () => {
     setLoading(true);
     setData(null);
     try {
-      const res = await axios.get("http://localhost:8080/manager/laporan", {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      const res = await axios.get(`${apiBase}/manager/laporan`, {
         ...authHeader,
         params: { start_date: start, end_date: end },
       });

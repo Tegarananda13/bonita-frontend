@@ -21,6 +21,8 @@ const DOK_ICONS: Record<string, string> = {
   paspor: "🛂", ktp: "🪪", foto: "🖼️", vaksin: "💉", lainnya: "📄",
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 const AdminDokumen = () => {
   const { token } = useAuth();
   const { showToast } = useToast();
@@ -45,7 +47,7 @@ const AdminDokumen = () => {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/admin/dokumen/pending", {
+      const res = await axios.get(`${API_BASE_URL}/admin/dokumen/pending`, {
         headers: authH(),
       });
       const items: DokumenItem[] = res.data?.data ?? [];
@@ -66,7 +68,7 @@ const AdminDokumen = () => {
   const fetchDetail = async (id: string) => {
     setDetailModal(id);
     try {
-      const res = await axios.get(`http://localhost:8080/admin/dokumen/${id}`, {
+      const res = await axios.get(`${API_BASE_URL}/admin/dokumen/${id}`, {
         headers: authH(),
       });
       const d = res.data?.dokumen;
@@ -89,7 +91,7 @@ const AdminDokumen = () => {
     }
     try {
       setVerifying(id + status);
-      await axios.put(`http://localhost:8080/admin/dokumen/${id}/verifikasi`,
+      await axios.put(`${API_BASE_URL}/admin/dokumen/${id}/verifikasi`,
         status === "ditolak" ? { status, alasan: reason } : { status }, {
         headers: authH(),
       });

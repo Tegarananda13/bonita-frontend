@@ -4,6 +4,9 @@ import { LuEye, LuPencil, LuPlus, LuRefreshCw, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdminPaket.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface FotoPaket {
   id: string | null;
@@ -168,7 +171,7 @@ export const FasilitasPanel = ({
 
   const fetchFotoFasilitas = async (fasId: string): Promise<FotoFasilitas[]> => {
     try {
-      const res = await axios.get(`http://localhost:8080/admin/fasilitas/${fasId}/foto`, auth);
+      const res = await axios.get(`${API_BASE_URL}/admin/fasilitas/${fasId}/foto`, auth);
       const raw = res.data?.data ?? [];
       return raw.map((ff: any) => ({
         id: String(ff.id || ""),
@@ -194,7 +197,7 @@ export const FasilitasPanel = ({
     try {
       setAdding(true);
       const res = await axios.post(
-        `http://localhost:8080/admin/paket/${paket.ID}/fasilitas`,
+        `${API_BASE_URL}/admin/paket/${paket.ID}/fasilitas`,
         { nama_fasilitas: nama.trim(), deskripsi: deskripsi.trim() },
         auth
       );
@@ -209,7 +212,7 @@ export const FasilitasPanel = ({
   const handleDelete = async (id: string) => {
     try {
       setDeletingId(id);
-      await axios.delete(`http://localhost:8080/admin/fasilitas/${id}`, auth);
+      await axios.delete(`${API_BASE_URL}/admin/fasilitas/${id}`, auth);
       setList((prev) => prev.filter((f) => f.id !== id));
     } catch { alert("Gagal menghapus fasilitas."); }
     finally { setDeletingId(null); }
@@ -221,7 +224,7 @@ export const FasilitasPanel = ({
       const fd = new FormData();
       fd.append("foto", file);
       const res = await axios.post(
-        `http://localhost:8080/admin/fasilitas/${fasId}/foto`, fd,
+        `${API_BASE_URL}/admin/fasilitas/${fasId}/foto`, fd,
         { headers: { ...auth.headers, "Content-Type": "multipart/form-data" } }
       );
       const raw = res.data?.data;
@@ -242,7 +245,7 @@ export const FasilitasPanel = ({
   const handleDeleteFoto = async (fasId: string, fotoId: string) => {
     try {
       setDeletingFoto(fotoId);
-      await axios.delete(`http://localhost:8080/admin/foto-fasilitas/${fotoId}`, auth);
+      await axios.delete(`${API_BASE_URL}/admin/foto-fasilitas/${fotoId}`, auth);
       setList((prev) => prev.map((f) =>
         f.id === fasId
           ? { ...f, foto_fasilitas: f.foto_fasilitas.filter((ff) => ff.id !== fotoId) }
@@ -395,7 +398,7 @@ const PaketDrawer = ({
     if (!isEdit || !editData?.ID) return;
     try {
       const res = await axios.get(
-        `http://localhost:8080/admin/paket/${editData.ID}/foto`,
+        `${API_BASE_URL}/admin/paket/${editData.ID}/foto`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const list = normalizeFotoPaket(res.data?.data ?? [], editData.FotoPaket);
@@ -446,7 +449,7 @@ const PaketDrawer = ({
     if (!f.id || f.is_legacy) return;
     try {
       await axios.patch(
-        `http://localhost:8080/admin/foto-paket/${f.id}/utama`,
+        `${API_BASE_URL}/admin/foto-paket/${f.id}/utama`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -462,7 +465,7 @@ const PaketDrawer = ({
       return;
     }
     try {
-      await axios.delete(`http://localhost:8080/admin/foto-paket/${f.id}`, {
+      await axios.delete(`${API_BASE_URL}/admin/foto-paket/${f.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDbFotos((prev) => prev.filter((item) => item.id !== f.id));
@@ -476,7 +479,7 @@ const PaketDrawer = ({
       const fd = new FormData();
       fd.append("foto", nf.file);
       const res = await axios.post(
-        `http://localhost:8080/admin/paket/${paketId}/foto`,
+        `${API_BASE_URL}/admin/paket/${paketId}/foto`,
         fd,
         { headers: { ...auth.headers, "Content-Type": "multipart/form-data" } }
       );
@@ -484,7 +487,7 @@ const PaketDrawer = ({
       const uploadedId = res.data?.data?.id;
       if (nf.isUtama && uploadedId && !setUtamaId) {
         await axios.patch(
-          `http://localhost:8080/admin/foto-paket/${uploadedId}/utama`,
+          `${API_BASE_URL}/admin/foto-paket/${uploadedId}/utama`,
           {},
           auth
         );
@@ -514,7 +517,7 @@ const PaketDrawer = ({
   const fetchDbFasilitas = useCallback(async () => {
     if (!isEdit || !editData?.ID) return;
     try {
-      const res = await axios.get(`http://localhost:8080/admin/paket/${editData.ID}`, {
+      const res = await axios.get(`${API_BASE_URL}/admin/paket/${editData.ID}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const list = res.data?.fasilitas ?? res.data?.paket?.Fasilitas ?? [];
@@ -557,7 +560,7 @@ const PaketDrawer = ({
       try {
         setFasLoading(true);
         const res = await axios.post(
-          `http://localhost:8080/admin/paket/${editData!.ID}/fasilitas`,
+          `${API_BASE_URL}/admin/paket/${editData!.ID}/fasilitas`,
           { nama_fasilitas: fasNama.trim(), deskripsi: fasDeskripsi.trim() },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -571,7 +574,7 @@ const PaketDrawer = ({
               const fd = new FormData();
               fd.append("foto", df.file);
               const upRes = await axios.post(
-                `http://localhost:8080/admin/fasilitas/${newFasId}/foto`,
+                `${API_BASE_URL}/admin/fasilitas/${newFasId}/foto`,
                 fd,
                 { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
               );
@@ -632,7 +635,7 @@ const PaketDrawer = ({
       // Edit mode: hapus dari API
       try {
         setFasLoading(true);
-        await axios.delete(`http://localhost:8080/admin/fasilitas/${id}`, {
+        await axios.delete(`${API_BASE_URL}/admin/fasilitas/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFasilitasEdit((prev) => prev.filter((f) => f.id !== id));
@@ -660,7 +663,7 @@ const PaketDrawer = ({
         const fd = new FormData();
         fd.append("foto", file);
         const res = await axios.post(
-          `http://localhost:8080/admin/fasilitas/${fasId}/foto`,
+          `${API_BASE_URL}/admin/fasilitas/${fasId}/foto`,
           fd,
           { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
         );
@@ -690,7 +693,7 @@ const PaketDrawer = ({
   const handleDeleteFasFoto = async (fasId: string, fotoId: string) => {
     try {
       setDeletingFasFoto(fotoId);
-      await axios.delete(`http://localhost:8080/admin/foto-fasilitas/${fotoId}`, {
+      await axios.delete(`${API_BASE_URL}/admin/foto-fasilitas/${fotoId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFasilitasEdit((prev) =>
@@ -755,14 +758,14 @@ const PaketDrawer = ({
     try {
       setSubmitting(true);
       if (isEdit) {
-        await axios.put(`http://localhost:8080/admin/paket/${editData!.ID}`, fd, { headers });
+        await axios.put(`${API_BASE_URL}/admin/paket/${editData!.ID}`, fd, { headers });
         // Upload foto baru yang dipilih
         if (newFotos.length > 0) {
           await uploadNewFotos(editData!.ID);
         }
       } else {
         // Buat paket dulu
-        const createRes = await axios.post("http://localhost:8080/admin/paket", fd, { headers });
+        const createRes = await axios.post(`${API_BASE_URL}/admin/paket`, fd, { headers });
         const newPaketId = createRes.data?.data?.id ?? createRes.data?.paket?.ID ?? createRes.data?.id;
         // Upload semua foto paket baru
         if (newPaketId && newFotos.length > 0) {
@@ -772,7 +775,7 @@ const PaketDrawer = ({
         if (newPaketId && fasilitasInput.length > 0) {
           for (const fas of fasilitasInput) {
             const fasRes = await axios.post(
-              `http://localhost:8080/admin/paket/${newPaketId}/fasilitas`,
+              `${API_BASE_URL}/admin/paket/${newPaketId}/fasilitas`,
               { nama_fasilitas: fas.nama, deskripsi: fas.deskripsi },
               { headers: authJSON }
             );
@@ -783,7 +786,7 @@ const PaketDrawer = ({
                   const ffd = new FormData();
                   ffd.append("foto", df.file);
                   await axios.post(
-                    `http://localhost:8080/admin/fasilitas/${createdFasId}/foto`,
+                    `${API_BASE_URL}/admin/fasilitas/${createdFasId}/foto`,
                     ffd,
                     { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
                   );
@@ -1265,7 +1268,7 @@ const AdminPaket = () => {
   const fetchPaket = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8080/admin/paket", {
+      const res = await axios.get(`${API_BASE_URL}/admin/paket`, {
         headers: authH(),
       });
       const rawList = res.data?.paket ?? [];
@@ -1297,7 +1300,7 @@ const AdminPaket = () => {
   const handleEditClick = async (p: PaketAdmin) => {
     try {
       setLoadingEditId(p.ID);
-      const res = await axios.get(`http://localhost:8080/admin/paket/${p.ID}`, {
+      const res = await axios.get(`${API_BASE_URL}/admin/paket/${p.ID}`, {
         headers: authH(),
       });
       const detailPaket = res.data?.paket ?? p;

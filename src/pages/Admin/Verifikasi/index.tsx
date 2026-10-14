@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { LuEye, LuCheck, LuTriangleAlert, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
+import JamaahTravelDocs from "./JamaahTravelDocs";
 import "./Verifikasi.css";
 
-const API = "http://localhost:8080";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 interface QueueItem {
   nomor_pendaftaran: string;
@@ -126,11 +127,31 @@ const fmtDateTime = (d?: string) => {
 
 const fmtRupiah = (n?: number) => "Rp " + (n ?? 0).toLocaleString("id-ID");
 
-const TRAVEL_TYPES = [
-  { key: "visa", label: "Visa Saudi", icon: "🛂" },
-  { key: "tiket_pesawat", label: "Tiket Pesawat", icon: "✈️" },
-  { key: "nusuk", label: "Kartu Nusuk", icon: "📱" },
-];
+const JENIS_ICON_MAP: Record<string, string> = {
+  paspor: "🛂",
+  ktp: "🪪",
+  kartu_keluarga: "👨‍👩‍👧",
+  akta_lahir: "📜",
+  akte_lahir: "📜",
+  vaksin: "💉",
+  pas_foto: "🖼️",
+  foto: "🖼️",
+  lainnya: "📄",
+};
+const getDocIcon = (jenis: string) => JENIS_ICON_MAP[jenis?.toLowerCase()] ?? "📄";
+
+const JENIS_LABEL_MAP: Record<string, string> = {
+  paspor: "Paspor",
+  ktp: "KTP",
+  kartu_keluarga: "Kartu Keluarga",
+  akta_lahir: "Akta Lahir",
+  akte_lahir: "Akta Lahir",
+  vaksin: "Vaksin",
+  pas_foto: "Pas Foto",
+  foto: "Pas Foto",
+  lainnya: "Lainnya",
+};
+const getDocLabel = (jenis: string) => JENIS_LABEL_MAP[jenis?.toLowerCase()] ?? jenis.replace(/_/g, " ");
 
 export default function VerifikasiManager() {
   const { token } = useAuth();
@@ -559,34 +580,48 @@ function DetailVerifikasiModal({
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Travel docs management state
-  const [uploadingTravel, setUploadingTravel] = useState(false);
-  const [selectedTravelType, setSelectedTravelType] = useState("visa");
-  const [travelFile, setTravelFile] = useState<File | null>(null);
-
   // Perbaikan modal state
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [catatan, setCatatan] = useState("");
   const [submittingNote, setSubmittingNote] = useState(false);
   const [approving, setApproving] = useState(false);
 
-  const fetchDetail = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API}/manager/verifikasi/${nomor}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setData(res.data);
-    } catch {
-      showToast("error", "Gagal memuat detail verifikasi.");
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  }, [nomor, token, showToast, onClose]);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const fetchDetail = useCallback(
+    async (isSilent = false) => {
+      const currentScroll = modalBodyRef.current?.scrollTop;
+      try {
+        if (!isSilent) {
+          setLoading(true);
+        }
+        const res = await axios.get(`${API}/manager/verifikasi/${nomor}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setData(res.data);
+        if (isSilent && currentScroll !== undefined) {
+          requestAnimationFrame(() => {
+            if (modalBodyRef.current && currentScroll !== undefined) {
+              modalBodyRef.current.scrollTop = currentScroll;
+            }
+          });
+        }
+      } catch {
+        showToast("error", "Gagal memuat detail verifikasi.");
+        onCloseRef.current();
+      } finally {
+        if (!isSilent) {
+          setLoading(false);
+        }
+      }
+    },
+    [nomor, token, showToast]
+  );
 
   useEffect(() => {
-    fetchDetail();
+    fetchDetail(false);
   }, [fetchDetail]);
 
   const handleApprove = async () => {
@@ -634,52 +669,6 @@ function DetailVerifikasiModal({
       showToast("error", msg);
     } finally {
       setSubmittingNote(false);
-    }
-  };
-
-  const handleUploadTravelDoc = async (targetNomor: string) => {
-    if (!travelFile) {
-      showToast("error", "Pilih file dokumen perjalanan terlebih dahulu.");
-      return;
-    }
-    setUploadingTravel(true);
-    try {
-      const fd = new FormData();
-      fd.append("jenis", selectedTravelType);
-      fd.append("file", travelFile);
-
-      await axios.post(`${API}/manager/pendaftaran/${targetNomor}/dokumen-perjalanan`, fd, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      showToast("success", "✓ Dokumen perjalanan berhasil diupload.");
-      setTravelFile(null);
-      fetchDetail();
-    } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data?.error ?? "Gagal upload dokumen perjalanan.")
-        : "Gagal upload dokumen perjalanan.";
-      showToast("error", msg);
-    } finally {
-      setUploadingTravel(false);
-    }
-  };
-
-  const handleDeleteTravelDoc = async (docId: string) => {
-    if (!window.confirm("Hapus dokumen perjalanan ini?")) return;
-    try {
-      await axios.delete(`${API}/manager/dokumen-perjalanan/${docId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      showToast("success", "Dokumen perjalanan berhasil dihapus.");
-      fetchDetail();
-    } catch (err: unknown) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data?.error ?? "Gagal menghapus dokumen.")
-        : "Gagal menghapus dokumen.";
-      showToast("error", msg);
     }
   };
 
@@ -747,7 +736,7 @@ function DetailVerifikasiModal({
         </div>
 
         {/* Body */}
-        <div className="verif-modal-body">
+        <div className="verif-modal-body" ref={modalBodyRef}>
           {/* Stamp Banner jika Siap Berangkat */}
           {pendaftaran.status === "siap_berangkat" && (
             <div className="verif-stamp-banner">
@@ -788,10 +777,10 @@ function DetailVerifikasiModal({
             </div>
           )}
 
-          {/* 1. Ringkasan Status & Paket */}
+          {/* Ringkasan Informasi Pendaftaran */}
           <div className="verif-section">
             <div className="verif-section-title">
-              <span>📋 Ringkasan Pendaftaran &amp; Tagihan</span>
+              <span>📋 Informasi Pendaftaran &amp; Paket</span>
               {pendaftaran.status === "siap_berangkat" ? (
                 <span className="status-pill status-selesai">✓ Siap Berangkat</span>
               ) : pendaftaran.status === "perlu_perbaikan" ? (
@@ -813,202 +802,161 @@ function DetailVerifikasiModal({
                 <span className="verif-info-label">Total Jamaah</span>
                 <span className="verif-info-val">{jamaah.length} Orang</span>
               </div>
-              <div className="verif-info-item">
-                <span className="verif-info-label">Total Tagihan</span>
-                <span className="verif-info-val">{fmtRupiah(pendaftaran.total_tagihan)}</span>
-              </div>
-              <div className="verif-info-item">
-                <span className="verif-info-label">Total Dibayar</span>
-                <span className="verif-info-val" style={{ color: "#059669" }}>
-                  {fmtRupiah(pendaftaran.total_pembayaran)}
-                </span>
-              </div>
-              <div className="verif-info-item">
-                <span className="verif-info-label">Status Pembayaran</span>
-                <span className="verif-info-val" style={{ color: "#059669" }}>✓ Lunas</span>
-              </div>
             </div>
           </div>
 
-          {/* 2. Data Jamaah & Dokumen Persyaratan (Read-only for Manager) */}
+          {/* 1. Ringkasan Pembayaran */}
           <div className="verif-section">
             <div className="verif-section-title">
-              <span>👥 Data Jamaah &amp; Dokumen Persyaratan ({(jamaah || []).length})</span>
-              <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 500 }}>
-                *Dokumen persyaratan diperiksa tanpa mengubah status satuan
-              </span>
+              <span>💳 Ringkasan Pembayaran</span>
+              {pendaftaran.payment_status === "lunas" || pendaftaran.total_pembayaran >= pendaftaran.total_tagihan ? (
+                <span className="status-pill status-lunas">✓ Invoice Lunas</span>
+              ) : (
+                <span className="status-pill status-menunggu">
+                  {pendaftaran.payment_status ? pendaftaran.payment_status.replace(/_/g, " ") : "Belum Lunas"}
+                </span>
+              )}
             </div>
 
-            {(jamaah || []).map((j, idx) => (
-              <div key={j.nomor_pendaftaran} className="verif-jamaah-card">
-                <div className="verif-jamaah-header">
-                  <div>
-                    <span style={{ color: "#1a6b43", fontWeight: 700, marginRight: 6 }}>
-                      #{idx + 1}
-                    </span>
-                    <span className="verif-jamaah-name">{j.nama}</span>
-                    <span style={{ fontSize: "0.78rem", color: "#64748b", marginLeft: 8 }}>
-                      ({j.nomor_pendaftaran})
-                    </span>
-                  </div>
-                  <span className="status-pill status-selesai">
-                    ✓ Dokumen {j.document_status === "lengkap" ? "Lengkap" : j.document_status}
-                  </span>
-                </div>
+            {/* Card Ringkasan Invoice & Progress Bar */}
+            {(() => {
+              const totalTagihan = pendaftaran.total_tagihan ?? 0;
+              const totalPembayaran = pendaftaran.total_pembayaran ?? 0;
+              const sisa = Math.max(0, totalTagihan - totalPembayaran);
+              const pct = totalTagihan > 0 ? Math.min((totalPembayaran / totalTagihan) * 100, 100) : 0;
+              const isGrup = (jamaah || []).length > 1;
 
-                <div className="verif-grid-3">
-                  <div className="verif-info-item">
-                    <span className="verif-info-label">NIK</span>
-                    <span className="verif-info-val" style={{ fontFamily: "monospace" }}>{j.nik}</span>
-                  </div>
-                  <div className="verif-info-item">
-                    <span className="verif-info-label">Tempat / Tanggal Lahir</span>
-                    <span className="verif-info-val">{j.tempat_lahir}, {fmtDate(j.tanggal_lahir)}</span>
-                  </div>
-                  <div className="verif-info-item">
-                    <span className="verif-info-label">Jenis Kelamin / No HP</span>
-                    <span className="verif-info-val">{j.jenis_kelamin || "-"} • {j.no_hp || "-"}</span>
-                  </div>
-                </div>
-
-                {/* Dokumen Persyaratan Jamaah */}
-                <div style={{ marginTop: "0.85rem" }}>
-                  <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#475569", textTransform: "uppercase" }}>
-                    Dokumen Persyaratan:
-                  </div>
-                  <div className="verif-docs-grid">
-                    {(j.dokumen_persyaratan || []).length === 0 ? (
-                      <div style={{ fontSize: "0.78rem", color: "#94a3b8", fontStyle: "italic", padding: "0.4rem 0" }}>
-                        Belum ada dokumen persyaratan yang diunggah
-                      </div>
+              return (
+                <div
+                  style={{
+                    background: "linear-gradient(135deg, #0f172a 0%, #0a2e1c 100%)",
+                    borderRadius: 14,
+                    padding: "1rem 1.25rem",
+                    color: "#ffffff",
+                    marginBottom: "1rem",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "0.85rem",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "0.74rem",
+                        fontWeight: 700,
+                        color: "#86efac",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {isGrup ? `Invoice Grup (${jamaah.length} Jamaah)` : "Invoice Individu"} •{" "}
+                      {pendaftaran.nomor_invoice || pendaftaran.nomor_pendaftaran}
+                    </div>
+                    {pendaftaran.payment_status === "lunas" || totalPembayaran >= totalTagihan ? (
+                      <span className="status-pill status-lunas">✓ Lunas</span>
                     ) : (
-                      (j.dokumen_persyaratan || []).map((d) => (
-                        <div key={d.id} className="verif-doc-item">
-                          <div className="verif-doc-info">
-                            <span className="verif-doc-name" style={{ textTransform: "capitalize" }}>
-                              {d.jenis.replace(/_/g, " ")}
-                            </span>
-                            <span className="verif-doc-status" style={{ color: "#059669", fontWeight: 600 }}>
-                              ✓ {d.status}
-                            </span>
-                          </div>
-                          {d.file && (
-                            <button
-                              type="button"
-                              className="verif-doc-btn-preview"
-                              onClick={() => setPreviewUrl(d.file)}
-                            >
-                              👁️ Lihat
-                            </button>
-                          )}
-                        </div>
-                      ))
+                      <span className="status-pill status-menunggu">
+                        {pendaftaran.payment_status || "Sebagian"}
+                      </span>
                     )}
                   </div>
-                </div>
-
-                {/* Dokumen Perjalanan (Manager Only Upload & View) */}
-                <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px dashed #e2e8f0" }}>
-                  <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}>
-                    <span>✈️</span> Dokumen Perjalanan (Visa, Tiket, Nusuk) — Dikelola Manager:
+                  <div className="verif-grid-2" style={{ marginBottom: "1rem" }}>
+                    <div>
+                      <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
+                        Total Tagihan
+                      </div>
+                      <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>
+                        {fmtRupiah(totalTagihan)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
+                        Total Dibayar
+                      </div>
+                      <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#4ade80" }}>
+                        {fmtRupiah(totalPembayaran)}
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="verif-travel-grid">
-                    {TRAVEL_TYPES.map((t) => {
-                      const doc = (j.dokumen_perjalanan || []).find((td) => td.jenis.toLowerCase() === t.key);
-                      return (
-                        <div key={t.key} className={`verif-travel-item ${doc ? "" : "empty"}`}>
-                          <div className="verif-travel-item-top">
-                            <span className="verif-travel-label">
-                              <span>{t.icon}</span> {t.label}
-                            </span>
-                            {doc ? (
-                              <div className="verif-travel-actions">
-                                <button
-                                  type="button"
-                                  className="verif-doc-btn-preview"
-                                  onClick={() => setPreviewUrl(doc.file)}
-                                >
-                                  👁️ Buka
-                                </button>
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: "#fee2e2",
-                                    color: "#dc2626",
-                                    border: "1px solid #fecaca",
-                                    fontSize: "0.72rem",
-                                    fontWeight: 700,
-                                    padding: "3px 7px",
-                                    borderRadius: 6,
-                                    cursor: "pointer",
-                                  }}
-                                  onClick={() => handleDeleteTravelDoc(doc.id)}
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Belum diunggah</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Form Upload Travel Doc untuk Jamaah Ini */}
-                  <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", background: "#f0fdf4", padding: "0.6rem 0.85rem", borderRadius: 8 }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#166534" }}>
-                      + Unggah Dokumen Perjalanan:
-                    </span>
-                    <select
-                      style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #86efac", fontSize: "0.78rem" }}
-                      value={selectedTravelType}
-                      onChange={(e) => setSelectedTravelType(e.target.value)}
-                    >
-                      {TRAVEL_TYPES.map((t) => (
-                        <option key={t.key} value={t.key}>{t.label}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      style={{ fontSize: "0.75rem" }}
-                      onChange={(e) => setTravelFile(e.target.files?.[0] ?? null)}
-                    />
-                    <button
-                      type="button"
-                      disabled={uploadingTravel || !travelFile}
+                  {/* Progress Bar */}
+                  <div>
+                    <div
                       style={{
-                        padding: "4px 10px",
-                        borderRadius: 6,
-                        border: "none",
-                        background: "#166534",
-                        color: "#ffffff",
+                        display: "flex",
+                        justifyContent: "space-between",
                         fontSize: "0.75rem",
-                        fontWeight: 700,
-                        cursor: travelFile ? "pointer" : "not-allowed",
-                        opacity: travelFile ? 1 : 0.6,
+                        color: "#cbd5e1",
+                        marginBottom: "0.4rem",
                       }}
-                      onClick={() => handleUploadTravelDoc(j.nomor_pendaftaran)}
                     >
-                      {uploadingTravel ? "Mengunggah..." : "Upload"}
-                    </button>
+                      <span>Progress Pembayaran</span>
+                      <span>{pct.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, height: 8 }}>
+                      <div
+                        style={{
+                          background: pct >= 100 ? "#34d399" : "#22c55e",
+                          height: 8,
+                          borderRadius: 999,
+                          width: `${pct}%`,
+                          transition: "width 0.4s",
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        fontSize: "0.75rem",
+                        color: "#94a3b8",
+                        marginTop: "0.45rem",
+                        flexWrap: "wrap",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <span>
+                        Sisa Tagihan: <strong style={{ color: "#f87171" }}>{fmtRupiah(sisa)}</strong>
+                      </span>
+                      {pendaftaran.nomor_invoice && (
+                        <button
+                          type="button"
+                          onClick={handleOpenInvoice}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#86efac",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                            padding: 0,
+                          }}
+                        >
+                          Buka Lembar Invoice ↗
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              );
+            })()}
 
-          {/* 3. Riwayat Pembayaran (Read-only for Manager) */}
-          <div className="verif-section">
-            <div className="verif-section-title">
-              <span>💳 Riwayat Pembayaran ({(pembayaran || []).length})</span>
-              <span className="status-pill status-lunas">Invoice Lunas</span>
+            {/* Riwayat Pembayaran List */}
+            <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+              Riwayat Pembayaran ({(pembayaran || []).length})
             </div>
             {(pembayaran || []).length === 0 ? (
-              <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Tidak ada riwayat pembayaran.</div>
+              <div style={{ fontSize: "0.82rem", color: "#64748b", fontStyle: "italic", padding: "0.4rem 0" }}>
+                Tidak ada riwayat pembayaran.
+              </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {(pembayaran || []).map((p, idx) => {
@@ -1052,6 +1000,96 @@ function DetailVerifikasiModal({
                 })}
               </div>
             )}
+          </div>
+
+          {/* 2. Data & Dokumen Jamaah (Read-only Dokumen Persyaratan + Dokumen Perjalanan per Jamaah) */}
+          <div className="verif-section">
+            <div className="verif-section-title">
+              <span>👥 Data &amp; Dokumen Jamaah ({(jamaah || []).length})</span>
+              <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 500 }}>
+                *Dokumen persyaratan dan perjalanan diperiksa per masing-masing jamaah
+              </span>
+            </div>
+
+            {(jamaah || []).map((j, idx) => (
+              <div key={j.nomor_pendaftaran} className="verif-jamaah-card">
+                {/* 1. Informasi dan data Jamaah */}
+                <div className="verif-jamaah-header">
+                  <div>
+                    <span style={{ color: "#1a6b43", fontWeight: 700, marginRight: 6 }}>
+                      #{idx + 1}
+                    </span>
+                    <span className="verif-jamaah-name">{j.nama}</span>
+                    <span style={{ fontSize: "0.78rem", color: "#64748b", marginLeft: 8 }}>
+                      ({j.nomor_pendaftaran})
+                    </span>
+                  </div>
+                  <span className="status-pill status-selesai">
+                    ✓ Dokumen {j.document_status === "lengkap" ? "Lengkap" : j.document_status}
+                  </span>
+                </div>
+
+                <div className="verif-grid-3">
+                  <div className="verif-info-item">
+                    <span className="verif-info-label">NIK</span>
+                    <span className="verif-info-val" style={{ fontFamily: "monospace" }}>{j.nik}</span>
+                  </div>
+                  <div className="verif-info-item">
+                    <span className="verif-info-label">Tempat / Tanggal Lahir</span>
+                    <span className="verif-info-val">{j.tempat_lahir}, {fmtDate(j.tanggal_lahir)}</span>
+                  </div>
+                  <div className="verif-info-item">
+                    <span className="verif-info-label">Jenis Kelamin / No HP</span>
+                    <span className="verif-info-val">{j.jenis_kelamin || "-"} • {j.no_hp || "-"}</span>
+                  </div>
+                </div>
+
+                {/* 2. Dokumen Persyaratan Jamaah */}
+                <div style={{ marginTop: "0.85rem" }}>
+                  <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#475569", textTransform: "uppercase" }}>
+                    📄 Dokumen Persyaratan:
+                  </div>
+                  <div className="verif-docs-grid">
+                    {(j.dokumen_persyaratan || []).length === 0 ? (
+                      <div style={{ fontSize: "0.78rem", color: "#94a3b8", fontStyle: "italic", padding: "0.4rem 0" }}>
+                        Belum ada dokumen persyaratan yang diunggah
+                      </div>
+                    ) : (
+                      (j.dokumen_persyaratan || []).map((d) => (
+                        <div key={d.id} className="verif-doc-item">
+                          <div className="verif-doc-info">
+                            <span className="verif-doc-name" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                              <span style={{ fontSize: "1.05rem" }}>{getDocIcon(d.jenis)}</span>
+                              <span style={{ textTransform: "capitalize" }}>{getDocLabel(d.jenis)}</span>
+                            </span>
+                            <span className="verif-doc-status" style={{ color: "#059669", fontWeight: 600 }}>
+                              ✓ {d.status}
+                            </span>
+                          </div>
+                          {d.file && (
+                            <button
+                              type="button"
+                              className="verif-doc-btn-preview"
+                              onClick={() => setPreviewUrl(d.file)}
+                            >
+                              👁️ Lihat
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Dokumen Perjalanan Jamaah (Visa Saudi, Tiket Pesawat, Kartu Nusuk) */}
+                <JamaahTravelDocs
+                  jamaah={j}
+                  token={token}
+                  onRefresh={() => fetchDetail(true)}
+                  onPreview={(url) => setPreviewUrl(url)}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
