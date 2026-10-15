@@ -301,17 +301,17 @@
 }
 
 .status-proses      { background: #eff6ff; color: #2563eb; }
-.status-selesai     { background: #ecfdf5; color: #059669; }
+.status-selesai     { background: #d1fae5; color: #065f46; }
 .status-batal       { background: #fef2f2; color: #dc2626; }
 .status-kadaluarsa  { background: #f1f5f9; color: #64748b; border: 1px solid #d1d5db; }
 .status-menunggu    { background: #fffbeb; color: #d97706; }
-.status-lunas       { background: #ecfdf5; color: #059669; }
+.status-lunas       { background: #d1fae5; color: #065f46; }
 .status-belum       { background: #f1f5f9; color: #64748b; }
 .status-pending     { background: #fffbeb; color: #d97706; }
 .status-dp          { background: #fdf4ff; color: #9333ea; }
-.status-verified    { background: #ecfdf5; color: #059669; }
+.status-verified    { background: #d1fae5; color: #065f46; }
 .status-ditolak     { background: #fef2f2; color: #dc2626; }
-.status-siap        { background: #f0f9ff; color: #0369a1; font-weight: 700; }
+.status-siap        { background: #d1fae5; color: #065f46; }
 
 /* Detail button */
 .detail-btn {
@@ -660,6 +660,22 @@
   border-radius: 12px;
   padding: 1rem 1.15rem;
   margin-bottom: 0.85rem;
+}
+
+.modal-jamaah-card.is-selectable {
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.modal-jamaah-card.is-selectable:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.modal-jamaah-card.is-selected {
+  border-color: #1a6b43 !important;
+  box-shadow: 0 0 0 2px rgba(26, 107, 67, 0.18) !important;
+  background-color: #fbfdfc;
 }
 
 .modal-jamaah-card:last-child {

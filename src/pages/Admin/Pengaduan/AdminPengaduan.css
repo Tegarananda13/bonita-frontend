@@ -312,7 +312,9 @@
 
 .status-menunggu { background: #fef3c7; color: #92400e; }
 .status-diproses  { background: #dbeafe; color: #1d4ed8; }
-.status-selesai   { background: #d1fae5; color: #065f46; }
+.status-selesai,
+.status-lunas,
+.status-siap   { background: #d1fae5; color: #065f46; }
 .status-default   { background: #f1f5f9; color: #475569; }
 
 /* ── Kategori ── */

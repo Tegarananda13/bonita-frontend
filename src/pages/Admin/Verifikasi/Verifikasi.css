@@ -1465,3 +1465,31 @@
   color: #0f172a;
 }
 
+/* ── Status Pills & Badges ── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-selesai,
+.status-lunas,
+.status-siap {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-batal {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.status-menunggu {
+  background: #fffbeb;
+  color: #d97706;
+}
+
