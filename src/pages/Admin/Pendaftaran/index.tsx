@@ -2861,6 +2861,18 @@ const groupByInvoice = (list: (PendaftaranItem & { nomor_invoice?: string; total
     }
     map[key].jamaah.push(p);
   }
+  for (const g of Object.values(map)) {
+    g.jamaah.sort((a, b) => {
+      const timeA = new Date(a.tanggal_daftar).getTime();
+      const timeB = new Date(b.tanggal_daftar).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return a.nomor_pendaftaran.localeCompare(b.nomor_pendaftaran);
+    });
+    if (g.jamaah.length > 0) {
+      g.tanggal = g.jamaah[0].tanggal_daftar;
+      g.paket = g.jamaah[0].paket;
+    }
+  }
   return Object.values(map).filter(g => g.jamaah.length > 1);
 };
 
@@ -2880,7 +2892,15 @@ const GrupDetailModal = ({
   /** Dipanggil saat modal ditutup bila ada perubahan data jamaah/pembayaran di dalam modal (untuk refresh daftar). */
   onChanged?: () => void;
 }) => {
-  const jamaahInGrup = allPendaftaran.filter(p => (p.nomor_invoice || p.nomor_pendaftaran) === nomorInvoice);
+  const jamaahInGrup = useMemo(() => {
+    const filtered = allPendaftaran.filter(p => (p.nomor_invoice || p.nomor_pendaftaran) === nomorInvoice);
+    return filtered.slice().sort((a, b) => {
+      const timeA = new Date(a.tanggal_daftar).getTime();
+      const timeB = new Date(b.tanggal_daftar).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return a.nomor_pendaftaran.localeCompare(b.nomor_pendaftaran);
+    });
+  }, [allPendaftaran, nomorInvoice]);
   const first = jamaahInGrup[0];
 
   const [totalTagihan, setTotalTagihan] = useState(first?.total_tagihan ?? 0);
@@ -2894,6 +2914,8 @@ const GrupDetailModal = ({
   const [groupStatus, setGroupStatus] = useState(first?.status ?? "");
   const [groupCatatan, setGroupCatatan] = useState(first?.catatan_verifikasi_manager ?? "");
   const [submittingAjukanGrup, setSubmittingAjukanGrup] = useState(false);
+
+  const kontakUtama = (grupJamaah.length > 0 ? grupJamaah[0].nama : "") || first?.nama_customer || "";
 
   // Jamaah yang sedang terbuka diidentifikasi lewat nomor_pendaftaran (bukan index). Default: jamaah pertama.
   const [openNomor, setOpenNomor] = useState<string | null>(first?.nomor_pendaftaran ?? null);
@@ -3180,7 +3202,7 @@ const GrupDetailModal = ({
           {/* Header */}
           <div className="modal-header">
             <div>
-              <div className="modal-title">👥 Detail Grup — Invoice</div>
+              <div className="modal-title">👥 Detail Grup{kontakUtama ? ` ${kontakUtama}` : ""}</div>
               <div className="modal-subtitle">{nomorInvoice}</div>
             </div>
             <button type="button" className="modal-close-btn" onClick={handleClose} aria-label="Tutup"><LuX size={16} /></button>
@@ -3244,6 +3266,12 @@ const GrupDetailModal = ({
                 )}
               </div>
               <div className="modal-grid-3">
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Kontak Utama</span>
+                  <span className="modal-info-val" style={{ fontWeight: 700, color: "#1e293b" }}>
+                    {kontakUtama || "-"}
+                  </span>
+                </div>
                 <div className="modal-info-item">
                   <span className="modal-info-label">Paket Umroh</span>
                   <span className="modal-info-val">{first?.paket || "-"}</span>
@@ -3627,8 +3655,12 @@ const PendaftaranGrupView = ({
                 <tr key={g.nomor_invoice}>
                   <td>
                     <div className="customer-cell">
-                      <div className="customer-avatar">{g.jamaah[0]?.nama_customer?.charAt(0)?.toUpperCase() ?? "?"}</div>
-                      <span className="customer-name">{g.jamaah[0]?.nama_customer}</span>
+                      <div className="customer-avatar">{g.jamaah[0]?.nama_customer?.charAt(0)?.toUpperCase() ?? "G"}</div>
+                      <span className="customer-name">
+                        {g.jamaah[0]?.nama_customer
+                          ? (g.jamaah[0].nama_customer.startsWith("Grup ") ? g.jamaah[0].nama_customer : `Grup ${g.jamaah[0].nama_customer}`)
+                          : "Grup"}
+                      </span>
                     </div>
                   </td>
                   <td>
