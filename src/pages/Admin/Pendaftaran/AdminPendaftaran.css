@@ -1405,3 +1405,135 @@
   transform: translateY(-1px);
 }
 
+
+/* ── Detail Grup: daftar jamaah expandable (accordion) ── */
+.grup-acc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.grup-acc-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.grup-acc-item:hover {
+  border-color: #94a3b8;
+}
+
+.grup-acc-item.is-open {
+  border-color: #1a6b43;
+  box-shadow: 0 0 0 2px rgba(26, 107, 67, 0.18);
+}
+
+.grup-acc-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.grup-acc-item.is-open .grup-acc-head {
+  background: #f0fdf4;
+  border-bottom: 1px solid #dcfce7;
+}
+
+.grup-acc-head:focus-visible {
+  outline: 2px solid #1a6b43;
+  outline-offset: -2px;
+}
+
+.grup-acc-num {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a6b43, #2d9e6b);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.grup-acc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.grup-acc-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.grup-acc-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.grup-acc-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.grup-acc-chevron {
+  flex-shrink: 0;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.grup-acc-item.is-open .grup-acc-chevron {
+  transform: rotate(180deg);
+  color: #1a6b43;
+}
+
+.grup-acc-body {
+  padding: 1rem;
+}
+
+/* DetailModal dalam mode embedded: tanpa overlay/panel sendiri, scroll mengikuti modal Detail Grup */
+.grup-embedded-overlay,
+.grup-embedded-panel {
+  display: block;
+  position: static;
+  width: 100%;
+}
+
+.grup-embedded-panel .modal-body {
+  padding: 0;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .grup-acc-head {
+    flex-wrap: wrap;
+  }
+  .grup-acc-badges {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .grup-acc-body {
+    padding: 0.75rem;
+  }
+}

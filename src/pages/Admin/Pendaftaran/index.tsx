@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LuEye, LuPlus, LuRefreshCw, LuX, LuCheck } from "react-icons/lu";
+import { LuEye, LuPlus, LuRefreshCw, LuX, LuCheck, LuChevronDown } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
@@ -129,10 +129,123 @@ const fmtRupiah = (n: number) => "Rp " + n.toLocaleString("id-ID");
 const TRAVEL_DOC_TYPES = [
   { key: "visa", label: "Visa", icon: "🛂", desc: "Visa Resmi Kerajaan Arab Saudi" },
   { key: "tiket_pesawat", label: "Tiket Pesawat", icon: "✈️", desc: "E-Ticket Penerbangan PP" },
-  { key: "nusuk", label: "Nusuk", icon: "📱", desc: "Kartu / Izin Masuk Nusuk" },
+  { key: "nusuk", label: "Kartu Nusuk", icon: "📱", desc: "Kartu / Izin Masuk Nusuk" },
 ];
 
+const TRAVEL_DOC_CONFIGS = TRAVEL_DOC_TYPES;
+
 const isTravelDoc = (jenis: string) => ["visa", "tiket_pesawat", "nusuk"].includes(jenis?.toLowerCase());
+
+// ── Shared Modal Styles & Form Helpers ──
+export const fmtPayInput = (raw: string) => {
+  const digits = raw.replace(/[^\d]/g, "");
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+export const inlineModal: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 9999,
+  background: "rgba(15, 23, 42, 0.65)",
+  backdropFilter: "blur(8px)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "1rem",
+  animation: "fadeIn 0.18s ease",
+};
+
+export const inlineBox: React.CSSProperties = {
+  background: "#ffffff",
+  borderRadius: "20px",
+  width: "100%",
+  maxWidth: "460px",
+  boxShadow: "0 25px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)",
+  overflow: "hidden",
+  animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)",
+};
+
+export const inlineLabel: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.77rem",
+  fontWeight: 700,
+  color: "#64748b",
+  marginBottom: "0.35rem",
+  marginTop: "1rem",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+};
+
+export const inlineInput: React.CSSProperties = {
+  width: "100%",
+  padding: "0.65rem 0.875rem",
+  border: "2px solid #e2e8f0",
+  borderRadius: "10px",
+  fontSize: "0.9rem",
+  color: "#1e293b",
+  outline: "none",
+  boxSizing: "border-box",
+  transition: "border-color 0.15s",
+  background: "#f8fafc",
+};
+
+export const inlineActions: React.CSSProperties = {
+  display: "flex",
+  gap: "0.75rem",
+  padding: "1rem 1.5rem 1.5rem",
+  justifyContent: "flex-end",
+  borderTop: "1px solid #f1f5f9",
+};
+
+export const btnCancel: React.CSSProperties = {
+  padding: "0.55rem 1.25rem",
+  borderRadius: "10px",
+  border: "2px solid #e2e8f0",
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  color: "#64748b",
+  transition: "all 0.15s",
+};
+
+export const btnSubmit: React.CSSProperties = {
+  padding: "0.55rem 1.5rem",
+  borderRadius: "10px",
+  border: "none",
+  background: "linear-gradient(135deg, #1a6b43 0%, #0f5132 100%)",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "0.85rem",
+  fontWeight: 700,
+  boxShadow: "0 4px 15px rgba(26,107,67,0.35)",
+  transition: "all 0.15s",
+};
+
+export const actionBtn = (color: string): React.CSSProperties => ({
+  fontSize: "0.72rem",
+  fontWeight: 600,
+  color,
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  padding: "2px 6px",
+  borderRadius: "6px",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "3px",
+});
+
+export const addBtn: React.CSSProperties = {
+  fontSize: "0.75rem",
+  fontWeight: 700,
+  color: "#1a6b43",
+  background: "#f0fdf4",
+  border: "none",
+  borderRadius: "8px",
+  padding: "4px 12px",
+  cursor: "pointer",
+};
 
 export const getFileName = (url: string = ""): string => {
   try {
@@ -577,88 +690,29 @@ export const DetailModal = ({
   token,
   onClose,
   onAssigned,
+  embedded = false,
+  onDataLoaded,
 }: {
   nomor: string;
   token: string;
   onClose: () => void;
   onAssigned?: () => void;
+  /** true = dirender inline di dalam Detail Grup (tanpa overlay/header/footer, tanpa ringkasan invoice & riwayat pembayaran). */
+  embedded?: boolean;
+  /** Dipanggil setiap data detail (re)load; dipakai Detail Grup agar ringkasan invoice & badge baris tetap sinkron. */
+  onDataLoaded?: (d: DetailPendaftaran) => void;
 }) => {
   const { nama: authNama, role } = useAuth();
   const isManager = role === "owner" || role === "manager" || role === "administration_manager";
   const [data, setData] = useState<DetailPendaftaran | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedJamaahNomor, setSelectedJamaahNomor] = useState<string>("");
 
+  // Detail selalu fokus pada SATU jamaah: yang nomor pendaftarannya dikirim lewat prop `nomor`.
+  // (Pemilihan anggota grup ditangani oleh accordion di GrupDetailModal, bukan di sini.)
   useEffect(() => {
-    setSelectedJamaahNomor(nomor);
-  }, [nomor]);
+    if (data) onDataLoaded?.(data);
+  }, [data, onDataLoaded]);
 
-  const activeNomor = useMemo(() => {
-    if (!data) return nomor;
-    if (selectedJamaahNomor && data.grup_jamaah?.some((j) => j.nomor_pendaftaran === selectedJamaahNomor)) {
-      return selectedJamaahNomor;
-    }
-    if (data.nomor_pendaftaran) return data.nomor_pendaftaran;
-    if (data.grup_jamaah && data.grup_jamaah.length > 0) return data.grup_jamaah[0].nomor_pendaftaran;
-    return nomor;
-  }, [data, selectedJamaahNomor, nomor]);
-
-  const activeJamaah = useMemo(() => {
-    if (!data) return null;
-    if (activeNomor === data.nomor_pendaftaran) {
-      return {
-        nomor_pendaftaran: data.nomor_pendaftaran,
-        nama_customer: data.nama_customer,
-        nik: data.nik,
-        tempat_lahir: data.tempat_lahir,
-        tanggal_lahir: data.tanggal_lahir,
-        jenis_kelamin: data.jenis_kelamin,
-        no_hp: data.no_hp,
-        email: data.email,
-        alamat_lengkap: data.alamat_lengkap,
-        provinsi: data.provinsi,
-        kabupaten_kota: data.kabupaten_kota,
-        kecamatan: data.kecamatan,
-        kelurahan_desa: data.kelurahan_desa,
-        kode_pos: data.kode_pos,
-      };
-    }
-    const found = data.grup_jamaah?.find((j) => j.nomor_pendaftaran === activeNomor);
-    if (found) {
-      return {
-        nomor_pendaftaran: found.nomor_pendaftaran,
-        nama_customer: found.nama,
-        nik: found.nik,
-        tempat_lahir: found.tempat_lahir || "-",
-        tanggal_lahir: found.tanggal_lahir || "",
-        jenis_kelamin: found.jenis_kelamin || "-",
-        no_hp: found.no_hp || "-",
-        email: found.email || "-",
-        alamat_lengkap: found.alamat_lengkap || "",
-        provinsi: found.provinsi || "",
-        kabupaten_kota: found.kabupaten_kota || "",
-        kecamatan: found.kecamatan || "",
-        kelurahan_desa: found.kelurahan_desa || "",
-        kode_pos: found.kode_pos || "",
-      };
-    }
-    return {
-      nomor_pendaftaran: data.nomor_pendaftaran,
-      nama_customer: data.nama_customer,
-      nik: data.nik,
-      tempat_lahir: data.tempat_lahir,
-      tanggal_lahir: data.tanggal_lahir,
-      jenis_kelamin: data.jenis_kelamin,
-      no_hp: data.no_hp,
-      email: data.email,
-      alamat_lengkap: data.alamat_lengkap,
-      provinsi: data.provinsi,
-      kabupaten_kota: data.kabupaten_kota,
-      kecamatan: data.kecamatan,
-      kelurahan_desa: data.kelurahan_desa,
-      kode_pos: data.kode_pos,
-    };
-  }, [data, activeNomor]);
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
   const [assignSuccess, setAssignSuccess] = useState(false);
@@ -666,6 +720,15 @@ export const DetailModal = ({
   const [payments, setPayments] = useState<PayItem[]>([]);
   const [docs, setDocs] = useState<DocItem[]>([]);
   const { showToast } = useToast();
+
+  const travelDocsMap = useMemo(() => {
+    const map: Record<string, DocItem | undefined> = {};
+    for (const cfg of TRAVEL_DOC_CONFIGS) {
+      const found = docs.find((d) => d.jenis?.toLowerCase() === cfg.key);
+      map[cfg.key] = found;
+    }
+    return map;
+  }, [docs]);
 
   // ── Modal Tambah/Edit Pembayaran ──
   const [showPayModal, setShowPayModal] = useState(false);
@@ -957,11 +1020,7 @@ export const DetailModal = ({
     }
   };
 
-  // ── Pembayaran helpers ──
-  const fmtPayInput = (raw: string) => {
-    const digits = raw.replace(/[^\d]/g, "");
-    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
+
 
   const openAddPay = () => {
     setEditPay(null);
@@ -1105,60 +1164,7 @@ export const DetailModal = ({
     return num === 1 ? "DP" : `Pembayaran ${num}`;
   };
 
-  // ── Inline modal styles (premium redesign) ──
-  const inlineModal: React.CSSProperties = {
-    position: "fixed", inset: 0, zIndex: 9999,
-    background: "rgba(15, 23, 42, 0.65)",
-    backdropFilter: "blur(8px)",
-    display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
-    animation: "fadeIn 0.18s ease",
-  };
-  const inlineBox: React.CSSProperties = {
-    background: "#ffffff",
-    borderRadius: "20px",
-    width: "100%",
-    maxWidth: "460px",
-    boxShadow: "0 25px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)",
-    overflow: "hidden",
-    animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)",
-  };
-  const inlineLabel: React.CSSProperties = {
-    display: "block", fontSize: "0.77rem", fontWeight: 700, color: "#64748b",
-    marginBottom: "0.35rem", marginTop: "1rem", letterSpacing: "0.04em", textTransform: "uppercase",
-  };
-  const inlineInput: React.CSSProperties = {
-    width: "100%", padding: "0.65rem 0.875rem",
-    border: "2px solid #e2e8f0",
-    borderRadius: "10px", fontSize: "0.9rem", color: "#1e293b", outline: "none",
-    boxSizing: "border-box", transition: "border-color 0.15s",
-    background: "#f8fafc",
-  };
-  const inlineActions: React.CSSProperties = {
-    display: "flex", gap: "0.75rem", padding: "1rem 1.5rem 1.5rem", justifyContent: "flex-end",
-    borderTop: "1px solid #f1f5f9",
-  };
-  const btnCancel: React.CSSProperties = {
-    padding: "0.55rem 1.25rem", borderRadius: "10px", border: "2px solid #e2e8f0",
-    background: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, color: "#64748b",
-    transition: "all 0.15s",
-  };
-  const btnSubmit: React.CSSProperties = {
-    padding: "0.55rem 1.5rem", borderRadius: "10px", border: "none",
-    background: "linear-gradient(135deg, #1a6b43 0%, #0f5132 100%)",
-    color: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700,
-    boxShadow: "0 4px 15px rgba(26,107,67,0.35)",
-    transition: "all 0.15s",
-  };
-  const actionBtn = (color: string): React.CSSProperties => ({
-    fontSize: "0.72rem", fontWeight: 600, color, background: "transparent",
-    border: "none", cursor: "pointer", padding: "2px 6px", borderRadius: "6px",
-    display: "inline-flex", alignItems: "center", gap: "3px",
-  });
-  const addBtn: React.CSSProperties = {
-    fontSize: "0.75rem", fontWeight: 700, color: "#1a6b43",
-    background: "#f0fdf4", border: "none", borderRadius: "8px",
-    padding: "4px 12px", cursor: "pointer",
-  };
+
 
   return (
     <>
@@ -1908,10 +1914,13 @@ export const DetailModal = ({
       )}
 
       {/* ── Main Modal ── */}
-      <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="modal-panel">
+      <div
+        className={embedded ? "grup-embedded-overlay" : "modal-overlay"}
+        onClick={(e) => !embedded && e.target === e.currentTarget && onClose()}
+      >
+        <div className={embedded ? "grup-embedded-panel" : "modal-panel"}>
           {/* Header */}
-          <div className="modal-header">
+          {!embedded && <div className="modal-header">
             <div>
               <div className="modal-title">
                 <span>📋</span> Detail Pendaftaran
@@ -1925,7 +1934,7 @@ export const DetailModal = ({
             <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup" title="Tutup">
               <LuX size={16} />
             </button>
-          </div>
+          </div>}
 
           {/* Body */}
           <div className="modal-body">
@@ -1999,7 +2008,7 @@ export const DetailModal = ({
                   </div>
                 )}
                 {/* ── Banner Siap Berangkat (Pengesahan Manager) ── */}
-                {data.status === "siap_berangkat" && (
+                {!embedded && data.status === "siap_berangkat" && (
                   <div className="verif-stamp-banner">
                     <div className="verif-stamp-left">
                       <div className="verif-stamp-icon">✓</div>
@@ -2021,7 +2030,7 @@ export const DetailModal = ({
                 )}
 
                 {/* ── Banner Perlu Perbaikan dari Manager ── */}
-                {data.status === "perlu_perbaikan" && (
+                {!embedded && data.status === "perlu_perbaikan" && (
                   <div className="verif-perbaikan-banner">
                     <div className="verif-perbaikan-icon">⚠️</div>
                     <div className="verif-perbaikan-content">
@@ -2053,7 +2062,7 @@ export const DetailModal = ({
                 )}
 
                 {/* ── 1. Ringkasan Pendaftaran & Tagihan ── */}
-                <div className="modal-section">
+                {!embedded && (<div className="modal-section">
                   <div className="modal-section-title">
                     <span>📋 Ringkasan Pendaftaran &amp; Tagihan</span>
                     {data.status === "siap_berangkat" ? (
@@ -2127,229 +2136,25 @@ export const DetailModal = ({
                       </span>
                     </div>
                   </div>
-                </div>
+                </div>)}
 
                 {/* ── 2. Data Jamaah ── */}
                 <div className="modal-section">
                   <div className="modal-section-title">
-                    <span>
-                      👥 Data Jamaah{" "}
-                      {data.grup_jamaah && data.grup_jamaah.length > 1
-                        ? `(${data.grup_jamaah.length} Jamaah Terdaftar)`
-                        : ""}
-                    </span>
+                    <span>👥 {embedded ? "Informasi Biodata Jamaah" : "Data Jamaah"}</span>
                   </div>
 
-                  {data.grup_jamaah && data.grup_jamaah.length > 1 ? (
-                    <>
-                      <div style={{ marginBottom: "1rem" }}>
-                        {data.grup_jamaah.map((j, idx) => {
-                          const isCurrent = j.nomor_pendaftaran === activeNomor;
-                          return (
-                            <div
-                              key={j.nomor_pendaftaran}
-                              className={`modal-jamaah-card is-selectable ${isCurrent ? "is-selected" : ""}`}
-                              onClick={() => setSelectedJamaahNomor(j.nomor_pendaftaran)}
-                              style={{
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                                ...(isCurrent
-                                  ? { borderColor: "#1a6b43", boxShadow: "0 0 0 2px rgba(26,107,67,0.18)", background: "#fbfdfc" }
-                                  : {}),
-                              }}
-                            >
-                              <div className="modal-jamaah-header">
-                                <div>
-                                  <span style={{ color: "#1a6b43", fontWeight: 700, marginRight: 6 }}>
-                                    #{idx + 1}
-                                  </span>
-                                  <span className="modal-jamaah-name">{j.nama}</span>
-                                  <span style={{ fontSize: "0.78rem", color: "#64748b", marginLeft: 8 }}>
-                                    ({j.nomor_pendaftaran})
-                                  </span>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                  {j.status && <StatusPill value={j.status} />}
-                                  <span
-                                    style={{
-                                      fontSize: "0.72rem",
-                                      fontWeight: 700,
-                                      padding: "0.2rem 0.6rem",
-                                      borderRadius: 999,
-                                      background: isCurrent ? "#dcfce7" : "#f1f5f9",
-                                      color: isCurrent ? "#166534" : "#64748b",
-                                      border: isCurrent ? "1px solid #86efac" : "1px solid #e2e8f0",
-                                      transition: "all 0.15s ease",
-                                    }}
-                                  >
-                                    {isCurrent ? "✓ Sedang Dilihat" : "Klik untuk Lihat"}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="modal-grid-3">
-                                <div className="modal-info-item">
-                                  <span className="modal-info-label">NIK</span>
-                                  <span className="modal-info-val" style={{ fontFamily: "monospace" }}>
-                                    {j.nik || "-"}
-                                  </span>
-                                </div>
-                                <div className="modal-info-item">
-                                  <span className="modal-info-label">Perlengkapan Tambahan</span>
-                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.4rem" }}>
-                                    <span className="modal-info-val">
-                                      {j.ambil_perlengkapan ? `Ya (${fmtRupiah(j.harga_perlengkapan)})` : "Tidak"}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openEditPerlengkapan(j.nomor_pendaftaran);
-                                      }}
-                                      style={{
-                                        background: "#f0fdf4",
-                                        border: "1px solid #86efac",
-                                        borderRadius: 6,
-                                        padding: "1px 6px",
-                                        fontSize: "0.72rem",
-                                        fontWeight: 700,
-                                        color: "#166534",
-                                        cursor: "pointer",
-                                      }}
-                                      title="Ubah perlengkapan jamaah ini"
-                                    >
-                                      ✏️ Ubah
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="modal-info-item">
-                                  <span className="modal-info-label">Nomor Pendaftaran</span>
-                                  <span className="modal-info-val" style={{ fontFamily: "monospace" }}>
-                                    {j.nomor_pendaftaran}
-                                  </span>
-                                </div>
-                              </div>
-                              {j.status === "batal" && (
-                                <div
-                                  style={{
-                                    marginTop: "0.6rem",
-                                    padding: "0.5rem 0.75rem",
-                                    background: "#fef2f2",
-                                    border: "1px solid #fecaca",
-                                    borderRadius: "8px",
-                                    fontSize: "0.75rem",
-                                    color: "#991b1b",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.4rem",
-                                  }}
-                                >
-                                  <span>⚠️</span>
-                                  <span>
-                                    <strong>Dibatalkan:</strong> {j.alasan_pembatalan || "Tanpa alasan tercatat"}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Detail Biodata Jamaah yang Sedang Dipilih */}
-                      <div
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: 12,
-                          padding: "1rem 1.15rem",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "0.85rem",
-                            fontWeight: 700,
-                            color: "#1e293b",
-                            marginBottom: "0.75rem",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.4rem",
-                          }}
-                        >
-                          <span>📋</span> Detail Biodata: {activeJamaah?.nama_customer || "-"}
-                        </div>
-                        <div className="modal-grid-3">
-                          <div className="modal-info-item">
-                            <span className="modal-info-label">Nama Lengkap</span>
-                            <span className="modal-info-val">{activeJamaah?.nama_customer || "-"}</span>
-                          </div>
-                          <div className="modal-info-item">
-                            <span className="modal-info-label">NIK</span>
-                            <span className="modal-info-val" style={{ fontFamily: "monospace" }}>
-                              {activeJamaah?.nik || "-"}
-                            </span>
-                          </div>
-                          <div className="modal-info-item">
-                            <span className="modal-info-label">Tempat / Tanggal Lahir</span>
-                            <span className="modal-info-val">
-                              {activeJamaah?.tempat_lahir || "-"}, {fmtDate(activeJamaah?.tanggal_lahir || "")}
-                            </span>
-                          </div>
-                          <div className="modal-info-item">
-                            <span className="modal-info-label">Jenis Kelamin</span>
-                            <span className="modal-info-val">{activeJamaah?.jenis_kelamin || "-"}</span>
-                          </div>
-                          <div className="modal-info-item">
-                            <span className="modal-info-label">Nomor HP</span>
-                            <span className="modal-info-val">{activeJamaah?.no_hp || "-"}</span>
-                          </div>
-                          <div className="modal-info-item">
-                            <span className="modal-info-label">Email</span>
-                            <span className="modal-info-val">{activeJamaah?.email || "-"}</span>
-                          </div>
-                          <div className="modal-info-item full">
-                            <span className="modal-info-label">Alamat Lengkap</span>
-                            <span className="modal-info-val">
-                              {activeJamaah?.alamat_lengkap ||
-                                [
-                                  activeJamaah?.kelurahan_desa,
-                                  activeJamaah?.kecamatan,
-                                  activeJamaah?.kabupaten_kota,
-                                  activeJamaah?.provinsi,
-                                  activeJamaah?.kode_pos,
-                                ]
-                                  .filter(Boolean)
-                                  .join(", ") ||
-                                "-"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
                     <div className="modal-jamaah-card">
+                      {!embedded && (
                       <div className="modal-jamaah-header">
                         <div>
-                          <span style={{ color: "#1a6b43", fontWeight: 700, marginRight: 6 }}>
-                            #1
-                          </span>
                           <span className="modal-jamaah-name">{data.nama_customer || "-"}</span>
                           <span style={{ fontSize: "0.78rem", color: "#64748b", marginLeft: 8 }}>
                             ({data.nomor_pendaftaran})
                           </span>
                         </div>
-                        <span
-                          style={{
-                            fontSize: "0.72rem",
-                            fontWeight: 700,
-                            padding: "0.2rem 0.6rem",
-                            borderRadius: 999,
-                            background: "#ecfdf5",
-                            color: "#059669",
-                            border: "1px solid #a7f3d0",
-                          }}
-                        >
-                          Jamaah Utama
-                        </span>
                       </div>
+                      )}
                       <div className="modal-grid-3">
                         <div className="modal-info-item">
                           <span className="modal-info-label">Nama Lengkap</span>
@@ -2391,116 +2196,117 @@ export const DetailModal = ({
                         </div>
                       </div>
                     </div>
-                  )}
                 </div>
 
                 {/* ── 3. Informasi Paket Umroh & Perlengkapan ── */}
-                <div className="modal-section">
-                  <div className="modal-section-title">
-                    <span>🕌 Informasi Paket Umroh &amp; Perlengkapan</span>
-                  </div>
-                  <div className="modal-grid-3">
-                    <div className="modal-info-item">
-                      <span className="modal-info-label">Nama Paket</span>
-                      <span className="modal-info-val">{data.paket || "-"}</span>
+                {!embedded && (
+                  <div className="modal-section">
+                    <div className="modal-section-title">
+                      <span>🕌 Informasi Paket Umroh &amp; Perlengkapan</span>
                     </div>
-                    <div className="modal-info-item">
-                      <span className="modal-info-label">Harga Paket</span>
-                      <span className="modal-info-val" style={{ color: "#1a6b43", fontWeight: 700 }}>
-                        {fmtRupiah(data.harga || 0)}
-                      </span>
+                    <div className="modal-grid-3">
+                      <div className="modal-info-item">
+                        <span className="modal-info-label">Nama Paket</span>
+                        <span className="modal-info-val">{data.paket || "-"}</span>
+                      </div>
+                      <div className="modal-info-item">
+                        <span className="modal-info-label">Harga Paket</span>
+                        <span className="modal-info-val" style={{ color: "#1a6b43", fontWeight: 700 }}>
+                          {fmtRupiah(data.harga || 0)}
+                        </span>
+                      </div>
+                      <div className="modal-info-item">
+                        <span className="modal-info-label">Tanggal Berangkat</span>
+                        <span className="modal-info-val">{fmtDate(data.tanggal_berangkat)}</span>
+                      </div>
                     </div>
-                    <div className="modal-info-item">
-                      <span className="modal-info-label">Tanggal Berangkat</span>
-                      <span className="modal-info-val">{fmtDate(data.tanggal_berangkat)}</span>
-                    </div>
-                  </div>
 
-                  {/* Card Perlengkapan Tambahan */}
-                  <div
-                    style={{
-                      background: data.ambil_perlengkapan ? "#f0fdf4" : "#ffffff",
-                      border: `1.5px solid ${data.ambil_perlengkapan ? "#86efac" : "#e2e8f0"}`,
-                      borderRadius: 12,
-                      padding: "0.9rem 1.15rem",
-                      marginTop: "1rem",
-                    }}
-                  >
+                    {/* Card Perlengkapan Tambahan */}
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "0.5rem",
+                        background: data.ambil_perlengkapan ? "#f0fdf4" : "#ffffff",
+                        border: `1.5px solid ${data.ambil_perlengkapan ? "#86efac" : "#e2e8f0"}`,
+                        borderRadius: 12,
+                        padding: "0.9rem 1.15rem",
+                        marginTop: "1rem",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                        <span style={{ fontSize: "1.2rem", color: data.ambil_perlengkapan ? "#16a34a" : "#94a3b8" }}>
-                          {data.ambil_perlengkapan ? "☑" : "☐"}
-                        </span>
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: 700,
-                              fontSize: "0.88rem",
-                              color: data.ambil_perlengkapan ? "#15803d" : "#475569",
-                            }}
-                          >
-                            {data.ambil_perlengkapan
-                              ? `Mengambil Perlengkapan Tambahan — ${fmtRupiah(data.harga_perlengkapan)}`
-                              : "Tidak Mengambil Perlengkapan Tambahan"}
-                          </div>
-                          {data.ambil_perlengkapan && (
-                            <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 2 }}>
-                              Koper 22" • Koper 24" • Kain Ihram • Mukena • Ikat Pinggang • Buku Doa • Tas Paspor
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                        {data.total_perlengkapan > 0 && (
-                          <span
-                            style={{
-                              fontSize: "0.78rem",
-                              fontWeight: 600,
-                              color: "#166534",
-                              background: "#dcfce7",
-                              padding: "0.2rem 0.6rem",
-                              borderRadius: 8,
-                            }}
-                          >
-                            Total Invoice: {fmtRupiah(data.total_perlengkapan)}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                          <span style={{ fontSize: "1.2rem", color: data.ambil_perlengkapan ? "#16a34a" : "#94a3b8" }}>
+                            {data.ambil_perlengkapan ? "☑" : "☐"}
                           </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => openEditPerlengkapan(data.nomor_pendaftaran)}
-                          style={{
-                            background: "#ffffff",
-                            border: "1.5px solid #16a34a",
-                            color: "#15803d",
-                            borderRadius: 8,
-                            padding: "0.3rem 0.75rem",
-                            fontSize: "0.78rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          ✏️ Ubah Perlengkapan
-                        </button>
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.88rem",
+                                color: data.ambil_perlengkapan ? "#15803d" : "#475569",
+                              }}
+                            >
+                              {data.ambil_perlengkapan
+                                ? `Mengambil Perlengkapan Tambahan — ${fmtRupiah(data.harga_perlengkapan)}`
+                                : "Tidak Mengambil Perlengkapan Tambahan"}
+                            </div>
+                            {data.ambil_perlengkapan && (
+                              <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: 2 }}>
+                                Koper 22" • Koper 24" • Kain Ihram • Mukena • Ikat Pinggang • Buku Doa • Tas Paspor
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          {data.total_perlengkapan > 0 && (
+                            <span
+                              style={{
+                                fontSize: "0.78rem",
+                                fontWeight: 600,
+                                color: "#166534",
+                                background: "#dcfce7",
+                                padding: "0.2rem 0.6rem",
+                                borderRadius: 8,
+                              }}
+                            >
+                              Total Invoice: {fmtRupiah(data.total_perlengkapan)}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openEditPerlengkapan(data.nomor_pendaftaran)}
+                            style={{
+                              background: "#ffffff",
+                              border: "1.5px solid #16a34a",
+                              color: "#15803d",
+                              borderRadius: 8,
+                              padding: "0.3rem 0.75rem",
+                              fontSize: "0.78rem",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.35rem",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            ✏️ Ubah Perlengkapan
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* ── 4. Riwayat & Ringkasan Pembayaran ── */}
-                <div className="modal-section">
+                {!embedded && (<div className="modal-section">
                   <div className="modal-section-title">
                     <span>💳 Riwayat &amp; Ringkasan Pembayaran</span>
                     <button style={addBtn} onClick={openAddPay}>
@@ -2715,12 +2521,12 @@ export const DetailModal = ({
                       </div>
                     ))
                   )}
-                </div>
+                </div>)}
 
                 {/* ── 5. Dokumen Persyaratan ── */}
                 <div className="modal-section">
                   <div className="modal-section-title">
-                    <span>📄 Dokumen Persyaratan</span>
+                    <span>📄 {embedded ? "Dokumen Persyaratan Jamaah" : "Dokumen Persyaratan"}</span>
                     <button style={addBtn} onClick={openAddDoc}>
                       + Upload Dokumen
                     </button>
@@ -2781,8 +2587,77 @@ export const DetailModal = ({
                   )}
                 </div>
 
+                {/* ── 6. Dokumen Perjalanan Jamaah (Read-Only) ── */}
+                <div className="modal-section">
+                  <div className="modal-section-title">
+                    <span>✈️ {embedded ? "Dokumen Perjalanan Jamaah" : "Dokumen Perjalanan"}</span>
+                    <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 600 }}>
+                      Dikelola Administration Manager
+                    </span>
+                  </div>
+
+                  <div className="modal-docs-grid">
+                    {TRAVEL_DOC_CONFIGS.map((t) => {
+                      const doc = travelDocsMap[t.key];
+                      const hasFile = Boolean(doc && doc.file_path);
+                      return (
+                        <div key={t.key} className="modal-doc-item" style={{ background: hasFile ? "#f8fafc" : "#fafafa" }}>
+                          <div className="modal-doc-info">
+                            <span className="modal-doc-name" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <span style={{ fontSize: "1.1rem" }}>{t.icon}</span>
+                              <span style={{ fontWeight: 600 }}>{t.label}</span>
+                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: 2 }}>
+                              {hasFile ? (
+                                <StatusPill value={doc?.status || "diterima"} />
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: "0.72rem",
+                                    color: "#94a3b8",
+                                    fontStyle: "italic",
+                                    background: "#f1f5f9",
+                                    padding: "2px 8px",
+                                    borderRadius: "6px",
+                                  }}
+                                >
+                                  Belum tersedia
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                            {hasFile ? (
+                              <a
+                                href={doc!.file_path}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="modal-doc-btn-preview"
+                                title={`Lihat ${t.label}`}
+                              >
+                                👁️ Lihat
+                              </a>
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#cbd5e1",
+                                  padding: "4px 8px",
+                                  userSelect: "none",
+                                }}
+                              >
+                                —
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* ── 7. Admin PIC / Penanggung Jawab ── */}
-                <div className="modal-assign-section">
+                {!embedded && (<div className="modal-assign-section">
                   <div className="modal-section-title" style={{ color: "#166534" }}>
                     <span>👷 Admin PIC / Penanggung Jawab</span>
                     {data.admin_pic ? (
@@ -2874,13 +2749,13 @@ export const DetailModal = ({
                       </div>
                     </div>
                   )}
-                </div>
+                </div>)}
               </>
             )}
           </div>
 
           {/* Footer */}
-          <div className="modal-footer">
+          {!embedded && <div className="modal-footer">
             <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
               {data?.nomor_invoice && (
                 <button
@@ -2928,7 +2803,7 @@ export const DetailModal = ({
                 Tutup
               </button>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -2996,13 +2871,14 @@ const GrupDetailModal = ({
   token,
   allPendaftaran,
   onClose,
-  onOpenDetail,
+  onChanged,
 }: {
   nomorInvoice: string;
   token: string;
   allPendaftaran: (PendaftaranItem & { nomor_invoice?: string; total_tagihan?: number; total_pembayaran?: number })[];
   onClose: () => void;
-  onOpenDetail: (nomor: string) => void;
+  /** Dipanggil saat modal ditutup bila ada perubahan data jamaah/pembayaran di dalam modal (untuk refresh daftar). */
+  onChanged?: () => void;
 }) => {
   const jamaahInGrup = allPendaftaran.filter(p => (p.nomor_invoice || p.nomor_pendaftaran) === nomorInvoice);
   const first = jamaahInGrup[0];
@@ -3010,38 +2886,99 @@ const GrupDetailModal = ({
   const [totalTagihan, setTotalTagihan] = useState(first?.total_tagihan ?? 0);
   const [totalPembayaran, setTotalPembayaran] = useState(first?.total_pembayaran ?? 0);
   const [totalPerlengkapan, setTotalPerlengkapan] = useState(0);
-  const [grupJamaah, setGrupJamaah] = useState<{ nomor_pendaftaran: string; nama: string; ambil_perlengkapan: boolean; harga_perlengkapan: number }[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState(first?.payment_status ?? "");
+  const [tanggalBerangkat, setTanggalBerangkat] = useState("");
+  const [regSource, setRegSource] = useState(first?.registration_source ?? "");
+  const [regByLabel, setRegByLabel] = useState(first?.registered_by_label ?? "");
+  const [grupJamaah, setGrupJamaah] = useState<{ nomor_pendaftaran: string; nama: string; nik: string }[]>([]);
   const [groupStatus, setGroupStatus] = useState(first?.status ?? "");
   const [groupCatatan, setGroupCatatan] = useState(first?.catatan_verifikasi_manager ?? "");
   const [submittingAjukanGrup, setSubmittingAjukanGrup] = useState(false);
+
+  // Jamaah yang sedang terbuka diidentifikasi lewat nomor_pendaftaran (bukan index). Default: jamaah pertama.
+  const [openNomor, setOpenNomor] = useState<string | null>(first?.nomor_pendaftaran ?? null);
+  // Status terbaru per jamaah (hasil load detail) agar badge baris ikut berubah setelah edit dokumen/dll.
+  const [liveInfo, setLiveInfo] = useState<Record<string, { status: string; document_status: string }>>({});
+  const syncSigRef = useRef<Record<string, string>>({});
+  const dirtyRef = useRef(false);
   const { showToast } = useToast();
 
-  useEffect(() => {
+  // ── Modal Tambah Pembayaran Grup ──
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payJumlah, setPayJumlah] = useState("");
+  const [payTanggal, setPayTanggal] = useState(new Date().toISOString().split("T")[0]);
+  const [payFile, setPayFile] = useState<File | null>(null);
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [payError, setPayError] = useState("");
+
+  const handleClose = () => {
+    if (dirtyRef.current) onChanged?.();
+    onClose();
+  };
+
+  const handleJamaahLoaded = useCallback((d: DetailPendaftaran) => {
+    const sig = `${d.status}|${d.document_status}|${d.total_tagihan}|${d.total_pembayaran}|${d.total_perlengkapan}|${d.ambil_perlengkapan}`;
+    const prev = syncSigRef.current[d.nomor_pendaftaran];
+    if (prev !== undefined && prev !== sig) dirtyRef.current = true;
+    syncSigRef.current[d.nomor_pendaftaran] = sig;
+    setLiveInfo((cur) => ({ ...cur, [d.nomor_pendaftaran]: { status: d.status, document_status: d.document_status } }));
+    if (d.total_tagihan !== undefined) setTotalTagihan(d.total_tagihan);
+    if (d.total_pembayaran !== undefined) setTotalPembayaran(d.total_pembayaran);
+    if (d.total_perlengkapan !== undefined) setTotalPerlengkapan(d.total_perlengkapan);
+    if (d.payment_status) setPaymentStatus(d.payment_status);
+    if (d.status) setGroupStatus(d.status);
+    if (d.tanggal_berangkat) setTanggalBerangkat(d.tanggal_berangkat);
+    if (d.registration_source) setRegSource(d.registration_source);
+    if (d.registered_by_label) setRegByLabel(d.registered_by_label);
+  }, []);
+
+  const fetchGroupDetail = useCallback(async () => {
     if (!first) return;
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`${API}/admin/pendaftaran/${first.nomor_pendaftaran}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const p = res.data?.pendaftaran;
-        if (p?.total_tagihan) setTotalTagihan(p.total_tagihan);
-        if (p?.total_pembayaran !== undefined) setTotalPembayaran(p.total_pembayaran);
-        if (p?.total_perlengkapan !== undefined) setTotalPerlengkapan(p.total_perlengkapan);
-        if (p?.status) setGroupStatus(p.status);
-        if (p?.catatan_verifikasi_manager) setGroupCatatan(p.catatan_verifikasi_manager);
-        const rawGrup = res.data?.grup_jamaah ?? [];
-        if (rawGrup.length > 0) {
-          setGrupJamaah(rawGrup.map((g: Record<string, unknown>) => ({
-            nomor_pendaftaran: String(g.nomor_pendaftaran ?? ""),
-            nama: String(g.nama ?? ""),
-            ambil_perlengkapan: Boolean(g.ambil_perlengkapan),
-            harga_perlengkapan: Number(g.harga_perlengkapan ?? 0),
-          })));
-        }
-      } catch { /* silent */ }
-    };
-    fetch();
+    try {
+      const res = await axios.get(`${API}/admin/pendaftaran/${first.nomor_pendaftaran}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const p = res.data?.pendaftaran;
+      if (p?.total_tagihan !== undefined) setTotalTagihan(p.total_tagihan);
+      if (p?.total_pembayaran !== undefined) setTotalPembayaran(p.total_pembayaran);
+      if (p?.total_perlengkapan !== undefined) setTotalPerlengkapan(p.total_perlengkapan);
+      if (p?.payment_status) setPaymentStatus(p.payment_status);
+      if (p?.status) setGroupStatus(p.status);
+      if (p?.catatan_verifikasi_manager) setGroupCatatan(p.catatan_verifikasi_manager);
+      const tgl = p?.Paket?.TanggalBerangkat ?? p?.Paket?.tanggal_berangkat ?? p?.tanggal_berangkat ?? "";
+      if (tgl) setTanggalBerangkat(tgl);
+      if (p?.registration_source) setRegSource(p.registration_source);
+      if (p?.registered_by_label) setRegByLabel(p.registered_by_label);
+      const rawGrup = res.data?.grup_jamaah ?? [];
+      if (rawGrup.length > 0) {
+        setGrupJamaah(rawGrup.map((g: Record<string, unknown>) => ({
+          nomor_pendaftaran: String(g.nomor_pendaftaran ?? ""),
+          nama: String(g.nama ?? ""),
+          nik: String(g.nik ?? ""),
+        })));
+      }
+    } catch { /* silent */ }
   }, [first, token]);
+
+  useEffect(() => {
+    fetchGroupDetail();
+  }, [fetchGroupDetail]);
+
+  const groupDocStatus = useMemo(() => {
+    const activeMembers = jamaahInGrup.filter(
+      (j) => (liveInfo[j.nomor_pendaftaran]?.status ?? j.status) !== "batal"
+    );
+    if (activeMembers.length === 0) return "belum";
+    const statuses = activeMembers.map((j) =>
+      (liveInfo[j.nomor_pendaftaran]?.document_status ?? j.document_status)?.toLowerCase()
+    );
+    if (statuses.every((s) => s === "lengkap")) return "lengkap";
+    if (statuses.some((s) => s === "revisi" || s === "ditolak")) return "revisi";
+    if (statuses.some((s) => s === "pending")) return "pending";
+    if (statuses.some((s) => s === "belum_lengkap")) return "belum_lengkap";
+    if (statuses.every((s) => s === "belum")) return "belum";
+    return statuses[0] || "belum";
+  }, [jamaahInGrup, liveInfo]);
 
   const handleAjukanVerifikasiGrup = async () => {
     if (!first) return;
@@ -3052,6 +2989,7 @@ const GrupDetailModal = ({
       });
       showToast("success", res.data?.message || "✓ Pendaftaran grup berhasil diajukan ulang ke Administration Manager.");
       setGroupStatus("menunggu_verifikasi_manager");
+      dirtyRef.current = true;
       window.dispatchEvent(new Event("admin-badge-refresh"));
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Gagal mengajukan verifikasi.") : "Gagal mengajukan verifikasi.";
@@ -3082,353 +3020,530 @@ const GrupDetailModal = ({
     }
   };
 
-  // Helper: cari equipment info untuk satu jamaah
-  const getPerlengkapan = (nomor: string) => grupJamaah.find(g => g.nomor_pendaftaran === nomor);
+  const openAddPay = () => {
+    setPayJumlah("");
+    setPayTanggal(new Date().toISOString().split("T")[0]);
+    setPayFile(null);
+    setPayError("");
+    setShowPayModal(true);
+  };
+
+  const submitPay = async () => {
+    if (!first) return;
+    setPayError("");
+    const nominal = parseFloat(payJumlah.replace(/[^\d]/g, ""));
+    if (!nominal || isNaN(nominal) || nominal <= 0) {
+      setPayError("Jumlah pembayaran tidak valid");
+      showToast("error", "Jumlah pembayaran tidak valid.");
+      return;
+    }
+    setPaySubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("jumlah", String(nominal));
+      fd.append("tanggal_bayar", payTanggal);
+      if (payFile) fd.append("bukti", payFile);
+
+      await axios.post(`${API}/admin/pendaftaran/${first.nomor_pendaftaran}/pembayaran`, fd, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setShowPayModal(false);
+      dirtyRef.current = true;
+      showToast("success", "Bukti pembayaran berhasil disimpan.");
+      await fetchGroupDetail();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Bukti pembayaran gagal disimpan.") : "Bukti pembayaran gagal disimpan.";
+      setPayError(msg);
+      showToast("error", msg);
+    } finally {
+      setPaySubmitting(false);
+    }
+  };
 
   const sisaPembayaran = Math.max(0, totalTagihan - totalPembayaran);
   const pct = totalTagihan > 0 ? Math.min((totalPembayaran / totalTagihan) * 100, 100) : 0;
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-panel" style={{ maxWidth: 760 }}>
-        {/* Header */}
-        <div className="modal-header">
-          <div>
-            <div className="modal-title">👥 Detail Grup — Invoice</div>
-            <div className="modal-subtitle">{nomorInvoice}</div>
-          </div>
-          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup"><LuX size={16} /></button>
-        </div>
-
-        <div className="modal-body">
-          {/* Banner Perlu Perbaikan untuk Grup */}
-          {groupStatus === "perlu_perbaikan" && (
+    <>
+      {showPayModal && (
+        <div style={inlineModal} onClick={(e) => e.target === e.currentTarget && !paySubmitting && setShowPayModal(false)}>
+          <div style={inlineBox}>
             <div style={{
-              background: "linear-gradient(135deg, #fef2f2, #fff1f2)",
-              border: "1.5px solid #fca5a5",
-              borderRadius: 14,
-              padding: "1rem 1.25rem",
-              marginBottom: "1.25rem",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "0.75rem",
+              background: "linear-gradient(135deg, #1a6b43 0%, #0f5132 100%)",
+              padding: "1.25rem 1.5rem",
+              display: "flex", alignItems: "center", gap: "0.75rem",
             }}>
-              <span style={{ fontSize: "1.4rem" }}>⚠️</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#991b1b" }}>
-                  Pendaftaran Grup Perlu Perbaikan (Administration Manager)
+              <div style={{
+                width: 40, height: 40, borderRadius: "12px",
+                background: "rgba(255,255,255,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.2rem",
+              }}>
+                💳
+              </div>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>
+                  Tambah Pembayaran
                 </div>
-                <div style={{ fontSize: "0.85rem", color: "#b91c1c", marginTop: 4, lineHeight: 1.4 }}>
-                  <strong>Catatan Manager:</strong> {groupCatatan || "-"}
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <button
-                    type="button"
-                    disabled={submittingAjukanGrup}
-                    onClick={handleAjukanVerifikasiGrup}
-                    style={{
-                      background: "linear-gradient(135deg, #dc2626, #b91c1c)",
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "0.5rem 1rem",
-                      fontSize: "0.82rem",
-                      fontWeight: 700,
-                      cursor: submittingAjukanGrup ? "not-allowed" : "pointer",
-                      boxShadow: "0 2px 6px rgba(220, 38, 38, 0.3)",
-                    }}
-                  >
-                    {submittingAjukanGrup ? "Mengajukan..." : "🛡️ Ajukan Verifikasi Ulang Grup ke Manager"}
-                  </button>
+                <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.78rem", marginTop: "2px" }}>
+                  {nomorInvoice} • Grup ({jamaahInGrup.length} Jamaah)
                 </div>
               </div>
             </div>
-          )}
 
-          {/* ── 1. Ringkasan Invoice ── */}
-          <div className="modal-section">
-            <div className="modal-section-title">
-              <span>💳 Ringkasan Invoice</span>
-              <StatusPill value={first?.payment_status ?? ""} />
+            <div style={{ padding: "1.25rem 1.5rem" }}>
+              {payError && (
+                <div style={{
+                  background: "#fef2f2", color: "#dc2626", borderRadius: "10px",
+                  padding: "0.65rem 1rem", fontSize: "0.82rem", marginBottom: "0.75rem",
+                  border: "1.5px solid #fecaca", display: "flex", alignItems: "center", gap: "0.5rem",
+                }}>
+                  <span>⚠️</span> {payError}
+                </div>
+              )}
+
+              <label style={inlineLabel}>Jumlah Pembayaran *</label>
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)",
+                  color: "#1a6b43", fontWeight: 700, fontSize: "0.9rem",
+                }}>
+                  Rp
+                </span>
+                <input
+                  type="text"
+                  placeholder="0"
+                  value={payJumlah}
+                  onChange={(e) => setPayJumlah(fmtPayInput(e.target.value))}
+                  disabled={paySubmitting}
+                  style={{ ...inlineInput, paddingLeft: "2.4rem", fontWeight: 700, fontSize: "1rem" }}
+                  autoFocus
+                />
+              </div>
+
+              <label style={inlineLabel}>Tanggal Pembayaran *</label>
+              <input
+                type="date"
+                value={payTanggal}
+                onChange={(e) => setPayTanggal(e.target.value)}
+                disabled={paySubmitting}
+                style={inlineInput}
+              />
+
+              <label style={inlineLabel}>Bukti Transfer (opsional)</label>
+              <div style={{
+                border: "2px dashed #cbd5e1", borderRadius: "10px",
+                padding: "0.9rem 1rem", background: payFile ? "#f0fdf4" : "#f8fafc",
+                textAlign: "center", cursor: "pointer", transition: "all 0.15s",
+              }}>
+                <input
+                  id="pay-file-input-grup"
+                  type="file"
+                  accept="image/*,.pdf"
+                  style={{ display: "none" }}
+                  onChange={(e) => setPayFile(e.target.files?.[0] ?? null)}
+                  disabled={paySubmitting}
+                />
+                <label htmlFor="pay-file-input-grup" style={{ cursor: "pointer", display: "block" }}>
+                  {payFile ? (
+                    <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
+                      ✅ {payFile.name}
+                      <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
+                        {(payFile.size / 1024).toFixed(0)} KB — klik untuk ganti
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
+                      <div style={{ fontSize: "1.3rem", marginBottom: "3px" }}>📎</div>
+                      <div style={{ fontWeight: 600, color: "#1a6b43" }}>Pilih file bukti</div>
+                      <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
+                    </div>
+                  )}
+                </label>
+              </div>
             </div>
 
-            <div
-              style={{
-                background: "linear-gradient(135deg, #0f172a 0%, #0a2e1c 100%)",
+            <div style={inlineActions}>
+              <button style={btnCancel} onClick={() => setShowPayModal(false)} disabled={paySubmitting}>
+                Batal
+              </button>
+              <button style={btnSubmit} onClick={submitPay} disabled={paySubmitting}>
+                {paySubmitting ? "Menyimpan..." : "Simpan Pembayaran"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
+        <div className="modal-panel">
+          {/* Header */}
+          <div className="modal-header">
+            <div>
+              <div className="modal-title">👥 Detail Grup — Invoice</div>
+              <div className="modal-subtitle">{nomorInvoice}</div>
+            </div>
+            <button type="button" className="modal-close-btn" onClick={handleClose} aria-label="Tutup"><LuX size={16} /></button>
+          </div>
+
+          <div className="modal-body">
+            {/* Banner Perlu Perbaikan untuk Grup */}
+            {groupStatus === "perlu_perbaikan" && (
+              <div style={{
+                background: "linear-gradient(135deg, #fef2f2, #fff1f2)",
+                border: "1.5px solid #fca5a5",
                 borderRadius: 14,
-                padding: "1.15rem 1.35rem",
-                color: "#ffffff",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.85rem",
-                  flexWrap: "wrap",
-                  gap: "0.5rem",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "0.74rem",
-                    fontWeight: 700,
-                    color: "#86efac",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  Invoice Grup ({jamaahInGrup.length} Jamaah) • {nomorInvoice}
+                padding: "1rem 1.25rem",
+                marginBottom: "1.25rem",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "0.75rem",
+              }}>
+                <span style={{ fontSize: "1.4rem" }}>⚠️</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#991b1b" }}>
+                    Pendaftaran Grup Perlu Perbaikan (Administration Manager)
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "#b91c1c", marginTop: 4, lineHeight: 1.4 }}>
+                    <strong>Catatan Manager:</strong> {groupCatatan || "-"}
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <button
+                      type="button"
+                      disabled={submittingAjukanGrup}
+                      onClick={handleAjukanVerifikasiGrup}
+                      style={{
+                        background: "linear-gradient(135deg, #dc2626, #b91c1c)",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        cursor: submittingAjukanGrup ? "not-allowed" : "pointer",
+                        boxShadow: "0 2px 6px rgba(220, 38, 38, 0.3)",
+                      }}
+                    >
+                      {submittingAjukanGrup ? "Mengajukan..." : "🛡️ Ajukan Verifikasi Ulang Grup ke Manager"}
+                    </button>
+                  </div>
                 </div>
-                <StatusPill value={first?.payment_status ?? ""} />
               </div>
+            )}
 
-              <div className="modal-grid-2" style={{ marginBottom: "1rem" }}>
-                <div>
-                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
-                    Paket Umroh
-                  </div>
-                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc" }}>
-                    {first?.paket ?? "-"}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
-                    Jumlah Jamaah
-                  </div>
-                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc" }}>
-                    {jamaahInGrup.length} Orang
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
-                    Total Tagihan
-                  </div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#f8fafc" }}>
-                    {fmtRupiah(totalTagihan)}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
-                    Total Dibayar
-                  </div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#4ade80" }}>
-                    {fmtRupiah(totalPembayaran)}
-                  </div>
-                </div>
-                {totalPerlengkapan > 0 && (
-                  <div
-                    style={{
-                      gridColumn: "1 / -1",
-                      fontSize: "0.78rem",
-                      color: "#bbf7d0",
-                      background: "rgba(255,255,255,0.06)",
-                      padding: "0.4rem 0.75rem",
-                      borderRadius: 8,
-                    }}
-                  >
-                    🧳 Total Perlengkapan Tambahan: <strong>{fmtRupiah(totalPerlengkapan)}</strong>
-                  </div>
+            {/* ── Bagian 1 — Ringkasan Pendaftaran & Tagihan ── */}
+            <div className="modal-section">
+              <div className="modal-section-title">
+                <span>📋 Ringkasan Pendaftaran &amp; Tagihan</span>
+                {groupStatus === "siap_berangkat" ? (
+                  <span className="status-pill status-selesai">✓ Siap Berangkat</span>
+                ) : groupStatus === "perlu_perbaikan" ? (
+                  <span className="status-pill status-batal">⚠️ Perlu Perbaikan</span>
+                ) : (
+                  <StatusPill value={groupStatus || first?.status || ""} />
                 )}
               </div>
-
-              {/* Progress Bar */}
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.75rem",
-                    color: "#cbd5e1",
-                    marginBottom: "0.4rem",
-                  }}
-                >
-                  <span>Progress Pembayaran</span>
-                  <span style={{ fontWeight: 700 }}>{pct.toFixed(1)}%</span>
+              <div className="modal-grid-3">
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Paket Umroh</span>
+                  <span className="modal-info-val">{first?.paket || "-"}</span>
                 </div>
-                <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, height: 8 }}>
-                  <div
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Tanggal Keberangkatan</span>
+                  <span className="modal-info-val">{fmtDate(tanggalBerangkat || "")}</span>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Total Jamaah</span>
+                  <span className="modal-info-val">{jamaahInGrup.length} Orang</span>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Total Tagihan</span>
+                  <span className="modal-info-val">{fmtRupiah(totalTagihan)}</span>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Total Dibayar</span>
+                  <span className="modal-info-val" style={{ color: "#059669" }}>
+                    {fmtRupiah(totalPembayaran)}
+                  </span>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Status Pembayaran</span>
+                  <div style={{ marginTop: 2 }}>
+                    <StatusPill value={paymentStatus || first?.payment_status || ""} />
+                  </div>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Status Dokumen</span>
+                  <div style={{ marginTop: 2 }}>
+                    <StatusPill value={groupDocStatus} />
+                  </div>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Asal Pendaftaran</span>
+                  <span className="modal-info-val" style={{ textTransform: "capitalize" }}>
+                    {regSource === "admin"
+                      ? "Admin"
+                      : regSource === "chatbot"
+                      ? "AI Chatbot"
+                      : "Customer"}
+                  </span>
+                </div>
+                <div className="modal-info-item">
+                  <span className="modal-info-label">Didaftarkan Oleh</span>
+                  <span
+                    className="modal-info-val"
                     style={{
-                      background: pct >= 100 ? "#34d399" : "#22c55e",
-                      height: 8,
-                      borderRadius: 999,
-                      width: `${pct}%`,
-                      transition: "width 0.4s",
+                      fontWeight: 700,
+                      color:
+                        regSource === "admin"
+                          ? "#1a6b43"
+                          : regSource === "chatbot"
+                          ? "#0369a1"
+                          : "#374151",
                     }}
-                  />
+                  >
+                    {regByLabel || first?.registered_by_label || "👤 Customer"}
+                  </span>
                 </div>
+              </div>
+            </div>
+
+            {/* ── Bagian 2 — Ringkasan Invoice & Pembayaran ── */}
+            <div className="modal-section">
+              <div className="modal-section-title">
+                <span>💳 Ringkasan Invoice</span>
+                <button style={addBtn} onClick={openAddPay}>
+                  + Tambah Pembayaran
+                </button>
+              </div>
+
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #0f172a 0%, #0a2e1c 100%)",
+                  borderRadius: 14,
+                  padding: "1.15rem 1.35rem",
+                  color: "#ffffff",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    fontSize: "0.78rem",
-                    color: "#94a3b8",
-                    marginTop: "0.6rem",
+                    marginBottom: "0.85rem",
                     flexWrap: "wrap",
                     gap: "0.5rem",
                   }}
                 >
-                  <span>
-                    Sisa Tagihan:{" "}
-                    <strong style={{ color: sisaPembayaran > 0 ? "#f87171" : "#86efac", fontSize: "0.88rem" }}>
-                      {fmtRupiah(sisaPembayaran)}
-                    </strong>
-                  </span>
-                  {nomorInvoice && (
-                    <button
-                      type="button"
-                      onClick={handleOpenInvoice}
+                  <div
+                    style={{
+                      fontSize: "0.74rem",
+                      fontWeight: 700,
+                      color: "#86efac",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    Invoice Grup ({jamaahInGrup.length} Jamaah) • {nomorInvoice}
+                  </div>
+                  <StatusPill value={paymentStatus || first?.payment_status || ""} />
+                </div>
+
+                <div className="modal-grid-2" style={{ marginBottom: "1rem" }}>
+                  <div>
+                    <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
+                      Paket Umroh
+                    </div>
+                    <div style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc" }}>
+                      {first?.paket ?? "-"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
+                      Jumlah Jamaah
+                    </div>
+                    <div style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc" }}>
+                      {jamaahInGrup.length} Orang
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
+                      Total Tagihan
+                    </div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#f8fafc" }}>
+                      {fmtRupiah(totalTagihan)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
+                      Total Dibayar
+                    </div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#4ade80" }}>
+                      {fmtRupiah(totalPembayaran)}
+                    </div>
+                  </div>
+                  {totalPerlengkapan > 0 && (
+                    <div
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        padding: "0.4rem 0.85rem",
-                        background: "rgba(45, 158, 107, 0.3)",
-                        border: "1px solid rgba(134, 239, 172, 0.4)",
-                        borderRadius: 8,
-                        color: "#86efac",
+                        gridColumn: "1 / -1",
                         fontSize: "0.78rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                        transition: "all 0.15s ease",
+                        color: "#bbf7d0",
+                        background: "rgba(255,255,255,0.06)",
+                        padding: "0.4rem 0.75rem",
+                        borderRadius: 8,
                       }}
                     >
-                      🔗 Lihat Invoice ↗
-                    </button>
+                      🧳 Total Perlengkapan Tambahan: <strong>{fmtRupiah(totalPerlengkapan)}</strong>
+                    </div>
                   )}
                 </div>
+
+                {/* Progress Bar */}
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "0.75rem",
+                      color: "#cbd5e1",
+                      marginBottom: "0.4rem",
+                    }}
+                  >
+                    <span>Progress Pembayaran</span>
+                    <span style={{ fontWeight: 700 }}>{pct.toFixed(1)}%</span>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, height: 8 }}>
+                    <div
+                      style={{
+                        background: pct >= 100 ? "#34d399" : "#22c55e",
+                        height: 8,
+                        borderRadius: 999,
+                        width: `${pct}%`,
+                        transition: "width 0.4s",
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      fontSize: "0.78rem",
+                      color: "#94a3b8",
+                      marginTop: "0.6rem",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span>
+                      Sisa Tagihan:{" "}
+                      <strong style={{ color: sisaPembayaran > 0 ? "#f87171" : "#86efac", fontSize: "0.88rem" }}>
+                        {fmtRupiah(sisaPembayaran)}
+                      </strong>
+                    </span>
+                    {nomorInvoice && (
+                      <button
+                        type="button"
+                        onClick={handleOpenInvoice}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          padding: "0.4rem 0.85rem",
+                          background: "rgba(45, 158, 107, 0.3)",
+                          border: "1px solid rgba(134, 239, 172, 0.4)",
+                          borderRadius: 8,
+                          color: "#86efac",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        🔗 Lihat Invoice ↗
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Bagian 3 — Daftar Jamaah (accordion: hanya satu terbuka; state berdasarkan nomor_pendaftaran) ── */}
+            <div className="modal-section">
+              <div className="modal-section-title">
+                <span>👤 Daftar Jamaah ({jamaahInGrup.length} Orang)</span>
+              </div>
+              <div className="grup-acc-list">
+                {jamaahInGrup.map((j, i) => {
+                  const isOpen = openNomor === j.nomor_pendaftaran;
+                  const live = liveInfo[j.nomor_pendaftaran];
+                  const nik = grupJamaah.find((g) => g.nomor_pendaftaran === j.nomor_pendaftaran)?.nik;
+                  const panelId = `grup-acc-panel-${j.nomor_pendaftaran}`;
+                  return (
+                    <div key={j.nomor_pendaftaran} className={`grup-acc-item${isOpen ? " is-open" : ""}`}>
+                      <button
+                        type="button"
+                        className="grup-acc-head"
+                        aria-expanded={isOpen}
+                        aria-controls={panelId}
+                        onClick={() => setOpenNomor((cur) => (cur === j.nomor_pendaftaran ? null : j.nomor_pendaftaran))}
+                      >
+                        <span className="grup-acc-num">{i + 1}</span>
+                        <span className="grup-acc-info">
+                          <span className="grup-acc-name">{j.nama_customer}</span>
+                          <span className="grup-acc-meta">
+                            {j.nomor_pendaftaran}
+                            {nik ? ` • NIK: ${nik}` : ""}
+                          </span>
+                        </span>
+                        <span className="grup-acc-badges">
+                          <StatusPill value={live?.document_status ?? j.document_status} />
+                          <StatusPill value={live?.status ?? j.status} />
+                        </span>
+                        <LuChevronDown className="grup-acc-chevron" size={18} aria-hidden="true" />
+                      </button>
+                      {isOpen && (
+                        <div id={panelId} className="grup-acc-body">
+                          <DetailModal
+                            key={j.nomor_pendaftaran}
+                            embedded
+                            nomor={j.nomor_pendaftaran}
+                            token={token}
+                            onClose={() => setOpenNomor(null)}
+                            onDataLoaded={handleJamaahLoaded}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* ── 2. Daftar Jamaah ── */}
-          <div className="modal-section">
-            <div className="modal-section-title">
-              <span>👤 Daftar Jamaah ({jamaahInGrup.length} Orang)</span>
+          <div className="modal-footer">
+            <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+              {nomorInvoice && (
+                <button
+                  type="button"
+                  className="modal-btn-secondary"
+                  onClick={handleOpenInvoice}
+                >
+                  📄 Buka Lembar Invoice
+                </button>
+              )}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
-              {jamaahInGrup.map((j, i) => {
-                const perl = getPerlengkapan(j.nomor_pendaftaran);
-                return (
-                  <div
-                    key={j.nomor_pendaftaran}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 12,
-                      overflow: "hidden",
-                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.02)",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.85rem 1.15rem",
-                        gap: "0.75rem",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 220 }}>
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            background: "linear-gradient(135deg, #1a6b43, #2d9e6b)",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontWeight: 800,
-                            fontSize: "0.82rem",
-                            flexShrink: 0,
-                          }}
-                        >
-                          #{i + 1}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#1e293b" }}>
-                            {j.nama_customer}
-                          </div>
-                          <div style={{ fontSize: "0.75rem", color: "#64748b", fontFamily: "monospace" }}>
-                            {j.nomor_pendaftaran}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                        <StatusPill value={j.document_status} />
-                        <StatusPill value={j.status} />
-                        <button
-                          type="button"
-                          onClick={() => onOpenDetail(j.nomor_pendaftaran)}
-                          style={{
-                            padding: "0.35rem 0.85rem",
-                            borderRadius: 8,
-                            border: j.status === "batal" ? "1.5px solid #fca5a5" : "1.5px solid #86efac",
-                            background: j.status === "batal" ? "#fef2f2" : "#f0fdf4",
-                            color: j.status === "batal" ? "#b91c1c" : "#166534",
-                            fontSize: "0.78rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.3rem",
-                            transition: "all 0.15s ease",
-                          }}
-                          title={j.status === "batal" ? "Lihat alasan pembatalan jamaah ini" : "Buka Detail Pendaftaran jamaah ini"}
-                        >
-                          {j.status === "batal" ? "Lihat Alasan →" : "Lihat Detail →"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Per-jamaah perlengkapan indicator */}
-                    {perl && (
-                      <div
-                        style={{
-                          padding: "0.4rem 1.15rem",
-                          borderTop: "1px solid #f1f5f9",
-                          background: perl.ambil_perlengkapan ? "#f0fdf4" : "#f8fafc",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                          <span style={{ color: perl.ambil_perlengkapan ? "#16a34a" : "#94a3b8", fontWeight: 700 }}>
-                            {perl.ambil_perlengkapan ? "☑" : "☐"}
-                          </span>
-                          <span style={{ color: perl.ambil_perlengkapan ? "#166534" : "#64748b", fontWeight: perl.ambil_perlengkapan ? 600 : 400 }}>
-                            {perl.ambil_perlengkapan ? "Perlengkapan Tambahan" : "Tidak mengambil perlengkapan"}
-                          </span>
-                        </div>
-                        {perl.ambil_perlengkapan && (
-                          <span style={{ fontWeight: 700, color: "#166534" }}>
-                            {fmtRupiah(perl.harga_perlengkapan)}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+              <button type="button" className="modal-btn-secondary" onClick={handleClose}>
+                Tutup
+              </button>
             </div>
           </div>
         </div>
-
-        <div className="modal-footer">
-          <button type="button" className="modal-close-full-btn" onClick={onClose}>Tutup</button>
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -3977,10 +4092,7 @@ const AdminPendaftaran = () => {
           token={token ?? ""}
           allPendaftaran={list}
           onClose={() => setGrupDetailInvoice(null)}
-          onOpenDetail={(nomor) => {
-            setGrupDetailInvoice(null);
-            setDetailNomor(nomor);
-          }}
+          onChanged={() => fetchData()}
         />
       )}
 
