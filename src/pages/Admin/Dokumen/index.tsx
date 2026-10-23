@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { LuEye, LuCheck, LuX, LuRefreshCw, LuTrash2 } from "react-icons/lu";
+import { LuEye, LuCheck, LuX, LuRefreshCw, LuTrash2, LuSearch } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
+import { AdminPagination } from "../../../components/Pagination";
 import "../Pembayaran/AdminPembayaran.css";
 
 interface DokumenItem {
@@ -34,6 +35,10 @@ const AdminDokumen = () => {
   const [detailData, setDetailData] = useState<{file?: string; jenis?: string; nama?: string; paket?: string} | null>(null);
   const [rejectMode, setRejectMode] = useState(false);
   const [alasan, setAlasan] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const closeModal = () => {
     setDetailModal(null);
@@ -47,21 +52,30 @@ const AdminDokumen = () => {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/dokumen/pending`, {
+      const params = new URLSearchParams();
+      params.append("page", String(page));
+      params.append("limit", "10");
+      if (search.trim()) {
+        params.append("search", search.trim());
+      }
+      const res = await axios.get(`${API_BASE_URL}/admin/dokumen/pending?${params.toString()}`, {
         headers: authH(),
       });
       const items: DokumenItem[] = res.data?.data ?? [];
-      items.sort((a, b) => new Date(b.tanggal_upload).getTime() - new Date(a.tanggal_upload).getTime());
       setList(items);
+      setTotalPages(res.data?.meta?.total_pages ?? 1);
+      setTotalItems(res.data?.meta?.total ?? items.length);
       const count = Number(res.data?.count_menunggu ?? res.data?.total ?? items.length);
       setTotalPending(count);
     } catch {
       setList([]);
+      setTotalPages(1);
+      setTotalItems(0);
       setTotalPending(0);
     } finally {
       setLoading(false);
     }
-  }, [authH]);
+  }, [authH, page, search]);
 
   useEffect(() => { fetchList(); }, [fetchList]);
 
@@ -151,6 +165,35 @@ const AdminDokumen = () => {
         </div>
       )}
 
+      {/* Search Toolbar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", minWidth: 260, flex: "0 1 360px" }}>
+          <LuSearch size={15} style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+          <input
+            type="text"
+            placeholder="Cari jamaah, nomor pendaftaran, jenis dokumen..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{
+              width: "100%",
+              padding: "0.55rem 0.85rem 0.55rem 2.4rem",
+              borderRadius: "10px",
+              border: "1.5px solid #e2e8f0",
+              fontSize: "0.84rem",
+              outline: "none",
+            }}
+          />
+        </div>
+        {!loading && (
+          <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+            {totalItems} dokumen ditemukan
+          </span>
+        )}
+      </div>
+
       {/* Table */}
       <div className="verify-table-card">
         <table className="verify-table">
@@ -221,6 +264,16 @@ const AdminDokumen = () => {
             )}
           </tbody>
         </table>
+        {!loading && list.length > 0 && (
+          <AdminPagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            currentCount={list.length}
+            onPageChange={setPage}
+            itemName="dokumen"
+          />
+        )}
       </div>
 
       {/* Modal */}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { PublicPagination } from "../../components/Pagination";
 import "./Paket.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -306,6 +307,8 @@ const Paket = () => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("berangkat");
   const [filterKuota, setFilterKuota] = useState<"all" | "available">("all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 9;
 
   const getPaket = async () => {
     try {
@@ -324,6 +327,11 @@ const Paket = () => {
   useEffect(() => {
     getPaket();
   }, []);
+
+  // Reset page whenever search or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, sortBy, filterKuota]);
 
   const filtered = useMemo(() => {
     let list = [...paketList];
@@ -348,6 +356,12 @@ const Paket = () => {
 
     return list;
   }, [paketList, search, sortBy, filterKuota]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const pagedItems = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page, PAGE_SIZE]);
 
   return (
     <div className="paket-page">
@@ -437,8 +451,9 @@ const Paket = () => {
             <p>Coba ubah kata kunci pencarian atau filter Anda.</p>
           </div>
         ) : (
-          <div className="paket-grid">
-            {filtered.map((item) => {
+          <>
+            <div className="paket-grid">
+              {pagedItems.map((item) => {
               const kuota = getKuotaInfo(item.sisa_kuota, item.kuota_max);
               return (
                 <Link
@@ -512,7 +527,15 @@ const Paket = () => {
               );
             })}
           </div>
-        )}
+          {totalPages > 1 && (
+            <PublicPagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
+      )}
       </div>
 
     </div>

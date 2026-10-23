@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { LuEye, LuCheck, LuRefreshCw, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { AdminPagination } from "../../../components/Pagination";
 import "./AdminPengaduan.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -248,6 +249,19 @@ const DetailModal = ({
   );
 };
 
+const sortPengaduan = (items: PengaduanItem[]) => {
+  return [...items].sort((a, b) => {
+    const rankA = a.status?.toLowerCase() === "menunggu" ? 0 : a.status?.toLowerCase() === "diproses" ? 1 : 2;
+    const rankB = b.status?.toLowerCase() === "menunggu" ? 0 : b.status?.toLowerCase() === "diproses" ? 1 : 2;
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+    const timeA = new Date(a.created_at).getTime() || 0;
+    const timeB = new Date(b.created_at).getTime() || 0;
+    return timeB - timeA;
+  });
+};
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const AdminPengaduan = () => {
@@ -256,46 +270,82 @@ const AdminPengaduan = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("semua");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [countMenunggu, setCountMenunggu] = useState(0);
+  const [stats, setStats] = useState({
+    total: 0,
+    menunggu: 0,
+    diproses: 0,
+    selesai: 0,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/pengaduan`, {
+      const params = new URLSearchParams();
+      params.append("page", String(page));
+      params.append("limit", "10");
+      if (filter && filter !== "semua") {
+        params.append("status", filter);
+      }
+      if (search.trim()) {
+        params.append("search", search.trim());
+      }
+      const res = await axios.get(`${API_BASE_URL}/admin/pengaduan?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setList(res.data?.data ?? []);
-      setCountMenunggu(res.data?.count_menunggu ?? 0);
+
+      const rawData: PengaduanItem[] = res.data?.data ?? [];
+      const sortedData = sortPengaduan(rawData);
+
+      // Handle stats count for filter cards (seperti halaman ulasan)
+      if (res.data?.stats) {
+        setStats({
+          total: Number(res.data.stats.total ?? 0),
+          menunggu: Number(res.data.stats.menunggu ?? 0),
+          diproses: Number(res.data.stats.diproses ?? 0),
+          selesai: Number(res.data.stats.selesai ?? 0),
+        });
+      } else {
+        setStats({
+          total: Number(res.data?.total ?? sortedData.length),
+          menunggu: Number(res.data?.count_menunggu ?? sortedData.filter(p => p.status?.toLowerCase() === "menunggu").length),
+          diproses: sortedData.filter(p => p.status?.toLowerCase() === "diproses").length,
+          selesai: sortedData.filter(p => p.status?.toLowerCase() === "selesai").length,
+        });
+      }
+
+      setCountMenunggu(Number(res.data?.count_menunggu ?? res.data?.stats?.menunggu ?? 0));
+
+      const serverMeta = res.data?.meta;
+      const total = Number(serverMeta?.total ?? res.data?.total ?? sortedData.length);
+
+      // Pastikan hanya 10 item per halaman yang ditampilkan di tabel
+      if (serverMeta && rawData.length <= 10) {
+        setList(sortedData);
+        setTotalPages(serverMeta.total_pages || 1);
+        setTotalItems(total);
+      } else {
+        setTotalItems(total);
+        setTotalPages(Math.ceil(total / 10) || 1);
+        const start = (page - 1) * 10;
+        setList(sortedData.slice(start, start + 10));
+      }
     } catch {
       setList([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, page, filter, search]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
-  // Filter + Search
-  const filtered = list.filter(p => {
-    const matchStatus = filter === "semua" || p.status === filter;
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      p.nomor_pendaftaran?.toLowerCase().includes(q) ||
-      p.nama_customer?.toLowerCase().includes(q) ||
-      p.kategori?.toLowerCase().includes(q) ||
-      p.judul?.toLowerCase().includes(q);
-    return matchStatus && matchSearch;
-  });
-
-  const filters = [
-    { key: "semua",    label: "Semua" },
-    { key: "menunggu", label: "Menunggu" },
-    { key: "diproses", label: "Diproses" },
-    { key: "selesai",  label: "Selesai" },
-  ];
+  const filtered = list;
 
   return (
     <div className="peng-page">
@@ -320,37 +370,91 @@ const AdminPengaduan = () => {
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="peng-toolbar">
-        {/* Filter chips */}
-        <div className="peng-filters">
-          {filters.map(f => (
-            <button
-              key={f.key}
-              className={`peng-filter-btn ${filter === f.key ? "active" : ""}`}
-              onClick={() => setFilter(f.key)}
-            >
-              {f.label}
-              {f.key === "menunggu" && countMenunggu > 0 && (
-                <span className="peng-filter-badge">{countMenunggu}</span>
-              )}
-            </button>
-          ))}
+      {/* ── Stats Grid / Filter (Persis seperti di Halaman Ulasan Jamaah) ── */}
+      <div className="peng-stats-grid">
+        <div
+          className={`peng-stat-card ${filter === "semua" ? "active" : ""}`}
+          onClick={() => {
+            setFilter("semua");
+            setPage(1);
+          }}
+          title="Klik untuk melihat semua pengaduan"
+        >
+          <div className="stat-icon-wrap icon-all">💬</div>
+          <div className="stat-info">
+            <span className="stat-val">{stats.total}</span>
+            <span className="stat-lbl">Total Pengaduan Masuk</span>
+          </div>
         </div>
 
-        {/* Search */}
+        <div
+          className={`peng-stat-card ${filter === "menunggu" ? "active" : ""}`}
+          onClick={() => {
+            setFilter(filter === "menunggu" ? "semua" : "menunggu");
+            setPage(1);
+          }}
+          title="Klik untuk filter Pengaduan Menunggu"
+        >
+          <div className="stat-icon-wrap icon-menunggu">🕐</div>
+          <div className="stat-info">
+            <span className="stat-val">{stats.menunggu}</span>
+            <span className="stat-lbl">Menunggu Respon</span>
+          </div>
+        </div>
+
+        <div
+          className={`peng-stat-card ${filter === "diproses" ? "active" : ""}`}
+          onClick={() => {
+            setFilter(filter === "diproses" ? "semua" : "diproses");
+            setPage(1);
+          }}
+          title="Klik untuk filter Pengaduan Diproses"
+        >
+          <div className="stat-icon-wrap icon-diproses">⚙️</div>
+          <div className="stat-info">
+            <span className="stat-val">{stats.diproses}</span>
+            <span className="stat-lbl">Sedang Diproses</span>
+          </div>
+        </div>
+
+        <div
+          className={`peng-stat-card ${filter === "selesai" ? "active" : ""}`}
+          onClick={() => {
+            setFilter(filter === "selesai" ? "semua" : "selesai");
+            setPage(1);
+          }}
+          title="Klik untuk filter Pengaduan Selesai"
+        >
+          <div className="stat-icon-wrap icon-selesai">✅</div>
+          <div className="stat-info">
+            <span className="stat-val">{stats.selesai}</span>
+            <span className="stat-lbl">Pengaduan Selesai</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar / Search */}
+      <div className="peng-toolbar">
         <div className="peng-search-wrap">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input
             type="text"
-            placeholder="Cari nama, nomor, atau kategori..."
+            placeholder="Cari nama, nomor pendaftaran, atau kategori..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="peng-search"
           />
         </div>
+        {!loading && (
+          <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+            {totalItems} pengaduan ditemukan
+          </span>
+        )}
       </div>
 
       {/* Table */}
@@ -414,6 +518,16 @@ const AdminPengaduan = () => {
               ))}
             </tbody>
           </table>
+        )}
+        {!loading && list.length > 0 && (
+          <AdminPagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            currentCount={list.length}
+            onPageChange={setPage}
+            itemName="pengaduan"
+          />
         )}
       </div>
 

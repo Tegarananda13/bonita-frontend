@@ -8,6 +8,7 @@ import Paket from './pages/Paket';
 import PaketDetail from './pages/PaketDetail';
 import Daftar from './pages/Daftar';
 import Portal from './pages/Portal';
+import Ulasan from './pages/Ulasan';
 
 // Admin
 import AdminLogin from './pages/Admin/Login';
@@ -23,6 +24,7 @@ import Laporan from './pages/Admin/Laporan';
 import ProtectedRoute from './pages/Admin/components/ProtectedRoute';
 import TambahJamaah from './pages/Admin/TambahJamaah';
 import AdminPengaduan from './pages/Admin/Pengaduan';
+import AdminUlasan from './pages/Admin/Ulasan';
 import TambahPaket from './pages/Admin/Paket/TambahPaket';
 import VerifikasiManager from './pages/Admin/Verifikasi';
 
@@ -41,6 +43,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="paket" element={<Paket />} />
           <Route path="paket/:id" element={<PaketDetail />} />
+          <Route path="ulasan" element={<Ulasan />} />
           <Route path="daftar" element={<Daftar />} />
           <Route path="portal/*" element={<Portal />} />
         </Route>
@@ -114,6 +117,7 @@ function App() {
           <Route path="pembayaran" element={<AdminPembayaran />} />
           <Route path="dokumen" element={<AdminDokumen />} />
           <Route path="pengaduan" element={<AdminPengaduan />} />
+          <Route path="ulasan" element={<AdminUlasan />} />
         </Route>
 
         {/* Catch-all */}

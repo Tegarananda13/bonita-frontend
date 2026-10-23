@@ -24,6 +24,7 @@ const TopBar = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Paket Umroh', path: '/paket' },
+    { name: 'Ulasan Jamaah', path: '/ulasan' },
     { name: 'Daftar', path: '/daftar' },
     { name: 'Portal Jamaah', path: '/portal' },
   ];

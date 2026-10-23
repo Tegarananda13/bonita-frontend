@@ -4,6 +4,7 @@ import { LuEye, LuPlus, LuRefreshCw, LuX, LuCheck, LuChevronDown } from "react-i
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
+import { AdminPagination } from "../../../components/Pagination";
 import "./AdminPendaftaran.css";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -3587,6 +3588,10 @@ const PendaftaranGrupView = ({
   onDetailGrup: (nomorInvoice: string) => void;
 }) => {
   const groups = groupByInvoice(list);
+  const [grupPage, setGrupPage] = useState(1);
+  const GRUP_PAGE_SIZE = 10;
+  const totalGrupPages = Math.ceil(groups.length / GRUP_PAGE_SIZE) || 1;
+  const pagedGroups = groups.slice((grupPage - 1) * GRUP_PAGE_SIZE, grupPage * GRUP_PAGE_SIZE);
 
   const countStatus = (s: string) => groups.filter(g => g.payment_status?.toLowerCase() === s).length;
   const totalInvoice = groups.length;
@@ -3651,7 +3656,7 @@ const PendaftaranGrupView = ({
                 </td>
               </tr>
             ) : (
-              groups.map(g => (
+              pagedGroups.map(g => (
                 <tr key={g.nomor_invoice}>
                   <td>
                     <div className="customer-cell">
@@ -3689,6 +3694,16 @@ const PendaftaranGrupView = ({
             )}
           </tbody>
         </table>
+        {!loading && groups.length > 0 && (
+          <AdminPagination
+            currentPage={grupPage}
+            totalPages={totalGrupPages}
+            totalItems={groups.length}
+            currentCount={pagedGroups.length}
+            onPageChange={setGrupPage}
+            itemName="invoice grup"
+          />
+        )}
       </div>
     </div>
   );
@@ -3780,6 +3795,20 @@ const AdminPendaftaran = () => {
   // ── Stats ──
   const countByStatus = (s: string) =>
     list.filter((p) => p.status?.toLowerCase() === s).length;
+
+  // ── Pagination ──
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, filterAdminId]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const pagedList = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
 
   return (
     <div className="pendaftaran-admin-page">
@@ -4023,7 +4052,7 @@ const AdminPendaftaran = () => {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((p) => (
+                  pagedList.map((p) => (
                     <tr key={p.nomor_pendaftaran}>
                       <td>
                         <span className="nomor-pendaftaran">{p.nomor_pendaftaran}</span>
@@ -4103,6 +4132,16 @@ const AdminPendaftaran = () => {
                 )}
               </tbody>
             </table>
+            {!loading && filtered.length > 0 && (
+              <AdminPagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                currentCount={pagedList.length}
+                onPageChange={setPage}
+                itemName="pendaftaran"
+              />
+            )}
           </div>
         </>
       ) : activeView === "grup" ? (
@@ -4525,6 +4564,14 @@ const JamaahSayaView = ({
   const selesaiList = baseFilter(list.filter((p) => p.status?.toLowerCase() === "selesai"));
   const displayList = picTab === "aktif" ? aktifList : picTab === "siap" ? siapList : selesaiList;
 
+  const [sayaPage, setSayaPage] = useState(1);
+  const SAYA_PAGE_SIZE = 10;
+  useEffect(() => {
+    setSayaPage(1);
+  }, [picTab, filterPaket]);
+  const totalSayaPages = Math.ceil(displayList.length / SAYA_PAGE_SIZE) || 1;
+  const pagedSayaList = displayList.slice((sayaPage - 1) * SAYA_PAGE_SIZE, sayaPage * SAYA_PAGE_SIZE);
+
   return (
     <div>
       {/* Header */}
@@ -4649,8 +4696,9 @@ const JamaahSayaView = ({
           </p>
         </div>
       ) : (
-        <div className="my-jamaah-grid">
-          {displayList.map((p) => {
+        <>
+          <div className="my-jamaah-grid">
+          {pagedSayaList.map((p) => {
             const isSelesai = p.status?.toLowerCase() === "selesai";
             return (
               <div
@@ -4697,7 +4745,20 @@ const JamaahSayaView = ({
             );
           })}
         </div>
-      )}
+        {!loading && displayList.length > 0 && (
+          <div style={{ marginTop: "1rem" }}>
+            <AdminPagination
+              currentPage={sayaPage}
+              totalPages={totalSayaPages}
+              totalItems={displayList.length}
+              currentCount={pagedSayaList.length}
+              onPageChange={setSayaPage}
+              itemName="jamaah"
+            />
+          </div>
+        )}
+      </>
+    )}
 
       {/* Modal Detail PIC */}
       {selectedJamaah && (

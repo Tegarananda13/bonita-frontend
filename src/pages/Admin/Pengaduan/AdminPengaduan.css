@@ -91,6 +91,87 @@
   50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
 }
 
+/* ── Stats Grid / Filter (Like Admin Ulasan) ── */
+.peng-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.peng-stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.peng-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.peng-stat-card.active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+.peng-stat-card .stat-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.peng-stat-card .icon-all {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.peng-stat-card .icon-menunggu {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.peng-stat-card .icon-diproses {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.peng-stat-card .icon-selesai {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.peng-stat-card .stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.peng-stat-card .stat-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.peng-stat-card .stat-lbl {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+
 /* ── Toolbar ── */
 .peng-toolbar {
   display: flex;

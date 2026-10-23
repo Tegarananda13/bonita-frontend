@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, type FormEvent, type ChangeEv
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./Portal.css";
+import { PortalReviewModal, PortalMyReviewsModal } from "./PortalReviewModal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1882,6 +1883,8 @@ const Portal = () => {
   const [countdown, setCountdown] = useState(0);
   const [activeTab, setActiveTab] = useState<TabType>("data-jamaah");
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showMyReviewsModal, setShowMyReviewsModal] = useState(false);
   const [loadingDash, setLoadingDash] = useState(false);
 
   // ── Countdown for resend ──
@@ -2012,7 +2015,7 @@ const Portal = () => {
               <div className="portal-login-title">Masuk ke Portal</div>
               <div className="portal-login-sub">
                 Nomor pendaftaran dikirimkan ke WhatsApp/email Anda setelah mendaftar.
-                Format: <strong>UMR-20260101XXXXXX</strong>
+                Format: <strong>UMR-YYYYMMDD-XXXX</strong> (contoh: UMR-20261022-A7K2)
               </div>
 
               {error && <div className="portal-error">{error}</div>}
@@ -2024,7 +2027,7 @@ const Portal = () => {
                     id="nomor-daftar"
                     className="portal-input"
                     type="text"
-                    placeholder="UMR-20260101000000"
+                    placeholder="Contoh: UMR-20261022-A7K2"
                     value={nomor}
                     onChange={(e) => setNomor(e.target.value.toUpperCase())}
                     disabled={loadingOtp}
@@ -2163,14 +2166,27 @@ const Portal = () => {
             <div className="portal-dash-name">{displayNama}</div>
             <div className="portal-dash-header-row">
               <div className="portal-dash-nomor">📋 {nomor}</div>
-              <button
-                type="button"
-                className="portal-dash-btn-invoice"
-                onClick={() => setShowInvoiceModal(true)}
-                title="Lihat Invoice Tagihan"
-              >
-                🧾 Lihat Invoice
-              </button>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                {(pendaftaranStatus || "").toLowerCase() === "selesai" && (
+                  <button
+                    type="button"
+                    className="portal-dash-btn-invoice"
+                    style={{ background: "#f59e0b", color: "#ffffff", borderColor: "#d97706" }}
+                    onClick={() => setShowReviewModal(true)}
+                    title="Berikan Ulasan Perjalanan Umroh Anda"
+                  >
+                    ⭐ Berikan Ulasan
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="portal-dash-btn-invoice"
+                  onClick={() => setShowInvoiceModal(true)}
+                  title="Lihat Invoice Tagihan"
+                >
+                  🧾 Lihat Invoice
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2347,6 +2363,68 @@ const Portal = () => {
             </div>
           )}
 
+          {/* Banner Selesai & Ulasan Jamaah */}
+          {!loadingDash && (pendaftaranStatus || "").toLowerCase() === "selesai" && (
+            <div style={{
+              margin: "0.75rem 1.75rem 0",
+              padding: "1.1rem 1.25rem",
+              background: "linear-gradient(135deg, #f0fdf4, #ecfdf5)",
+              border: "1.5px solid #86efac",
+              borderRadius: 14,
+              display: "flex", alignItems: "flex-start", gap: "0.85rem",
+            }}>
+              <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>🌟</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#065f46", marginBottom: 3 }}>
+                  Alhamdulillah, Ibadah Umroh Anda Telah Selesai!
+                </div>
+                <div style={{ fontSize: "0.84rem", color: "#047857", lineHeight: 1.5, marginBottom: 8 }}>
+                  Semoga menjadi ibadah umroh yang mabrur dan penuh keberkahan. Kami sangat mengapresiasi jika Anda berkenan memberikan ulasan dan testimoni pengalaman ibadah bersama Bonita Umroh.
+                </div>
+                <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewModal(true)}
+                    style={{
+                      background: "#0d9488",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "0.45rem 0.95rem",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                    }}
+                  >
+                    ⭐ Berikan Ulasan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMyReviewsModal(true)}
+                    style={{
+                      background: "#ffffff",
+                      color: "#0f766e",
+                      border: "1.5px solid #99f6e4",
+                      borderRadius: 8,
+                      padding: "0.45rem 0.95rem",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                    }}
+                  >
+                    📋 Ulasan Saya
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tabs */}
           <div className="portal-tabs">
             <button
@@ -2418,6 +2496,29 @@ const Portal = () => {
           dashData={dashData}
           token={token}
           onClose={() => setShowInvoiceModal(false)}
+        />
+      )}
+
+      {showReviewModal && (
+        <PortalReviewModal
+          token={token}
+          namaPaket={dashData?.paket_umroh?.nama_paket || dashData?.paket || "Paket Umroh"}
+          onClose={() => setShowReviewModal(false)}
+          onSuccess={() => {
+            setShowReviewModal(false);
+            setShowMyReviewsModal(true);
+          }}
+        />
+      )}
+
+      {showMyReviewsModal && (
+        <PortalMyReviewsModal
+          token={token}
+          onClose={() => setShowMyReviewsModal(false)}
+          onWriteNewReview={() => {
+            setShowMyReviewsModal(false);
+            setShowReviewModal(true);
+          }}
         />
       )}
 

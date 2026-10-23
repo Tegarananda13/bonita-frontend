@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { LuEye, LuPencil, LuPlus, LuRefreshCw, LuX } from "react-icons/lu";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import { AdminPagination } from "../../../components/Pagination";
 import "./AdminPaket.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -1256,6 +1257,16 @@ const AdminPaket = () => {
   const [paketList, setPaketList] = useState<PaketAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const [stats, setStats] = useState({
+    totalPaket: 0,
+    totalKuota: 0,
+    totalTerisi: 0,
+  });
+
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PaketAdmin | null>(null);
@@ -1268,10 +1279,16 @@ const AdminPaket = () => {
   const fetchPaket = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/paket`, {
+      const params = new URLSearchParams();
+      params.append("page", String(page));
+      params.append("limit", "10");
+      if (search.trim()) {
+        params.append("search", search.trim());
+      }
+      const res = await axios.get(`${API_BASE_URL}/admin/paket?${params.toString()}`, {
         headers: authH(),
       });
-      const rawList = res.data?.paket ?? [];
+      const rawList = res.data?.data ?? res.data?.paket ?? [];
       const normalizedList = rawList.map((p: any) => {
         const rawGambar = p.GambarPaket || p.gambar_paket || [];
         const utamaFoto = rawGambar.find((g: any) => g.is_utama)?.file_path ||
@@ -1286,13 +1303,43 @@ const AdminPaket = () => {
           Fasilitas: normalizeFasilitas(p.Fasilitas || p.fasilitas),
         };
       });
-      setPaketList(normalizedList);
+
+      const serverMeta = res.data?.meta;
+      const total = Number(serverMeta?.total ?? res.data?.stats?.total_paket ?? normalizedList.length);
+
+      if (res.data?.stats) {
+        setStats({
+          totalPaket: Number(res.data.stats.total_paket ?? total),
+          totalKuota: Number(res.data.stats.total_kuota ?? 0),
+          totalTerisi: Number(res.data.stats.total_terisi ?? 0),
+        });
+      } else {
+        setStats({
+          totalPaket: total,
+          totalKuota: normalizedList.reduce((s: number, p: any) => s + (p.KuotaMax ?? 0), 0),
+          totalTerisi: normalizedList.reduce((s: number, p: any) => s + (p.KuotaTerpakai ?? 0), 0),
+        });
+      }
+
+      // Pastikan hanya 10 item per halaman yang ditampilkan di tabel
+      if (serverMeta && rawList.length <= 10) {
+        setPaketList(normalizedList);
+        setTotalPages(serverMeta.total_pages || 1);
+        setTotalItems(total);
+      } else {
+        setTotalItems(total);
+        setTotalPages(Math.ceil(total / 10) || 1);
+        const start = (page - 1) * 10;
+        setPaketList(normalizedList.slice(start, start + 10));
+      }
     } catch {
       setPaketList([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [authH]);
+  }, [authH, page, search]);
   useEffect(() => {
     fetchPaket();
   }, [fetchPaket]);
@@ -1332,11 +1379,8 @@ const AdminPaket = () => {
       setLoadingEditId(null);
     }
   };
-  const filtered = paketList.filter((p) =>
-    p.NamaPaket?.toLowerCase().includes(search.toLowerCase())
-  );
-  const totalKuota = paketList.reduce((s, p) => s + (p.KuotaMax ?? 0), 0);
-  const totalTerisi = paketList.reduce((s, p) => s + (p.KuotaTerpakai ?? 0), 0);
+
+  const filtered = paketList;
   const getKuotaClass = (p: PaketAdmin) => {
     const sisa = p.KuotaMax - p.KuotaTerpakai;
     if (sisa <= 0) return "kuota-full";
@@ -1383,10 +1427,10 @@ const AdminPaket = () => {
       {!loading && (
         <div className="paket-stats-row">
           {[
-            { icon: "✨", label: "Total Paket", value: paketList.length },
-            { icon: "👥", label: "Total Kuota", value: totalKuota },
-            { icon: "✅", label: "Terisi", value: totalTerisi },
-            { icon: "🟢", label: "Tersedia", value: totalKuota - totalTerisi },
+            { icon: "✨", label: "Total Paket", value: stats.totalPaket || totalItems },
+            { icon: "👥", label: "Total Kuota", value: stats.totalKuota },
+            { icon: "✅", label: "Terisi", value: stats.totalTerisi },
+            { icon: "🟢", label: "Tersedia", value: Math.max(0, stats.totalKuota - stats.totalTerisi) },
           ].map((s) => (
             <div className="paket-stat-card" key={s.label}>
               <div className="paket-stat-icon">{s.icon}</div>
@@ -1408,12 +1452,15 @@ const AdminPaket = () => {
             type="text"
             placeholder="Cari nama paket..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         {!loading && (
           <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
-            {filtered.length} paket ditemukan
+            {totalItems} paket ditemukan
           </span>
         )}
       </div>
@@ -1591,6 +1638,16 @@ const AdminPaket = () => {
             )}
           </tbody>
         </table>
+        {!loading && paketList.length > 0 && (
+          <AdminPagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            currentCount={paketList.length}
+            onPageChange={setPage}
+            itemName="paket"
+          />
+        )}
       </div>
       {/* ── Drawer (Create/Edit) ── */}
       {drawerOpen && (
