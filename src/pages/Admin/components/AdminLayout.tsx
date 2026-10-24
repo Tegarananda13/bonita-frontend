@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
+import bonitaLogo from "../../../assets/logo-bonita.jpg";
 import "./AdminLayout.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -233,9 +234,9 @@ const AdminLayout = () => {
       <aside className="admin-sidebar">
         {/* Brand */}
         <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">🕌</div>
+          <img src={bonitaLogo} alt="Bonita Umroh Logo" className="sidebar-brand-logo-img" />
           <div className="sidebar-brand-text">
-            <div className="sidebar-brand-name">Bonita Umroh</div>
+            <div className="sidebar-brand-name">Bonita Umrah</div>
             <div className="sidebar-brand-sub">Admin Portal</div>
           </div>
         </div>

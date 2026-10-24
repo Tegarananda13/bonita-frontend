@@ -51,7 +51,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     sender: 'bot',
-    text: "Assalamu'alaikum 🕌 Selamat datang di Bonita Umroh! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umroh. Ada yang ingin ditanyakan?",
+    text: "Assalamu'alaikum 🕌 Selamat datang di Bonita Umrah! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umroh. Ada yang ingin ditanyakan?",
     timestamp: new Date(),
   },
 ];

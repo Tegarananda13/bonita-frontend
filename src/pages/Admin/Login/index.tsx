@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
+import bonitaLogo from "../../../assets/logo-bonita.jpg";
+import kaabaBg from "../../../assets/kaaba-login-bg.jpg";
 import "./Login.css";
 
 const AdminLogin = () => {
@@ -57,12 +59,16 @@ const AdminLogin = () => {
       {/* ── Left Panel ── */}
       <div className="login-left">
         <div className="login-left-bg" />
+        <div className="login-left-visual">
+          <img src={kaabaBg} alt="Masjidil Haram & Ka'bah" className="login-visual-img" />
+          <div className="login-visual-overlay" />
+        </div>
         <div className="login-left-pattern" />
 
         <div className="login-left-content">
           {/* Brand */}
           <div className="login-brand">
-            <div className="login-brand-icon">🕌</div>
+            <img src={bonitaLogo} alt="Bonita Umroh Logo" className="login-brand-logo-img" />
             <div>
               <div className="login-brand-name">Bonita Umroh</div>
               <div className="login-brand-sub">Admin Portal</div>
@@ -77,7 +83,7 @@ const AdminLogin = () => {
             </h2>
             <p>
               Platform manajemen terpadu untuk Admin dan Administration Manager dalam
-              mengelola paket, jamaah, verifikasi berkas, dan pembayaran umroh.
+              mengelola paket, jamaah, verifikasi berkas, dan pembayaran umrah.
             </p>
           </div>
         </div>

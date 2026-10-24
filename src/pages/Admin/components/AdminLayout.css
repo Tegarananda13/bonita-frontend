@@ -49,6 +49,16 @@
   box-shadow: 0 4px 12px rgba(26, 107, 67, 0.4);
 }
 
+.sidebar-brand-logo-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+}
+
 .sidebar-brand-text {
   overflow: hidden;
 }

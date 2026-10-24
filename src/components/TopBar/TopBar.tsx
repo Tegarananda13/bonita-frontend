@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
+import bonitaLogo from '../../assets/logo-bonita.jpg';
 import './TopBar.css';
 
 const TopBar = () => {
@@ -39,7 +40,10 @@ const TopBar = () => {
       <div className="topbar-container">
         {/* Logo */}
         <Link to="/" className="topbar-logo">
-          Bonita<span>Umroh</span>
+          <img src={bonitaLogo} alt="Bonita Umroh" className="topbar-logo-img" />
+          <span className="topbar-logo-text">
+            Bonita<span>Umrah</span>
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
