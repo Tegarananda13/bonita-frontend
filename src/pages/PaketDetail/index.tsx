@@ -165,7 +165,7 @@ const PaketDetail = () => {
       <div className="pd-breadcrumb">
         <Link to="/">Beranda</Link>
         <span>›</span>
-        <Link to="/paket">Paket Umroh</Link>
+        <Link to="/paket">Paket Umrah</Link>
         <span>›</span>
         <span className="pd-breadcrumb-cur">{paket.nama_paket}</span>
       </div>
@@ -361,7 +361,7 @@ const PaketDetail = () => {
         </h2>
         <div className="pd-perlengkapan-card">
           <p className="pd-perlengkapan-intro">
-            Lengkapi perjalanan Anda dengan perlengkapan tambahan yang disediakan oleh Bonita Umroh.
+            Lengkapi perjalanan Anda dengan perlengkapan tambahan yang disediakan oleh Bonita Umrah.
           </p>
           <ul className="pd-perlengkapan-list">
             <li>Koper 22"</li>

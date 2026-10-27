@@ -300,8 +300,8 @@ const AdminPaketDetail = () => {
             </svg>
             Kembali
           </button>
-          <h1 className="apd-title">Detail Paket Umroh</h1>
-          <p className="apd-subtitle">Informasi lengkap, jadwal keberangkatan, fasilitas, dan status paket umroh.</p>
+          <h1 className="apd-title">Detail Paket Umrah</h1>
+          <p className="apd-subtitle">Informasi lengkap, jadwal keberangkatan, fasilitas, dan status paket umrah.</p>
         </div>
 
         <div className="apd-header-actions">

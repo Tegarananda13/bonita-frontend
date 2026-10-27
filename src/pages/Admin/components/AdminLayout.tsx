@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
   },
   {
     to: "/admin/paket",
-    label: "Paket Umroh",
+    label: "Paket Umrah",
     roles: ["admin", "owner", "manager", "administration_manager"],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -142,7 +142,7 @@ const navItems: NavItem[] = [
 const pageTitle: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
   "/admin/verifikasi": "Verifikasi Pendaftaran",
-  "/admin/paket": "Paket Umroh",
+  "/admin/paket": "Paket Umrah",
   "/admin/pendaftaran": "Pendaftaran",
   "/admin/pembayaran": "Pembayaran",
   "/admin/dokumen": "Dokumen",
@@ -234,7 +234,7 @@ const AdminLayout = () => {
       <aside className="admin-sidebar">
         {/* Brand */}
         <div className="sidebar-brand">
-          <img src={bonitaLogo} alt="Bonita Umroh Logo" className="sidebar-brand-logo-img" />
+          <img src={bonitaLogo} alt="Bonita Umrah Logo" className="sidebar-brand-logo-img" />
           <div className="sidebar-brand-text">
             <div className="sidebar-brand-name">Bonita Umrah</div>
             <div className="sidebar-brand-sub">Admin Portal</div>

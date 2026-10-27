@@ -33,9 +33,9 @@ type StepState = '' | 'ask_nomor' | 'ask_kategori' | string; // ask_isi_<kategor
 // ── Quick reply suggestions ────────────────────────────────────────────────────
 
 const QUICK_REPLIES = [
-  'Apa saja paket umroh yang tersedia?',
-  'Berapa harga paket umroh?',
-  'Saya ingin daftar umroh',
+  'Apa saja paket umrah yang tersedia?',
+  'Berapa harga paket umrah?',
+  'Saya ingin daftar umrah',
   'Apa saja dokumen yang diperlukan?',
   'Saya ingin membuat pengaduan',
 ];
@@ -51,7 +51,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     sender: 'bot',
-    text: "Assalamu'alaikum 🕌 Selamat datang di Bonita Umrah! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umroh. Ada yang ingin ditanyakan?",
+    text: "Assalamu'alaikum 🕌 Selamat datang di Bonita Umrah! Saya Bonita Assistant, siap membantu Anda merencanakan perjalanan umrah. Ada yang ingin ditanyakan?",
     timestamp: new Date(),
   },
 ];

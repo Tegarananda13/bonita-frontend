@@ -550,7 +550,7 @@ const AssignModal = ({
                     </span>
                   </div>
                   <div className="modal-info-item">
-                    <span className="modal-info-label">Paket Umroh</span>
+                    <span className="modal-info-label">Paket Umrah</span>
                     <span className="modal-info-val">{data?.paket || "-"}</span>
                   </div>
                   <div className="modal-info-item">
@@ -1613,7 +1613,7 @@ export const DetailModal = ({
                       </span>
                     </div>
                     <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "4px", lineHeight: "1.4" }}>
-                      Menyediakan paket koper resmi Bonita Umroh dan seragam ibadah lengkap untuk jamaah ini.
+                      Menyediakan paket koper resmi Bonita Umrah dan seragam ibadah lengkap untuk jamaah ini.
                     </div>
                   </div>
                 </label>
@@ -1785,7 +1785,7 @@ export const DetailModal = ({
                 color: "#9f1239",
                 lineHeight: 1.45,
               }}>
-                <strong>Perhatian:</strong> Bonita Umroh tidak memiliki kebijakan pengembalian dana (refund). Pembatalan hanya mengubah status pendaftaran dan mengembalikan kuota kursi. Invoice dan riwayat pembayaran tetap tersimpan.
+                <strong>Perhatian:</strong> Bonita Umrah tidak memiliki kebijakan pengembalian dana (refund). Pembatalan hanya mengubah status pendaftaran dan mengembalikan kuota kursi. Invoice dan riwayat pembayaran tetap tersimpan.
               </div>
 
               {batalError && (
@@ -1829,7 +1829,7 @@ export const DetailModal = ({
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>Paket Umroh</div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>Paket Umrah</div>
                   <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1e293b", marginTop: "2px" }}>
                     {data.paket}
                   </div>
@@ -2076,7 +2076,7 @@ export const DetailModal = ({
                   </div>
                   <div className="modal-grid-3">
                     <div className="modal-info-item">
-                      <span className="modal-info-label">Paket Umroh</span>
+                      <span className="modal-info-label">Paket Umrah</span>
                       <span className="modal-info-val">{data.paket || "-"}</span>
                     </div>
                     <div className="modal-info-item">
@@ -2199,11 +2199,11 @@ export const DetailModal = ({
                     </div>
                 </div>
 
-                {/* ── 3. Informasi Paket Umroh & Perlengkapan ── */}
+                {/* ── 3. Informasi Paket Umrah & Perlengkapan ── */}
                 {!embedded && (
                   <div className="modal-section">
                     <div className="modal-section-title">
-                      <span>🕌 Informasi Paket Umroh &amp; Perlengkapan</span>
+                      <span>🕌 Informasi Paket Umrah &amp; Perlengkapan</span>
                     </div>
                     <div className="modal-grid-3">
                       <div className="modal-info-item">
@@ -3274,7 +3274,7 @@ const GrupDetailModal = ({
                   </span>
                 </div>
                 <div className="modal-info-item">
-                  <span className="modal-info-label">Paket Umroh</span>
+                  <span className="modal-info-label">Paket Umrah</span>
                   <span className="modal-info-val">{first?.paket || "-"}</span>
                 </div>
                 <div className="modal-info-item">
@@ -3382,7 +3382,7 @@ const GrupDetailModal = ({
                 <div className="modal-grid-2" style={{ marginBottom: "1rem" }}>
                   <div>
                     <div style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: "2px" }}>
-                      Paket Umroh
+                      Paket Umrah
                     </div>
                     <div style={{ fontSize: "1rem", fontWeight: 700, color: "#f8fafc" }}>
                       {first?.paket ?? "-"}
@@ -3816,7 +3816,7 @@ const AdminPendaftaran = () => {
       <div className="page-header">
         <div className="page-header-left">
           <h2>Pendaftaran Jamaah</h2>
-          <p>Monitor, kelola, dan assign PIC untuk setiap pendaftaran jamaah umroh.</p>
+          <p>Monitor, kelola, dan assign PIC untuk setiap pendaftaran jamaah umrah.</p>
         </div>
         <div className="page-header-actions">
           <button
@@ -4317,7 +4317,7 @@ const PICDetailModal = ({
                 <div className="modal-status-item">
                   <div className="modal-status-label">Status</div>
                   {isSelesai ? (
-                    <span style={{ background: "#d1fae5", color: "#065f46", padding: "0.25rem 0.75rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700 }}>✔ Umroh Selesai</span>
+                    <span style={{ background: "#d1fae5", color: "#065f46", padding: "0.25rem 0.75rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700 }}>✔ Umrah Selesai</span>
                   ) : (
                     <StatusPill value={data.status} />
                   )}
@@ -4495,7 +4495,7 @@ const PICDetailModal = ({
 
               {isSelesai && (
                 <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#d1fae5", border: "1px solid #6ee7b7", borderRadius: "10px", fontSize: "0.85rem", color: "#065f46", fontWeight: 600, textAlign: "center" }}>
-                  ✔ Perjalanan umroh jamaah ini telah selesai
+                  ✔ Perjalanan umrah jamaah ini telah selesai
                 </div>
               )}
             </>
@@ -4689,7 +4689,7 @@ const JamaahSayaView = ({
           </div>
           <p style={{ fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.6 }}>
             {picTab === "selesai"
-              ? "Jamaah yang sudah selesai melaksanakan umroh akan muncul di sini."
+              ? "Jamaah yang sudah selesai melaksanakan umrah akan muncul di sini."
               : picTab === "siap"
                 ? "Jamaah yang sudah siap berangkat akan muncul di sini."
                 : "Anda belum menjadi PIC untuk jamaah manapun.\nBuka tab \"Semua Pendaftaran\" dan klik \"Detail & Assign\" untuk mengambil tanggung jawab jamaah."}

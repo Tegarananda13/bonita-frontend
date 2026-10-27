@@ -68,9 +68,9 @@ const AdminLogin = () => {
         <div className="login-left-content">
           {/* Brand */}
           <div className="login-brand">
-            <img src={bonitaLogo} alt="Bonita Umroh Logo" className="login-brand-logo-img" />
+            <img src={bonitaLogo} alt="Bonita Umrah Logo" className="login-brand-logo-img" />
             <div>
-              <div className="login-brand-name">Bonita Umroh</div>
+              <div className="login-brand-name">Bonita Umrah</div>
               <div className="login-brand-sub">Admin Portal</div>
             </div>
           </div>
@@ -94,7 +94,7 @@ const AdminLogin = () => {
             {[
               { icon: "📋", text: "Manajemen paket & fasilitas" },
               { icon: "👥", text: "Kelola data jamaah & pendaftaran" },
-              { icon: "💳", text: "Verifikasi pembayaran real-time" },
+              { icon: "💳", text: "Verifikasi pembayaran" },
               { icon: "🛡️", text: "Manager: verifikasi & pengesahan akhir" },
             ].map((f, i) => (
               <div className="login-feature-item" key={i}>
@@ -223,7 +223,7 @@ const AdminLogin = () => {
           </form>
 
           <p className="login-form-note">
-            Portal ini hanya untuk Admin &amp; Administration Manager Bonita Umroh.
+            Portal ini hanya untuk Admin &amp; Administration Manager Bonita Umrah.
           </p>
         </div>
       </div>

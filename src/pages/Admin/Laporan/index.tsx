@@ -207,7 +207,7 @@ const Laporan = () => {
       doc.setFontSize(16); doc.setFont("helvetica", "bold");
       doc.text("LAPORAN DAN REKAPITULASI", pw / 2, y, { align: "center" }); y += 7;
       doc.setFontSize(12); doc.setFont("helvetica", "normal");
-      doc.text("BONITA UMROH", pw / 2, y, { align: "center" }); y += 10;
+      doc.text("BONITA UMRAH", pw / 2, y, { align: "center" }); y += 10;
 
       doc.setFontSize(10);
       doc.text(`Periode: ${data.periode.start_date}  s.d.  ${data.periode.end_date}`, pw / 2, y, { align: "center" }); y += 10;
@@ -238,7 +238,7 @@ const Laporan = () => {
       doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.text("B. Rekapitulasi Pendaftaran", 14, y); y += 7;
       doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-      doc.text("Paket Umroh", 14, y);
+      doc.text("Paket Umrah", 14, y);
       doc.text("Jamaah", 110, y, { align: "right" });
       doc.text("Kuota Max", 140, y, { align: "right" });
       doc.text("Terpakai", 165, y, { align: "right" });
@@ -291,7 +291,7 @@ const Laporan = () => {
         doc.setTextColor(0);
       }
 
-      doc.save(`Laporan_BonUmroh_${data.periode.start_date}_${data.periode.end_date}.pdf`);
+      doc.save(`Laporan_BonUmrah_${data.periode.start_date}_${data.periode.end_date}.pdf`);
     } catch {
       alert("Gagal menghasilkan PDF.");
     } finally {
@@ -309,7 +309,7 @@ const Laporan = () => {
 
       // Sheet 1 — Ringkasan
       const ringkasanSheet = XLSX.utils.aoa_to_sheet([
-        ["LAPORAN DAN REKAPITULASI — BONITA UMROH"],
+        ["LAPORAN DAN REKAPITULASI — BONITA UMRAH"],
         [`Periode: ${data.periode.start_date} s.d. ${data.periode.end_date}`],
         [],
         ["Metrik", "Nilai"],
@@ -323,7 +323,7 @@ const Laporan = () => {
 
       // Sheet 2 — Pendaftaran
       const daftarRows = [
-        ["Paket Umroh", "Jumlah Jamaah", "Kuota Max", "Kuota Terpakai", "Status"],
+        ["Paket Umrah", "Jumlah Jamaah", "Kuota Max", "Kuota Terpakai", "Status"],
         ...pendaftaran.map((p) => [
           p.nama_paket,
           p.jumlah_jamaah,
@@ -348,7 +348,7 @@ const Laporan = () => {
       ];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trenRows), "Tren Pendaftaran");
 
-      XLSX.writeFile(wb, `Laporan_BonUmroh_${data.periode.start_date}_${data.periode.end_date}.xlsx`);
+      XLSX.writeFile(wb, `Laporan_BonUmrah_${data.periode.start_date}_${data.periode.end_date}.xlsx`);
     } catch {
       alert("Gagal menghasilkan Excel.");
     } finally {
@@ -366,7 +366,7 @@ const Laporan = () => {
       <div className="laporan-header">
         <div className="laporan-header-text">
           <h2>Laporan &amp; Rekapitulasi</h2>
-          <p>Lihat ringkasan data operasional Bonita Umroh berdasarkan periode tertentu.</p>
+          <p>Lihat ringkasan data operasional Bonita Umrah berdasarkan periode tertentu.</p>
         </div>
         <div className="laporan-export-group">
           <button
@@ -596,7 +596,7 @@ const Laporan = () => {
                 <table className="laporan-table">
                   <thead>
                     <tr>
-                      <th>Paket Umroh</th>
+                      <th>Paket Umrah</th>
                       <th style={{ textAlign: "right" }}>Jumlah Jamaah</th>
                       <th style={{ textAlign: "right" }}>Kuota Maksimal</th>
                       <th style={{ textAlign: "right" }}>Kuota Terpakai</th>

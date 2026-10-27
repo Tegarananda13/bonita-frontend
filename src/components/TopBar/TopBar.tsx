@@ -24,9 +24,8 @@ const TopBar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Paket Umroh', path: '/paket' },
+    { name: 'Paket Umrah', path: '/paket' },
     { name: 'Ulasan Jamaah', path: '/ulasan' },
-    { name: 'Daftar', path: '/daftar' },
     { name: 'Portal Jamaah', path: '/portal' },
   ];
 
@@ -40,7 +39,7 @@ const TopBar = () => {
       <div className="topbar-container">
         {/* Logo */}
         <Link to="/" className="topbar-logo">
-          <img src={bonitaLogo} alt="Bonita Umroh" className="topbar-logo-img" />
+          <img src={bonitaLogo} alt="Bonita Umrah" className="topbar-logo-img" />
           <span className="topbar-logo-text">
             Bonita<span>Umrah</span>
           </span>

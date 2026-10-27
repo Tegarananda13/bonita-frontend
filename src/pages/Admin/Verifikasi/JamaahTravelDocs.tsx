@@ -65,7 +65,7 @@ const TRAVEL_CONFIGS: TravelTypeConfig[] = [
   {
     key: "nusuk",
     label: "Kartu Nusuk",
-    subtitle: "Tasreeh Ibadah Umroh & Raudhah",
+    subtitle: "Tasreeh Ibadah Umrah & Raudhah",
     tag: "Smart Permit",
     icon: "📱",
     cardClass: "travel-card-nusuk",

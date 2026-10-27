@@ -144,7 +144,7 @@ export const PortalReviewModal = ({
           <div className="invoice-modal-header-left">
             <div className="invoice-modal-badge-icon">⭐</div>
             <div>
-              <div className="invoice-modal-title">Berikan Ulasan Perjalanan Umroh</div>
+              <div className="invoice-modal-title">Berikan Ulasan Perjalanan Umrah</div>
               <div className="invoice-modal-subtitle">{namaPaket}</div>
             </div>
           </div>

@@ -902,7 +902,7 @@ const PaketDrawer = ({
                 id="nama-paket"
                 className="form-input"
                 type="text"
-                placeholder="cth. Umroh Reguler 2026"
+                placeholder="cth. Umrah Reguler 2026"
                 value={form.nama_paket}
                 onChange={handleField("nama_paket")}
                 disabled={submitting}
@@ -1392,8 +1392,8 @@ const AdminPaket = () => {
       {/* ── Header ── */}
       <div className="page-header">
         <div className="page-header-left">
-          <h2>Paket Umroh</h2>
-          <p>Kelola semua paket umroh yang tersedia.</p>
+          <h2>Paket Umrah</h2>
+          <p>Kelola semua paket umrah yang tersedia.</p>
         </div>
         <div className="page-header-actions">
           <button

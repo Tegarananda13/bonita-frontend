@@ -58,7 +58,7 @@ const PROCESS_STEPS = [
 
 const TESTIMONIALS = [
   {
-    text: "Alhamdulillah, perjalanan umroh bersama Bonita sangat berkesan. Pembimbing sangat sabar dan hotel pilihan sangat nyaman. Sangat direkomendasikan!",
+    text: "Alhamdulillah, perjalanan umrah bersama Bonita sangat berkesan. Pembimbing sangat sabar dan hotel pilihan sangat nyaman. Sangat direkomendasikan!",
     name: "Ibu Siti Aminah",
     kota: "Bandung, Jawa Barat",
     paket: "Paket Reguler 12 Hari",
@@ -74,7 +74,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
-    text: "Ini umroh kedua kami bersama Bonita. Pelayanan semakin baik, ustadz pembimbing luar biasa, dan penginapan sangat dekat dengan Masjidil Haram.",
+    text: "Ini umrah kedua kami bersama Bonita. Pelayanan semakin baik, ustadz pembimbing luar biasa, dan penginapan sangat dekat dengan Masjidil Haram.",
     name: "Keluarga Bapak Rahmat",
     kota: "Jakarta Selatan",
     paket: "Paket Keluarga 14 Hari",
@@ -108,20 +108,20 @@ const Home = () => {
 
             <h1 className="hero-title">
               Wujudkan{" "}
-              <span className="hero-title-gold">Ibadah Umroh</span>
+              <span className="hero-title-gold">Ibadah Umrah</span>
               <br />
               Impian Anda
             </h1>
 
             <p className="hero-desc">
-              Bonita hadir sebagai mitra perjalanan umroh terpercaya Anda.
+              Bonita hadir sebagai mitra perjalanan umrah terpercaya Anda.
               Dengan pengalaman lebih dari satu dekade, kami memastikan setiap
               langkah perjalanan suci Anda berjalan lancar, khusyu, dan berkesan.
             </p>
 
             <div className="hero-cta-row">
               <Link to="/paket" className="btn-hero-primary">
-                🕌 Lihat Paket Umroh
+                🕌 Lihat Paket Umrah
               </Link>
               <a href="#kontak" className="btn-hero-outline" onClick={scrollToContact}>
                 Hubungi Kami
@@ -136,7 +136,7 @@ const Home = () => {
                 <div className="hero-card-header">
                   <div className="hero-card-icon">🕌</div>
                   <div>
-                    <div className="hero-card-title">Bonita Umroh</div>
+                    <div className="hero-card-title">Bonita Umrah</div>
                     <div className="hero-card-sub">Perjalanan Ibadah Terpercaya</div>
                   </div>
                 </div>
@@ -230,8 +230,8 @@ const Home = () => {
                 Lebih dari Sekedar<br />Perjalanan Wisata
               </h2>
               <p className="about-desc">
-                Bonita Umroh adalah perusahaan perjalanan umroh yang didirikan dengan
-                semangat untuk membantu masyarakat Indonesia menunaikan ibadah umroh
+                Bonita Umrah adalah perusahaan perjalanan umrah yang didirikan dengan
+                semangat untuk membantu masyarakat Indonesia menunaikan ibadah umrah
                 dengan mudah, nyaman, dan sesuai syariat Islam.
               </p>
               <p className="about-desc">
@@ -244,7 +244,7 @@ const Home = () => {
               <div className="about-highlights">
                 {[
                   { text: <><strong>Izin Resmi PPIU</strong> dari Kementerian Agama RI</> },
-                  { text: <><strong>Tim profesional</strong> dengan sertifikasi resmi pendamping umroh</> },
+                  { text: <><strong>Tim profesional</strong> dengan sertifikasi resmi pendamping umrah</> },
                   { text: <><strong>Kemitraan langsung</strong> dengan hotel-hotel premium di Makkah & Madinah</> },
                   { text: <><strong>Sistem digital terintegrasi</strong> untuk kemudahan pendaftaran online</> },
                 ].map((h, i) => (
@@ -344,7 +344,7 @@ const Home = () => {
             <div className="section-tag">💎 Keunggulan Kami</div>
             <h2 className="why-title">Kenapa Memilih Bonita?</h2>
             <p className="why-desc">
-              Kami hadir bukan hanya sebagai penyedia layanan umroh, tapi sebagai
+              Kami hadir bukan hanya sebagai penyedia layanan umrah, tapi sebagai
               sahabat perjalanan ibadah Anda yang terpercaya.
             </p>
           </div>
@@ -484,11 +484,11 @@ const Home = () => {
                   </div>
                 </a>
 
-                <a href="mailto:info@bonitaumroh.com" className="contact-info-item">
+                <a href="mailto:info@bonitaumrah.com" className="contact-info-item">
                   <div className="contact-info-icon contact-info-icon-email">✉️</div>
                   <div>
                     <div className="contact-info-label">Email</div>
-                    <div className="contact-info-val">info@bonitaumroh.com</div>
+                    <div className="contact-info-val">info@bonitaumrah.com</div>
                   </div>
                 </a>
 
@@ -520,16 +520,16 @@ const Home = () => {
               <div className="contact-cta-card">
                 <div className="contact-cta-icon">🕌</div>
                 <div className="contact-cta-title">
-                  Mulai Perjalanan<br />Umroh Anda Sekarang
+                  Mulai Perjalanan<br />Umrah Anda Sekarang
                 </div>
                 <p className="contact-cta-text">
                   Daftarkan diri Anda hari ini dan dapatkan konsultasi gratis
-                  dari tim profesional Bonita. Wujudkan impian ibadah umroh
+                  dari tim profesional Bonita. Wujudkan impian ibadah umrah
                   Anda bersama kami.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
                   <Link to="/paket" className="contact-cta-btn">
-                    🌙 Lihat Paket Umroh
+                    🌙 Lihat Paket Umrah
                   </Link>
                   <Link to="/daftar" className="contact-cta-btn-outline">
                     📝 Daftar Sekarang
@@ -574,9 +574,9 @@ const Home = () => {
       <footer className="home-footer">
         <div className="home-footer-inner">
           <div>
-            <div className="footer-brand-name">🕌 Bonita Umroh</div>
+            <div className="footer-brand-name">🕌 Bonita Umrah</div>
             <p className="footer-brand-tagline">
-              Mitra perjalanan ibadah umroh terpercaya Anda. Melayani dengan hati,
+              Mitra perjalanan ibadah umrah terpercaya Anda. Melayani dengan hati,
               memberangkatkan dengan amanah.
             </p>
           </div>
@@ -595,7 +595,7 @@ const Home = () => {
           <div>
             <div className="footer-col-title">Layanan</div>
             <div className="footer-links">
-              <Link to="/paket">Paket Umroh</Link>
+              <Link to="/paket">Paket Umrah</Link>
               <Link to="/daftar">Pendaftaran</Link>
               <Link to="/portal">Portal Jamaah</Link>
               <Link to="/paket">Cek Status</Link>
@@ -615,7 +615,7 @@ const Home = () => {
 
         <div className="footer-bottom">
           <div className="footer-copy">
-            © {new Date().getFullYear()} Bonita Umroh. All rights reserved.
+            © {new Date().getFullYear()} Bonita Umrah. All rights reserved.
           </div>
           <div className="footer-love">
             Dibuat dengan <span>❤️</span> untuk jamaah Indonesia

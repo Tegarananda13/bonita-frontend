@@ -294,7 +294,7 @@ const TambahJamaah = () => {
   const dpMinimum = MIN_DP_PER_ORANG * jamaahList.length;
 
   const validateAll = (): string => {
-    if (!paketId) return "Pilih paket umroh terlebih dahulu.";
+    if (!paketId) return "Pilih paket umrah terlebih dahulu.";
     const niks = jamaahList.map(j => j.nik.trim()).filter(Boolean);
     if (new Set(niks).size !== niks.length) return "Terdapat NIK yang sama pada lebih dari satu jamaah.";
     for (let i = 0; i < jamaahList.length; i++) {
@@ -435,7 +435,7 @@ const TambahJamaah = () => {
           {/* Pilih Paket */}
           <div className="tj-form-card">
             <div className="tj-section">
-              <div className="tj-section-title"><span>🕌</span> Paket Umroh</div>
+              <div className="tj-section-title"><span>🕌</span> Paket Umrah</div>
               <div className="tj-field full">
                 <label className="tj-label" htmlFor="tj-paket">Pilih Paket <span className="tj-required">*</span></label>
                 {loadingPaket ? (
@@ -443,7 +443,7 @@ const TambahJamaah = () => {
                 ) : (
                   <select id="tj-paket" className="tj-select" value={paketId}
                     onChange={e => setPaketId(e.target.value)} disabled={submitting}>
-                    <option value="">-- Pilih Paket Umroh --</option>
+                    <option value="">-- Pilih Paket Umrah --</option>
                     {pakets.map(p => {
                       const habis = p.kuota_terpakai >= p.kuota_max;
                       return (
@@ -569,7 +569,7 @@ const TambahJamaah = () => {
           </div>
           <div className="tj-info-card tj-info-flow">
             <div className="tj-info-title">Alur Pendaftaran Grup</div>
-            {["Pilih paket umroh", "Isi data jamaah (tambah bila perlu)", "Klik Daftarkan", "1 Invoice dibuat", "Lanjut proses pembayaran"].map((step, i) => (
+            {["Pilih paket umrah", "Isi data jamaah (tambah bila perlu)", "Klik Daftarkan", "1 Invoice dibuat", "Lanjut proses pembayaran"].map((step, i) => (
               <div key={i} className="tj-flow-step">
                 <span className="tj-flow-num">{i + 1}</span>
                 <span>{step}</span>

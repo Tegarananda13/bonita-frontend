@@ -200,7 +200,7 @@ const DetailModal = ({
               <div className="peng-info-grid">
                 {[
                   { label: "Nomor UMR",      val: data.pendaftaran.nomor_pendaftaran },
-                  { label: "Paket Umroh",    val: data.pendaftaran.paket },
+                  { label: "Paket Umrah",    val: data.pendaftaran.paket },
                   { label: "Tanggal Berangkat", val: data.pendaftaran.tanggal_berangkat ? new Date(data.pendaftaran.tanggal_berangkat).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-" },
                   { label: "Status Pembayaran", val: data.pendaftaran.payment_status },
                   { label: "Status Dokumen",    val: data.pendaftaran.document_status },

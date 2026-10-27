@@ -252,7 +252,7 @@ const Ulasan = () => {
           </h1>
           <p className="ulasan-hero-sub">
             Kebahagiaan dan ketenangan jamaah dalam menjalankan ibadah di Baitullah
-            adalah amanah utama kami. Simak cerita nyata dari para jamaah Bonita Umroh.
+            adalah amanah utama kami. Simak cerita nyata dari para jamaah Bonita Umrah.
           </p>
           <button className="ulasan-hero-btn" onClick={handleOpenModal}>
             ⭐ Berikan Ulasan Anda
@@ -315,7 +315,7 @@ const Ulasan = () => {
             <div className="ulasan-empty-icon">🕋</div>
             <div className="ulasan-empty-title">Belum Ada Ulasan</div>
             <p className="ulasan-empty-desc">
-              Jadilah yang pertama membagikan pengalaman ibadah Umroh bersama Bonita Umroh!
+              Jadilah yang pertama membagikan pengalaman ibadah Umrah bersama Bonita Umrah!
             </p>
             <button className="ulasan-hero-btn" onClick={handleOpenModal}>
               ⭐ Berikan Ulasan Pertama
@@ -418,7 +418,7 @@ const Ulasan = () => {
               {modalStep === "nomor" && (
                 <form onSubmit={handleRequestOtp}>
                   <div className="ulasan-form-field">
-                    <label className="ulasan-form-label">Nomor Pendaftaran Umroh *</label>
+                    <label className="ulasan-form-label">Nomor Pendaftaran Umrah *</label>
                     <input
                       type="text"
                       className="ulasan-form-input"
@@ -512,7 +512,7 @@ const Ulasan = () => {
                     <textarea
                       rows={4}
                       className="ulasan-form-textarea"
-                      placeholder="Bagikan pengalaman ibadah, kenyamanan hotel, pelayanan muthawwif, maupun fasilitas selama umroh..."
+                      placeholder="Bagikan pengalaman ibadah, kenyamanan hotel, pelayanan muthawwif, maupun fasilitas selama umrah..."
                       value={komentar}
                       onChange={(e) => setKomentar(e.target.value)}
                       maxLength={2000}

@@ -303,8 +303,8 @@ const UploadBuktiModal = ({
 // ── Bank Info Card ────────────────────────────────────────────────────────────
 
 const BANK_INFO = [
-  { bank: "BRI", logo: "🏦", noRek: "1234-5678-9012-3456", atasNama: "Bonita Travel Umroh" },
-  { bank: "BCA", logo: "🏛️", noRek: "8901-2345-67", atasNama: "Bonita Travel Umroh" },
+  { bank: "BRI", logo: "🏦", noRek: "1234-5678-9012-3456", atasNama: "Bonita Travel Umrah" },
+  { bank: "BCA", logo: "🏛️", noRek: "8901-2345-67", atasNama: "Bonita Travel Umrah" },
 ];
 
 const BankInfoCard = () => {
@@ -996,7 +996,7 @@ const TabDokumen = ({
                   Syarat Upload Dokumen Persyaratan
                 </div>
                 <div style={{ fontSize: "0.82rem", color: "#78350f", lineHeight: 1.6 }}>
-                  Dokumen persyaratan umroh baru dapat diunggah setelah{" "}
+                  Dokumen persyaratan umrah baru dapat diunggah setelah{" "}
                   <strong>pembayaran DP pertama sebesar minimal Rp5.000.000</strong>{" "}
                   telah diverifikasi oleh admin Bonita.
                 </div>
@@ -1194,7 +1194,7 @@ const TabDokumen = ({
           <span>✈️</span> Dokumen Perjalanan
         </div>
         <p style={{ fontSize: "0.82rem", color: "#64748b", margin: "0 0 1rem 0", lineHeight: 1.5 }}>
-          Dokumen perjalanan (Visa, Tiket Pesawat, dan Nusuk) diterbitkan dan disediakan oleh pihak Bonita Umroh.
+          Dokumen perjalanan (Visa, Tiket Pesawat, dan Nusuk) diterbitkan dan disediakan oleh pihak Bonita Umrah.
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
@@ -1264,7 +1264,7 @@ const TabDokumen = ({
                     lineHeight: 1.5,
                   }}>
                     <span style={{ flexShrink: 0 }}>ℹ️</span>
-                    <span>Dokumen belum tersedia. Dokumen akan tersedia setelah disediakan oleh pihak Bonita Umroh.</span>
+                    <span>Dokumen belum tersedia. Dokumen akan tersedia setelah disediakan oleh pihak Bonita Umrah.</span>
                   </div>
                 ) : (
                   <div style={{
@@ -1417,7 +1417,7 @@ const InvoiceModal = ({ dashData, token, onClose }: InvoiceModalProps) => {
             <div>
               <div className="invoice-modal-title">Invoice Pendaftaran</div>
               <div className="invoice-modal-subtitle">
-                Tagihan resmi pendaftaran ibadah umroh
+                Tagihan resmi pendaftaran ibadah umrah
               </div>
             </div>
           </div>
@@ -1485,7 +1485,7 @@ const InvoiceModal = ({ dashData, token, onClose }: InvoiceModalProps) => {
           {/* Section: Data Paket */}
           <div className="invoice-section">
             <div className="invoice-section-title">
-              <span>🕋</span> Informasi Paket Umroh
+              <span>🕋</span> Informasi Paket Umrah
             </div>
             <div className="invoice-grid-2">
               <div className="invoice-data-item">
@@ -1598,7 +1598,7 @@ const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
   const kodePos = customer?.kode_pos || "";
 
   // Data Paket
-  const namaPaket = paket?.nama_paket || dashData?.paket || "Paket Umroh";
+  const namaPaket = paket?.nama_paket || dashData?.paket || "Paket Umrah";
   const jenisPaket = paket?.jenis_paket || "Reguler";
   const hargaPaket = paket?.harga || dashData?.harga || 0;
   const tglBerangkat = paket?.tanggal_berangkat;
@@ -1705,12 +1705,12 @@ const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
         )}
       </div>
 
-      {/* ── 2. Paket Umroh yang Diambil ── */}
+      {/* ── 2. Paket Umrah yang Diambil ── */}
       <div className="portal-section-card">
         <div className="portal-card-header-bar">
           <div className="portal-card-title">
             <span className="portal-card-icon">🕋</span>
-            <span>Paket Umroh yang Diambil</span>
+            <span>Paket Umrah yang Diambil</span>
           </div>
         </div>
 
@@ -2014,7 +2014,7 @@ const Portal = () => {
             <div className="portal-login">
               <div className="portal-login-title">Masuk ke Portal</div>
               <div className="portal-login-sub">
-                Nomor pendaftaran dikirimkan ke WhatsApp/email Anda setelah mendaftar.
+                Nomor pendaftaran akan muncul setelah anda mendaftar Umrah.
                 Format: <strong>UMR-YYYYMMDD-XXXX</strong> (contoh: UMR-20261022-A7K2)
               </div>
 
@@ -2173,7 +2173,7 @@ const Portal = () => {
                     className="portal-dash-btn-invoice"
                     style={{ background: "#f59e0b", color: "#ffffff", borderColor: "#d97706" }}
                     onClick={() => setShowReviewModal(true)}
-                    title="Berikan Ulasan Perjalanan Umroh Anda"
+                    title="Berikan Ulasan Perjalanan Umrah Anda"
                   >
                     ⭐ Berikan Ulasan
                   </button>
@@ -2254,7 +2254,7 @@ const Portal = () => {
                 </div>
                 <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
                   Pendaftaran ini sudah kadaluarsa karena pembayaran DP tidak dilakukan dalam batas waktu.
-                  Silakan <a href="/daftar" style={{ color: "#4f46e5", fontWeight: 600 }}>daftar ulang</a> jika masih ingin mengikuti paket umroh.
+                  Silakan <a href="/daftar" style={{ color: "#4f46e5", fontWeight: 600 }}>daftar ulang</a> jika masih ingin mengikuti paket umrah.
                 </div>
               </div>
             </div>
@@ -2376,10 +2376,10 @@ const Portal = () => {
               <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>🌟</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#065f46", marginBottom: 3 }}>
-                  Alhamdulillah, Ibadah Umroh Anda Telah Selesai!
+                  Alhamdulillah, Ibadah Umrah Anda Telah Selesai!
                 </div>
                 <div style={{ fontSize: "0.84rem", color: "#047857", lineHeight: 1.5, marginBottom: 8 }}>
-                  Semoga menjadi ibadah umroh yang mabrur dan penuh keberkahan. Kami sangat mengapresiasi jika Anda berkenan memberikan ulasan dan testimoni pengalaman ibadah bersama Bonita Umroh.
+                  Semoga menjadi ibadah umrah yang mabrur dan penuh keberkahan. Kami sangat mengapresiasi jika Anda berkenan memberikan ulasan dan testimoni pengalaman ibadah bersama Bonita Umrah.
                 </div>
                 <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
                   <button
@@ -2502,7 +2502,7 @@ const Portal = () => {
       {showReviewModal && (
         <PortalReviewModal
           token={token}
-          namaPaket={dashData?.paket_umroh?.nama_paket || dashData?.paket || "Paket Umroh"}
+          namaPaket={dashData?.paket_umroh?.nama_paket || dashData?.paket || "Paket Umrah"}
           onClose={() => setShowReviewModal(false)}
           onSuccess={() => {
             setShowReviewModal(false);

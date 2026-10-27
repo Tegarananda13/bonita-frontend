@@ -53,6 +53,9 @@
 
 .daftar-step.active { color: #1a6b43; }
 .daftar-step.done   { color: #0f5132; }
+.daftar-step.done.active {
+  color: #0f5132;
+}
 
 .step-num {
   width: 24px;
@@ -71,6 +74,11 @@
 
 .daftar-step.active .step-num { background: #1a6b43; color: #fff; }
 .daftar-step.done .step-num   { background: #0f5132; color: #fff; }
+.daftar-step.done.active .step-num {
+  background: #0f5132;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 81, 50, 0.2);
+}
 
 .step-divider {
   flex: 1;
@@ -923,4 +931,141 @@
   border: 1px solid #dcfce7;
   border-radius: 8px;
   line-height: 1.6;
+}
+
+/* ── Selected Package Banner in Step 2 ── */
+.daftar-selected-paket-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: #ffffff;
+  border: 1.5px solid #d1fae5;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+  transition: all 0.2s ease;
+}
+
+.daftar-selected-paket-banner:hover {
+  border-color: #86efac;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12);
+}
+
+.daftar-selected-paket-content {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.daftar-selected-paket-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.daftar-selected-paket-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.daftar-selected-paket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.daftar-selected-paket-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.2rem 0.65rem;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid #a7f3d0;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.daftar-selected-paket-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.daftar-selected-paket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.daftar-selected-paket-harga {
+  font-weight: 700;
+  color: #1a6b43;
+}
+
+.daftar-selected-paket-harga .per-orang {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.daftar-change-paket-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.daftar-change-paket-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .daftar-selected-paket-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  .daftar-change-paket-btn {
+    justify-content: center;
+  }
 }

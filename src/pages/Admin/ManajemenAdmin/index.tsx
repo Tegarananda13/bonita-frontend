@@ -238,7 +238,7 @@ const ManajemenAdmin = () => {
       <div className="manajemen-header">
         <div className="manajemen-header-text">
           <h2>Manajemen Admin</h2>
-          <p>Tambah, lihat, dan kelola akun admin Bonita Umroh.</p>
+          <p>Tambah, lihat, dan kelola akun admin Bonita Umrah.</p>
         </div>
         <button className="ma-add-btn" onClick={openAdd}>
           <LuPlus size={16} />

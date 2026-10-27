@@ -110,7 +110,7 @@ const getNamaJamaah = (item: AdminUlasanItem): string => {
     item.nama_jamaah ||
     item.pendaftaran?.Customer?.Nama ||
     item.pendaftaran?.customer?.nama ||
-    "Jamaah Bonita Umroh"
+    "Jamaah Bonita Umrah"
   );
 };
 
@@ -119,7 +119,7 @@ const getNamaPaket = (item: AdminUlasanItem): string => {
     item.paket_nama ||
     item.pendaftaran?.Paket?.NamaPaket ||
     item.pendaftaran?.paket?.nama_paket ||
-    "Paket Umroh"
+    "Paket Umrah"
   );
 };
 
@@ -277,10 +277,10 @@ const AdminUlasan = () => {
       <div className="ulasan-header">
         <div className="ulasan-header-left">
           <h2 className="ulasan-title">
-            ⭐ Ulasan Jamaah
+            Ulasan Jamaah
           </h2>
           <p className="ulasan-subtitle">
-            Daftar testimoni dan ulasan perjalanan umroh yang dikirimkan oleh jamaah. Seluruh ulasan langsung terpublikasi.
+            Daftar testimoni dan ulasan perjalanan umrah yang dikirimkan oleh jamaah. Seluruh ulasan langsung terpublikasi.
           </p>
         </div>
         <div className="ulasan-header-actions">
@@ -429,7 +429,7 @@ const AdminUlasan = () => {
                 <tr>
                   <th>Tanggal</th>
                   <th>Jamaah</th>
-                  <th>Paket Umroh</th>
+                  <th>Paket Umrah</th>
                   <th>Rating</th>
                   <th>Ulasan</th>
                   <th>Foto</th>
@@ -593,7 +593,7 @@ const AdminUlasan = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="detail-item-lbl">Paket Umroh</div>
+                    <div className="detail-item-lbl">Paket Umrah</div>
                     <div className="detail-item-val">
                       <FiPackage size={13} style={{ marginRight: 5, verticalAlign: -1 }} />
                       {getNamaPaket(detailModalItem)}

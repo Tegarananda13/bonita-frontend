@@ -369,14 +369,14 @@ const Paket = () => {
       <section className="paket-hero">
         <div className="paket-hero-badge">
           <span />
-          Paket Umroh Terpercaya
+          Paket Umrah Terpercaya
         </div>
         <h1>
           Perjalanan Suci <br />
           <span>Menuju Baitullah</span>
         </h1>
         <p>
-          Pilih paket umroh terbaik sesuai kebutuhan Anda. Kami hadir untuk
+          Pilih paket umrah terbaik sesuai kebutuhan Anda. Kami hadir untuk
           memastikan perjalanan ibadah yang nyaman, aman, dan penuh makna.
         </p>
       </section>
@@ -390,7 +390,7 @@ const Paket = () => {
             </svg>
             <input
               type="text"
-              placeholder="Cari paket umroh..."
+              placeholder="Cari paket umrah..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

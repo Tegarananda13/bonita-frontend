@@ -166,7 +166,9 @@ export default function VerifikasiManager() {
   });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedNomor, setSelectedNomor] = useState<string | null>(null);
+  const [selectedNomor, setSelectedNomor] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get("nomor")
+  );
 
   const fetchQueue = useCallback(async (tabToFetch: TabType = activeTab) => {
     if (!token) return;
@@ -222,9 +224,7 @@ export default function VerifikasiManager() {
       {/* ── Top Header ── */}
       <div className="verifikasi-header">
         <div className="verifikasi-title-wrap">
-          <h1>
-            <span>🛡️</span> Verifikasi Pendaftaran
-          </h1>
+          <h1>Verifikasi Pendaftaran</h1>
           <p>
             Pusat pengelolaan dan pemeriksaan akhir (Final Verification) berkas dan pembayaran jamaah oleh Administration Manager.
           </p>
@@ -422,7 +422,9 @@ export default function VerifikasiManager() {
                     </td>
                     <td>
                       <div className="verifikasi-customer-cell">
-                        <span className="verifikasi-customer-name">{item.nama_customer}</span>
+                        <span className="verifikasi-customer-name">
+                          {item.total_jamaah > 1 ? `Grup ${item.nama_customer}` : item.nama_customer}
+                        </span>
                         {item.total_jamaah > 1 && (
                           <span className="verifikasi-customer-badge">
                             👥 {item.total_jamaah} Jamaah (Grup)
@@ -491,7 +493,7 @@ export default function VerifikasiManager() {
                         <td>
                           <div className="verif-approver-cell">
                             <span className="verif-approver-name">
-                              🛡️ {item.approver_nama || "Administration Manager"}
+                              {item.approver_nama || "Administration Manager"}
                             </span>
                             <span className="verif-approver-time">
                               {fmtDateTime(item.approved_at)}
@@ -564,7 +566,7 @@ export default function VerifikasiManager() {
 
 // ── Detail Verifikasi Modal ──────────────────────────────────────────────────
 
-function DetailVerifikasiModal({
+export function DetailVerifikasiModal({
   nomor,
   token,
   onClose,
@@ -713,17 +715,13 @@ function DetailVerifikasiModal({
           <div>
             <div className="verif-modal-title">
               {pendaftaran.status === "siap_berangkat" ? (
-                <>
-                  <span>🛡️</span> Detail Pendaftaran Terverifikasi — Siap Berangkat
-                </>
+                <>Detail Pendaftaran Terverifikasi — Siap Berangkat</>
               ) : pendaftaran.status === "perlu_perbaikan" ? (
                 <>
                   <span>⚠️</span> Detail Pendaftaran — Perlu Perbaikan
                 </>
               ) : (
-                <>
-                  <span>🛡️</span> Pemeriksaan Pendaftaran — Administration Manager
-                </>
+                <>Pemeriksaan Pendaftaran — Administration Manager</>
               )}
             </div>
             <div className="verif-modal-sub">
@@ -791,7 +789,7 @@ function DetailVerifikasiModal({
             </div>
             <div className="verif-grid-3">
               <div className="verif-info-item">
-                <span className="verif-info-label">Paket Umroh</span>
+                <span className="verif-info-label">Paket Umrah</span>
                 <span className="verif-info-val">{paket.nama_paket} ({paket.jenis_paket})</span>
               </div>
               <div className="verif-info-item">

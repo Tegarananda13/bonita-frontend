@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState, type FormEvent } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation, Link } from "react-router-dom";
 import axios from "axios";
 import "./Daftar.css";
 
@@ -64,11 +64,141 @@ const fmtDate = (d: string) =>
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
   });
 
-// ── JamaahCard — TOP-LEVEL component (bukan di dalam Daftar) ─────────────────
-// Penting: didefinisikan di luar agar React tidak membuat type baru setiap render.
-// Jika didefinisikan di dalam Daftar, setiap keystroke akan unmount/remount card
-// dan menyebabkan hilangnya fokus pada input.
+const getKuotaClass = (sisa: number) =>
+  sisa <= 0 ? "kuota-full" : sisa <= 5 ? "kuota-low" : "kuota-ok";
 
+// ── ErrorBox — TOP-LEVEL component ───────────────────────────────────────────
+const ErrorBox = ({ msg }: { msg: string }) => (
+  <div className="daftar-error">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+    {msg}
+  </div>
+);
+
+// ── StepBar — TOP-LEVEL component (3 Tahap Visual) ───────────────────────────
+// Step 1 (Pilih Paket): Otomatis berstatus ceklis (✓) karena paket sudah dipilih sebelumnya
+// Step 2 (Data Jamaah): Aktif pertama saat formulir dibuka, berstatus ceklis (✓) saat data lengkap & valid
+// Step 3 (Konfirmasi): Tahap review & submit sebelum pendaftaran diselesaikan
+interface StepBarProps {
+  isStep1Done: boolean;
+  isStep2Done: boolean;
+  isStep3Done: boolean;
+  currentStep: 2 | 3;
+}
+
+const StepBar = ({ isStep1Done, isStep2Done, isStep3Done, currentStep }: StepBarProps) => {
+  const stepsConfig = [
+    {
+      n: 1,
+      label: "Pilih Paket",
+      isDone: isStep1Done,
+      isActive: false,
+    },
+    {
+      n: 2,
+      label: "Data Jamaah",
+      isDone: isStep2Done,
+      isActive: currentStep === 2,
+    },
+    {
+      n: 3,
+      label: "Konfirmasi",
+      isDone: isStep3Done,
+      isActive: currentStep === 3 && !isStep3Done,
+    },
+  ];
+
+  return (
+    <div className="daftar-steps">
+      {stepsConfig.map((s, i) => {
+        let stepClass = "daftar-step";
+        if (s.isDone && s.isActive) {
+          stepClass += " done active";
+        } else if (s.isDone) {
+          stepClass += " done";
+        } else if (s.isActive) {
+          stepClass += " active";
+        }
+
+        const isDividerDone =
+          i === 0 ? isStep1Done :
+          i === 1 ? isStep2Done : false;
+
+        return (
+          <Fragment key={s.n}>
+            <div className={stepClass}>
+              <div className="step-num">{s.isDone ? "✓" : s.n}</div>
+              <span>{s.label}</span>
+            </div>
+            {i < 2 && (
+              <div className={`step-divider ${isDividerDone ? "done" : ""}`} />
+            )}
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
+// ── RingkasanTagihan — TOP-LEVEL component ───────────────────────────────────
+interface RingkasanTagihanProps {
+  selectedPaket: PaketPublic | null;
+  jamaahCount: number;
+  jumlahPerlengkapan: number;
+  totalPerlengkapan: number;
+  totalTagihan: number;
+  dpMinimum: number;
+}
+
+const RingkasanTagihan = ({
+  selectedPaket,
+  jamaahCount,
+  jumlahPerlengkapan,
+  totalPerlengkapan,
+  totalTagihan,
+  dpMinimum,
+}: RingkasanTagihanProps) => (
+  <div className="ringkasan-tagihan">
+    <div className="ringkasan-title">💳 Ringkasan Pendaftaran</div>
+    <div className="ringkasan-row"><span>Paket</span><span className="ringkasan-val">{selectedPaket?.nama_paket}</span></div>
+    <div className="ringkasan-row"><span>Harga / Orang</span><span className="ringkasan-val">{selectedPaket ? fmtRupiah(selectedPaket.harga) : "-"}</span></div>
+    <div className="ringkasan-row">
+      <span>Jumlah Jamaah</span>
+      <span className="ringkasan-val ringkasan-count">{jamaahCount} Orang</span>
+    </div>
+    <div className="ringkasan-row">
+      <span>Subtotal Paket</span>
+      <span className="ringkasan-val">{selectedPaket ? fmtRupiah(selectedPaket.harga * jamaahCount) : "-"}</span>
+    </div>
+    {jumlahPerlengkapan > 0 && (
+      <>
+        <div className="ringkasan-divider" />
+        <div className="ringkasan-row">
+          <span>🧳 Perlengkapan Tambahan</span>
+          <span className="ringkasan-val">{jumlahPerlengkapan} jamaah × {fmtRupiah(HARGA_PERLENGKAPAN)}</span>
+        </div>
+        <div className="ringkasan-row">
+          <span>Subtotal Perlengkapan</span>
+          <span className="ringkasan-val">{fmtRupiah(totalPerlengkapan)}</span>
+        </div>
+      </>
+    )}
+    <div className="ringkasan-divider" />
+    <div className="ringkasan-row ringkasan-total">
+      <span>Total Tagihan</span>
+      <span className="ringkasan-val ringkasan-total-val">{fmtRupiah(totalTagihan)}</span>
+    </div>
+    <div className="ringkasan-row ringkasan-dp">
+      <span>DP Minimum</span>
+      <span className="ringkasan-val">{fmtRupiah(dpMinimum)}</span>
+    </div>
+  </div>
+);
+
+// ── JamaahCard — TOP-LEVEL component ─────────────────────────────────────────
 interface JamaahCardProps {
   idx: number;
   data: JamaahForm;
@@ -227,35 +357,62 @@ const JamaahCard = ({ idx, data, onUpdate, onRemove, disabled }: JamaahCardProps
 
 const Daftar = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const preselectedId = searchParams.get("paket");
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [paketList, setPaketList] = useState<PaketPublic[]>([]);
+  // Alur pendaftaran langsung masuk ke tahap 2 (Data Jamaah) lalu 3 (Konfirmasi)
+  const [step, setStep] = useState<2 | 3>(2);
   const [loadingPaket, setLoadingPaket] = useState(true);
-  const [selectedPaket, setSelectedPaket] = useState<PaketPublic | null>(null);
+  const [selectedPaket, setSelectedPaket] = useState<PaketPublic | null>(
+    location.state?.paket || null
+  );
   const [jamaahList, setJamaahList] = useState<JamaahForm[]>([{ ...EMPTY_JAMAAH }]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
 
   useEffect(() => {
+    const targetId = preselectedId || location.state?.paket?.id;
+    if (!targetId) {
+      // Jika halaman dibuka langsung tanpa memilih paket, arahkan ke daftar paket umrah
+      navigate("/paket", { replace: true });
+      return;
+    }
+
+    let isMounted = true;
     const load = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/paket`);
+        if (!isMounted) return;
         const list: PaketPublic[] = res.data?.paket ?? [];
-        setPaketList(list.filter((p) => p.sisa_kuota > 0));
-        if (preselectedId) {
-          const found = list.find((p) => p.id === preselectedId);
-          if (found) setSelectedPaket(found);
+        const found = list.find((p) => p.id === targetId);
+
+        if (found && found.sisa_kuota > 0) {
+          setSelectedPaket(found);
+        } else if (location.state?.paket && location.state.paket.sisa_kuota > 0) {
+          setSelectedPaket(location.state.paket);
+        } else {
+          // Paket tidak ditemukan atau kuota sudah penuh
+          navigate("/paket", { replace: true });
         }
       } catch {
-        setPaketList([]);
+        if (!isMounted) return;
+        if (!location.state?.paket) {
+          navigate("/paket", { replace: true });
+        }
       } finally {
-        setLoadingPaket(false);
+        if (isMounted) {
+          setLoadingPaket(false);
+        }
       }
     };
+
     load();
-  }, [preselectedId]);
+    return () => {
+      isMounted = false;
+    };
+  }, [preselectedId, location.state, navigate]);
 
   // useCallback agar referensi fungsi stabil → tidak trigger remount JamaahCard
   const updateJamaah = useCallback((idx: number, field: keyof JamaahForm, value: string) => {
@@ -308,11 +465,11 @@ const Daftar = () => {
     return "";
   };
 
-  const goToStep2 = () => {
-    if (!selectedPaket) { setError("Pilih paket umroh terlebih dahulu."); return; }
-    setError(""); setStep(2);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // Status validasi kelengkapan data jamaah
+  const isDataJamaahValid =
+    jamaahList.length > 0 &&
+    new Set(jamaahList.map(j => j.nik.trim()).filter(Boolean)).size === jamaahList.length &&
+    jamaahList.every((j, i) => validateJamaah(j, i) === "");
 
   const goToStep3 = () => {
     const niks = jamaahList.map(j => j.nik.trim()).filter(Boolean);
@@ -354,142 +511,91 @@ const Daftar = () => {
     }
   };
 
-  const getKuotaClass = (sisa: number) =>
-    sisa <= 0 ? "kuota-full" : sisa <= 5 ? "kuota-low" : "kuota-ok";
-
-  const ErrorBox = ({ msg }: { msg: string }) => (
-    <div className="daftar-error">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      {msg}
-    </div>
-  );
-
-  const StepBar = () => (
-    <div className="daftar-steps">
-      {[{ n: 1, label: "Pilih Paket" }, { n: 2, label: "Data Jamaah" }, { n: 3, label: "Konfirmasi" }].map((s, i) => (
-        <Fragment key={s.n}>
-          <div className={`daftar-step ${step === s.n ? "active" : step > s.n ? "done" : ""}`}>
-            <div className="step-num">{step > s.n ? "✓" : s.n}</div>
-            {s.label}
+  // ── Loading state saat mengambil paket ──────────────────────────────────────
+  if (loadingPaket && !selectedPaket) {
+    return (
+      <div className="daftar-page">
+        <div className="daftar-container">
+          <div className="daftar-page-header">
+            <h1>Daftar Umrah</h1>
+            <p>Memuat data paket umrah pilihan Anda...</p>
           </div>
-          {i < 2 && (
-            <div
-              className={`step-divider ${step > s.n + 1 ? "done" : step === s.n + 1 ? "active" : ""}`} />
-          )}
-        </Fragment>
-      ))}
-    </div>
-  );
-
-  const RingkasanTagihan = () => (
-    <div className="ringkasan-tagihan">
-      <div className="ringkasan-title">💳 Ringkasan Pendaftaran</div>
-      <div className="ringkasan-row"><span>Paket</span><span className="ringkasan-val">{selectedPaket?.nama_paket}</span></div>
-      <div className="ringkasan-row"><span>Harga / Orang</span><span className="ringkasan-val">{selectedPaket ? fmtRupiah(selectedPaket.harga) : "-"}</span></div>
-      <div className="ringkasan-row">
-        <span>Jumlah Jamaah</span>
-        <span className="ringkasan-val ringkasan-count">{jamaahList.length} Orang</span>
-      </div>
-      <div className="ringkasan-row">
-        <span>Subtotal Paket</span>
-        <span className="ringkasan-val">{selectedPaket ? fmtRupiah(selectedPaket.harga * jamaahList.length) : "-"}</span>
-      </div>
-      {jumlahPerlengkapan > 0 && (
-        <>
-          <div className="ringkasan-divider" />
-          <div className="ringkasan-row">
-            <span>🧳 Perlengkapan Tambahan</span>
-            <span className="ringkasan-val">{jumlahPerlengkapan} jamaah × {fmtRupiah(HARGA_PERLENGKAPAN)}</span>
-          </div>
-          <div className="ringkasan-row">
-            <span>Subtotal Perlengkapan</span>
-            <span className="ringkasan-val">{fmtRupiah(totalPerlengkapan)}</span>
-          </div>
-        </>
-      )}
-      <div className="ringkasan-divider" />
-      <div className="ringkasan-row ringkasan-total">
-        <span>Total Tagihan</span>
-        <span className="ringkasan-val ringkasan-total-val">{fmtRupiah(totalTagihan)}</span>
-      </div>
-      <div className="ringkasan-row ringkasan-dp">
-        <span>DP Minimum</span>
-        <span className="ringkasan-val">{fmtRupiah(dpMinimum)}</span>
-      </div>
-    </div>
-  );
-
-  // ── Step 1 ──────────────────────────────────────────────────────────────────
-  if (step === 1) return (
-    <div className="daftar-page">
-      <div className="daftar-container">
-        <div className="daftar-page-header">
-          <h1>Daftar Umroh</h1>
-          <p>Pilih paket, isi data jamaah, dan konfirmasi pendaftaran Anda.</p>
-        </div>
-        <StepBar />
-        <div className="daftar-card">
-          <div className="daftar-card-header">
-            <div className="daftar-card-title">🕌 Pilih Paket Umroh</div>
-            <div className="daftar-card-sub">Hanya paket dengan kuota tersedia yang ditampilkan.</div>
-          </div>
-          <div className="daftar-card-body">
-            {error && <ErrorBox msg={error} />}
-            {loadingPaket ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>Memuat paket...</div>
-            ) : paketList.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
-                <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📦</div>
-                <p>Tidak ada paket tersedia saat ini.</p>
-                <Link to="/paket" className="btn-ghost" style={{ marginTop: "0.75rem" }}>Lihat Semua Paket →</Link>
-              </div>
-            ) : (
-              <div className="paket-selector-grid">
-                {paketList.map(p => (
-                  <div key={p.id} className={`paket-selector-card ${selectedPaket?.id === p.id ? "selected" : ""}`}
-                    onClick={() => setSelectedPaket(p)}>
-                    <div className="paket-selector-radio"><div className="paket-selector-check" /></div>
-                    {p.foto_paket ? (
-                      <img src={p.foto_paket} alt={p.nama_paket} className="paket-selector-img"
-                        onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }} />
-                    ) : (
-                      <div className="paket-selector-img-placeholder">🕌</div>
-                    )}
-                    <div className="paket-selector-nama">{p.nama_paket}</div>
-                    <div className="paket-selector-info">
-                      <span>📅 {fmtDate(p.tanggal_berangkat)}</span>
-                      <span>⏱ {p.durasi} hari</span>
-                    </div>
-                    <div className="paket-selector-harga">{fmtRupiah(p.harga)}/orang</div>
-                    <span className={`paket-selector-kuota ${getKuotaClass(p.sisa_kuota)}`}>
-                      {p.sisa_kuota <= 5 ? `Sisa ${p.sisa_kuota} kursi!` : `${p.sisa_kuota} kursi tersedia`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="daftar-card-footer">
-            <Link to="/paket" className="btn-back">← Kembali ke Paket</Link>
-            <button className="btn-next" onClick={goToStep2} disabled={!selectedPaket}>Lanjut: Data Jamaah →</button>
+          <div className="daftar-card" style={{ padding: "3rem", textAlign: "center", color: "#64748b" }}>
+            <div className="mini-spinner" style={{ width: 28, height: 28, margin: "0 auto 1rem", borderWidth: 3 }} />
+            <div>Menyiapkan formulir pendaftaran...</div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  // ── Step 2 ──────────────────────────────────────────────────────────────────
+  // ── Fallback jika paket tidak ditemukan ────────────────────────────────────
+  if (!selectedPaket) {
+    return (
+      <div className="daftar-page">
+        <div className="daftar-container">
+          <div className="daftar-card" style={{ padding: "3rem", textAlign: "center", color: "#64748b" }}>
+            <p style={{ marginBottom: "1rem" }}>Silakan pilih paket umrah terlebih dahulu.</p>
+            <Link to="/paket" className="btn-primary" style={{ display: "inline-block" }}>
+              Lihat Pilihan Paket Umrah →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 2: Data Jamaah ─────────────────────────────────────────────────────
   if (step === 2) return (
     <div className="daftar-page">
       <div className="daftar-container">
         <div className="daftar-page-header">
-          <h1>Daftar Umroh</h1>
+          <h1>Daftar Umrah</h1>
           <p>Isi data seluruh jamaah yang akan didaftarkan.</p>
         </div>
-        <StepBar />
+        <StepBar
+          isStep1Done={!!selectedPaket}
+          isStep2Done={isDataJamaahValid}
+          isStep3Done={!!result}
+          currentStep={2}
+        />
+
+        {/* ── Ringkasan Paket Terpilih ── */}
+        <div className="daftar-selected-paket-banner">
+          <div className="daftar-selected-paket-content">
+            {selectedPaket.foto_paket ? (
+              <img
+                src={selectedPaket.foto_paket}
+                alt={selectedPaket.nama_paket}
+                className="daftar-selected-paket-img"
+                onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }}
+              />
+            ) : (
+              <div className="daftar-selected-paket-placeholder">🕌</div>
+            )}
+            <div className="daftar-selected-paket-info">
+              <div className="daftar-selected-paket-badge">Paket Terpilih</div>
+              <h3 className="daftar-selected-paket-title">{selectedPaket.nama_paket}</h3>
+              <div className="daftar-selected-paket-meta">
+                <span>📅 {fmtDate(selectedPaket.tanggal_berangkat)}</span>
+                <span>⏱ {selectedPaket.durasi} Hari</span>
+                <span className="daftar-selected-paket-harga">
+                  {fmtRupiah(selectedPaket.harga)}
+                  <span className="per-orang">/orang</span>
+                </span>
+                <span className={`paket-selector-kuota ${getKuotaClass(selectedPaket.sisa_kuota)}`}>
+                  {selectedPaket.sisa_kuota <= 5
+                    ? `Sisa ${selectedPaket.sisa_kuota} kursi!`
+                    : `${selectedPaket.sisa_kuota} kursi tersedia`}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Link to="/paket" className="daftar-change-paket-btn" title="Ganti pilihan paket umrah">
+            🔄 Ganti Paket
+          </Link>
+        </div>
+
         {error && <ErrorBox msg={error} />}
 
         {jamaahList.map((data, idx) => (
@@ -506,21 +612,37 @@ const Daftar = () => {
           <span className="btn-tambah-icon">+</span> Tambah Jamaah
         </button>
 
-        <RingkasanTagihan />
+        <RingkasanTagihan
+          selectedPaket={selectedPaket}
+          jamaahCount={jamaahList.length}
+          jumlahPerlengkapan={jumlahPerlengkapan}
+          totalPerlengkapan={totalPerlengkapan}
+          totalTagihan={totalTagihan}
+          dpMinimum={dpMinimum}
+        />
 
         <div className="daftar-nav-row">
-          <button className="btn-back" onClick={() => { setStep(1); setError(""); }}>← Kembali</button>
-          <button className="btn-next" onClick={goToStep3}>Review Pendaftaran →</button>
+          <Link to="/paket" className="btn-back">
+            ← Ganti Paket Umrah
+          </Link>
+          <button className="btn-next" onClick={goToStep3}>
+            Review Pendaftaran →
+          </button>
         </div>
       </div>
     </div>
   );
 
-  // ── Step 3 Sukses ────────────────────────────────────────────────────────────
+  // ── Step 3: Sukses Pendaftaran ──────────────────────────────────────────────
   if (result) return (
     <div className="daftar-page">
       <div className="daftar-container">
-        <StepBar />
+        <StepBar
+          isStep1Done={!!selectedPaket}
+          isStep2Done={true}
+          isStep3Done={true}
+          currentStep={3}
+        />
         <div className="daftar-card">
           <div className="daftar-success">
             <div className="success-icon-wrap">🎉</div>
@@ -561,15 +683,20 @@ const Daftar = () => {
     </div>
   );
 
-  // ── Step 3 Review ─────────────────────────────────────────────────────────
+  // ── Step 3: Review / Konfirmasi ─────────────────────────────────────────────
   return (
     <div className="daftar-page">
       <div className="daftar-container">
         <div className="daftar-page-header">
-          <h1>Daftar Umroh</h1>
+          <h1>Daftar Umrah</h1>
           <p>Periksa kembali data Anda sebelum mengirim.</p>
         </div>
-        <StepBar />
+        <StepBar
+          isStep1Done={!!selectedPaket}
+          isStep2Done={true}
+          isStep3Done={false}
+          currentStep={3}
+        />
         <form onSubmit={handleSubmit}>
           <div className="daftar-card">
             <div className="daftar-card-header">
@@ -598,7 +725,14 @@ const Daftar = () => {
                     </div>
                   </div>
                 </div>
-                <RingkasanTagihan />
+                <RingkasanTagihan
+                  selectedPaket={selectedPaket}
+                  jamaahCount={jamaahList.length}
+                  jumlahPerlengkapan={jumlahPerlengkapan}
+                  totalPerlengkapan={totalPerlengkapan}
+                  totalTagihan={totalTagihan}
+                  dpMinimum={dpMinimum}
+                />
                 {jamaahList.map((j, i) => (
                   <div key={i}>
                     <div className="daftar-label" style={{ marginBottom: "0.5rem" }}>
@@ -639,7 +773,7 @@ const Daftar = () => {
                 ))}
                 <div className="review-disclaimer">
                   <span>⚠️</span>
-                  <span>Dengan konfirmasi ini, Anda menyetujui bahwa data yang diisi sudah benar. Tim Bonita Umroh akan menghubungi Anda untuk proses selanjutnya.</span>
+                  <span>Dengan konfirmasi ini, Anda menyetujui bahwa data yang diisi sudah benar. Tim Bonita Umrah akan menghubungi Anda untuk proses selanjutnya.</span>
                 </div>
               </div>
             </div>

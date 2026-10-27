@@ -412,8 +412,8 @@ const TambahPaket = () => {
       console.error("Error creating paket:", err);
       setError(
         axios.isAxiosError(err)
-          ? err.response?.data?.error ?? "Gagal menyimpan paket umroh baru."
-          : "Gagal menyimpan paket umroh baru."
+          ? err.response?.data?.error ?? "Gagal menyimpan paket umrah baru."
+          : "Gagal menyimpan paket umrah baru."
       );
     } finally {
       setSubmitting(false);
@@ -435,7 +435,7 @@ const TambahPaket = () => {
             Kembali
           </button>
           <h2>Tambah Paket Baru</h2>
-          <p>Lengkapi formulir di bawah ini untuk menambahkan dan menerbitkan paket umroh baru.</p>
+          <p>Lengkapi formulir di bawah ini untuk menambahkan dan menerbitkan paket umrah baru.</p>
         </div>
       </div>
 
@@ -475,7 +475,7 @@ const TambahPaket = () => {
                   id="tp-nama"
                   type="text"
                   className="tp-input"
-                  placeholder="cth. Umroh Reguler Syawal 1447H"
+                  placeholder="cth. Umrah Reguler Syawal 1447H"
                   value={form.nama_paket}
                   onChange={handleField("nama_paket")}
                   disabled={submitting}
@@ -614,7 +614,7 @@ const TambahPaket = () => {
                   id="tp-deskripsi"
                   className="tp-input tp-textarea"
                   rows={4}
-                  placeholder="Tuliskan gambaran ringkas, rute ziarah, atau keunggulan khusus dari paket umroh ini..."
+                  placeholder="Tuliskan gambaran ringkas, rute ziarah, atau keunggulan khusus dari paket umrah ini..."
                   value={form.deskripsi}
                   onChange={handleField("deskripsi")}
                   disabled={submitting}
@@ -928,7 +928,7 @@ const TambahPaket = () => {
             </div>
             <div className="tp-preview-body">
               <div className="tp-preview-name">
-                {form.nama_paket || "Nama Paket Umroh"}
+                {form.nama_paket || "Nama Paket Umrah"}
               </div>
               <div className="tp-preview-price">
                 {form.harga && !isNaN(Number(form.harga))
@@ -963,7 +963,7 @@ const TambahPaket = () => {
               <span>💡</span> Standar Pengisian Paket
             </div>
             <ul className="tp-info-list">
-              <li><strong>Foto Utama:</strong> Foto yang ditandai bintang akan dijadikan cover di katalog publik Bonita Umroh.</li>
+              <li><strong>Foto Utama:</strong> Foto yang ditandai bintang akan dijadikan cover di katalog publik Bonita Umrah.</li>
               <li><strong>Harga:</strong> Masukkan nominal riil per jamaah (sudah termasuk komponen biaya wajib).</li>
               <li><strong>Batas Pendaftaran:</strong> Menentukan kapan paket ditutup otomatis sebelum jadwal keberangkatan.</li>
               <li><strong>Fasilitas:</strong> Rincikan hotel, penerbangan, dan konsumsi untuk meningkatkan kepercayaan jamaah.</li>

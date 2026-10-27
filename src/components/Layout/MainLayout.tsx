@@ -11,7 +11,7 @@ const MainLayout = () => {
         <Outlet />
       </main>
       <footer className="main-footer">
-        <p>&copy; {new Date().getFullYear()} Bonita Umroh. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Bonita Umrah. All rights reserved.</p>
       </footer>
       <ChatbotWidget />
     </div>
