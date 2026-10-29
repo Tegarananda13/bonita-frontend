@@ -25,8 +25,8 @@ const TopBar = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Paket Umrah', path: '/paket' },
-    { name: 'Ulasan Jamaah', path: '/ulasan' },
     { name: 'Portal Jamaah', path: '/portal' },
+    { name: 'Ulasan Jamaah', path: '/ulasan' },
   ];
 
   const isActive = (path: string) => {

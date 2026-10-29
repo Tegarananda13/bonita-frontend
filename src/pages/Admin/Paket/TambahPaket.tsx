@@ -850,7 +850,7 @@ const TambahPaket = () => {
                   </svg>
                   {fasDraftFotos.length > 0
                     ? `+ Tambah Foto (${fasDraftFotos.length})`
-                    : "+ Foto Fasilitas"}
+                    : "Foto Fasilitas"}
                 </label>
               </div>
 

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./Portal.css";
 import { PortalReviewModal, PortalMyReviewsModal } from "./PortalReviewModal";
+import { BsiLogo, MandiriLogo, BcaLogo } from "./BankLogos";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -303,15 +304,16 @@ const UploadBuktiModal = ({
 // ── Bank Info Card ────────────────────────────────────────────────────────────
 
 const BANK_INFO = [
-  { bank: "BRI", logo: "🏦", noRek: "1234-5678-9012-3456", atasNama: "Bonita Travel Umrah" },
-  { bank: "BCA", logo: "🏛️", noRek: "8901-2345-67", atasNama: "Bonita Travel Umrah" },
+  { bank: "BSI", logo: <BsiLogo />, noRek: "6117119007", atasNama: "PT. BONITA ANUGRAH PRATAMA" },
+  { bank: "MANDIRI", logo: <MandiriLogo />, noRek: "121-000-662-5606", atasNama: "PT. BONITA ANUGRAH PRATAMA" },
+  { bank: "BCA", logo: <BcaLogo />, noRek: "336 300 7488", atasNama: "PT. BONITA ANUGRAH PRATAMA" },
 ];
 
 const BankInfoCard = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text.replace(/-/g, "")).then(() => {
+    navigator.clipboard.writeText(text.replace(/[-\s]/g, "")).then(() => {
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 2000);
     });
@@ -319,7 +321,7 @@ const BankInfoCard = () => {
 
   return (
     <div className="bank-info-wrap">
-      <div className="bank-info-title">🏦 Rekening Tujuan Transfer</div>
+      <div className="bank-info-title">🏦 Rekening Pembayaran Resmi</div>
       {BANK_INFO.map((b) => (
         <div className="bank-info-card" key={b.bank}>
           <div className="bank-info-left">
@@ -1565,10 +1567,27 @@ const InvoiceModal = ({ dashData, token, onClose }: InvoiceModalProps) => {
 
 interface TabDataJamaahProps {
   dashData: DashboardData | null;
+  token: string;
   onOpenInvoice: () => void;
+  onCustomerUpdated?: (updatedCustomer: CustomerData) => void;
 }
 
-const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
+const toDateInputVal = (raw?: string) => {
+  if (!raw) return "";
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) return match[1];
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0];
+};
+
+const normalizeGenderSelect = (jk?: string) => {
+  const val = (jk || "").trim().toLowerCase();
+  if (val === "p" || val === "perempuan") return "Perempuan";
+  return "Laki-laki";
+};
+
+const TabDataJamaah = ({ dashData, token, onOpenInvoice, onCustomerUpdated }: TabDataJamaahProps) => {
   const customer = dashData?.customer;
   const paket = dashData?.paket_umroh;
   const pendaftaran = dashData?.pendaftaran;
@@ -1596,6 +1615,157 @@ const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
   const kecamatan = customer?.kecamatan || "";
   const kelurahanDesa = customer?.kelurahan_desa || "";
   const kodePos = customer?.kode_pos || "";
+
+  // State Edit Data Jamaah
+  const [isEditing, setIsEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccessMsg, setEditSuccessMsg] = useState("");
+  const [editForm, setEditForm] = useState({
+    nama: "",
+    tempat_lahir: "",
+    tanggal_lahir: "",
+    jenis_kelamin: "Laki-laki",
+    no_hp: "",
+    email: "",
+    alamat_lengkap: "",
+    provinsi: "",
+    kabupaten_kota: "",
+    kecamatan: "",
+    kelurahan_desa: "",
+    kode_pos: "",
+  });
+
+  const handleOpenEdit = () => {
+    setEditForm({
+      nama: customer?.nama || dashData?.nama || "",
+      tempat_lahir: customer?.tempat_lahir || "",
+      tanggal_lahir: toDateInputVal(customer?.tanggal_lahir),
+      jenis_kelamin: normalizeGenderSelect(customer?.jenis_kelamin),
+      no_hp: customer?.no_hp || "",
+      email: customer?.email || "",
+      alamat_lengkap: customer?.alamat_lengkap || "",
+      provinsi: customer?.provinsi || "",
+      kabupaten_kota: customer?.kabupaten_kota || "",
+      kecamatan: customer?.kecamatan || "",
+      kelurahan_desa: customer?.kelurahan_desa || "",
+      kode_pos: customer?.kode_pos || "",
+    });
+    setEditError("");
+    setEditSuccessMsg("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (savingEdit) return;
+    setIsEditing(false);
+    setEditError("");
+  };
+
+  const handleSaveEdit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (savingEdit) return;
+
+    setEditError("");
+    setEditSuccessMsg("");
+
+    const trimmedNama = editForm.nama.trim();
+    const trimmedTempatLahir = editForm.tempat_lahir.trim();
+    const trimmedTanggalLahir = editForm.tanggal_lahir.trim();
+    const trimmedJenisKelamin = editForm.jenis_kelamin.trim();
+    const trimmedNoHp = editForm.no_hp.trim();
+    const trimmedEmail = editForm.email.trim();
+    const trimmedAlamat = editForm.alamat_lengkap.trim();
+    const trimmedProvinsi = editForm.provinsi.trim();
+    const trimmedKabupaten = editForm.kabupaten_kota.trim();
+    const trimmedKecamatan = editForm.kecamatan.trim();
+    const trimmedKelurahan = editForm.kelurahan_desa.trim();
+    const trimmedKodePos = editForm.kode_pos.trim();
+
+    if (
+      !trimmedNama ||
+      !trimmedTempatLahir ||
+      !trimmedTanggalLahir ||
+      !trimmedJenisKelamin ||
+      !trimmedNoHp ||
+      !trimmedEmail ||
+      !trimmedAlamat
+    ) {
+      setEditError("Semua field biodata wajib diisi.");
+      return;
+    }
+
+    if (trimmedNama.length < 2) {
+      setEditError("Nama lengkap minimal 2 karakter.");
+      return;
+    }
+
+    if (!/^\+?\d{9,15}$/.test(trimmedNoHp)) {
+      setEditError("Nomor HP tidak valid (gunakan 10–15 digit angka).");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEditError("Format alamat email tidak valid.");
+      return;
+    }
+
+    if (trimmedKodePos && !/^\d{5}$/.test(trimmedKodePos)) {
+      setEditError("Kode pos harus terdiri dari 5 digit angka.");
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const res = await axios.put(
+        `${API}/customer/jamaah`,
+        {
+          nama: trimmedNama,
+          tempat_lahir: trimmedTempatLahir,
+          tanggal_lahir: trimmedTanggalLahir,
+          jenis_kelamin: trimmedJenisKelamin,
+          no_hp: trimmedNoHp,
+          email: trimmedEmail,
+          alamat_lengkap: trimmedAlamat,
+          provinsi: trimmedProvinsi,
+          kabupaten_kota: trimmedKabupaten,
+          kecamatan: trimmedKecamatan,
+          kelurahan_desa: trimmedKelurahan,
+          kode_pos: trimmedKodePos,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const updatedCust: CustomerData = res.data?.customer || {
+        nik: customer?.nik || "",
+        nama: trimmedNama,
+        tempat_lahir: trimmedTempatLahir,
+        tanggal_lahir: trimmedTanggalLahir,
+        jenis_kelamin: trimmedJenisKelamin,
+        no_hp: trimmedNoHp,
+        email: trimmedEmail,
+        alamat_lengkap: trimmedAlamat,
+        provinsi: trimmedProvinsi,
+        kabupaten_kota: trimmedKabupaten,
+        kecamatan: trimmedKecamatan,
+        kelurahan_desa: trimmedKelurahan,
+        kode_pos: trimmedKodePos,
+      };
+
+      onCustomerUpdated?.(updatedCust);
+      setIsEditing(false);
+      setEditSuccessMsg(res.data?.message || "Data jamaah berhasil diperbarui.");
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error || "Gagal menyimpan perubahan data jamaah."
+        : "Gagal menyimpan perubahan data jamaah.";
+      setEditError(msg);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   // Data Paket
   const namaPaket = paket?.nama_paket || dashData?.paket || "Paket Umrah";
@@ -1773,71 +1943,329 @@ const TabDataJamaah = ({ dashData, onOpenInvoice }: TabDataJamaahProps) => {
             <span className="portal-card-icon">👤</span>
             <span>Data Diri Jamaah</span>
           </div>
-        </div>
-
-        <div className="jamaah-grid">
-          <div className="jamaah-item">
-            <span className="jamaah-item-label">Nama Lengkap</span>
-            <span className="jamaah-item-val bold">{nama}</span>
-          </div>
-
-          <div className="jamaah-item">
-            <span className="jamaah-item-label">NIK (Nomor Induk Kependudukan)</span>
-            <span className="jamaah-item-val monospace">{nik}</span>
-          </div>
-
-          <div className="jamaah-item">
-            <span className="jamaah-item-label">Tempat & Tanggal Lahir</span>
-            <span className="jamaah-item-val">{tempatTglLahir}</span>
-          </div>
-
-          <div className="jamaah-item">
-            <span className="jamaah-item-label">Jenis Kelamin</span>
-            <span className="jamaah-item-val">{jenisKelamin}</span>
-          </div>
-
-          <div className="jamaah-item">
-            <span className="jamaah-item-label">Nomor WhatsApp / HP</span>
-            <span className="jamaah-item-val">{noHp}</span>
-          </div>
-
-          <div className="jamaah-item">
-            <span className="jamaah-item-label">Alamat Email</span>
-            <span className="jamaah-item-val">{email}</span>
-          </div>
-
-          <div className="jamaah-item jamaah-col-span-2">
-            <span className="jamaah-item-label">Alamat Lengkap</span>
-            <span className="jamaah-item-val">{alamat}</span>
-          </div>
-
-          {(kelurahanDesa || kecamatan || kabupatenKota || provinsi || kodePos) && (
-            <div className="jamaah-address-breakdown jamaah-col-span-2">
-              <div className="address-chip">
-                <span className="address-chip-label">Kelurahan / Desa:</span>
-                <span className="address-chip-val">{kelurahanDesa || "-"}</span>
-              </div>
-              <div className="address-chip">
-                <span className="address-chip-label">Kecamatan:</span>
-                <span className="address-chip-val">{kecamatan || "-"}</span>
-              </div>
-              <div className="address-chip">
-                <span className="address-chip-label">Kabupaten / Kota:</span>
-                <span className="address-chip-val">{kabupatenKota || "-"}</span>
-              </div>
-              <div className="address-chip">
-                <span className="address-chip-label">Provinsi:</span>
-                <span className="address-chip-val">{provinsi || "-"}</span>
-              </div>
-              {kodePos && (
-                <div className="address-chip">
-                  <span className="address-chip-label">Kode Pos:</span>
-                  <span className="address-chip-val">{kodePos}</span>
-                </div>
-              )}
-            </div>
+          {!isEditing && statusPendaftaran !== "batal" && (
+            <button
+              type="button"
+              className="portal-btn-invoice-action"
+              onClick={handleOpenEdit}
+            >
+              ✏️ Edit Data Jamaah
+            </button>
           )}
         </div>
+
+        {editSuccessMsg && !isEditing && (
+          <div className="portal-success-msg" style={{ marginBottom: "1rem" }}>
+            <span>✅</span>
+            <span>{editSuccessMsg}</span>
+          </div>
+        )}
+
+        {isEditing ? (
+          <form className="portal-edit-jamaah-form" onSubmit={handleSaveEdit} noValidate>
+            {editError && (
+              <div className="portal-error" style={{ marginBottom: 0 }}>
+                <span>⚠️</span>
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <div className="portal-edit-grid">
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-nama">
+                  Nama Lengkap <span className="portal-edit-req">*</span>
+                </label>
+                <input
+                  id="portal-edit-nama"
+                  type="text"
+                  className="portal-edit-input"
+                  value={editForm.nama}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, nama: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Nama lengkap sesuai KTP"
+                  required
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-nik">
+                  NIK (Nomor Induk Kependudukan)
+                </label>
+                <input
+                  id="portal-edit-nik"
+                  type="text"
+                  className="portal-edit-input"
+                  style={{ fontFamily: "monospace" }}
+                  value={nik}
+                  disabled
+                  readOnly
+                />
+                <span className="portal-edit-hint">Identitas utama pendaftaran (tidak dapat diubah).</span>
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-tempat-lahir">
+                  Tempat Lahir <span className="portal-edit-req">*</span>
+                </label>
+                <input
+                  id="portal-edit-tempat-lahir"
+                  type="text"
+                  className="portal-edit-input"
+                  value={editForm.tempat_lahir}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, tempat_lahir: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Contoh: Jakarta"
+                  required
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-tanggal-lahir">
+                  Tanggal Lahir <span className="portal-edit-req">*</span>
+                </label>
+                <input
+                  id="portal-edit-tanggal-lahir"
+                  type="date"
+                  className="portal-edit-input"
+                  max={new Date().toISOString().split("T")[0]}
+                  value={editForm.tanggal_lahir}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, tanggal_lahir: e.target.value }))}
+                  disabled={savingEdit}
+                  required
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-jenis-kelamin">
+                  Jenis Kelamin <span className="portal-edit-req">*</span>
+                </label>
+                <select
+                  id="portal-edit-jenis-kelamin"
+                  className="portal-edit-select"
+                  value={editForm.jenis_kelamin}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, jenis_kelamin: e.target.value }))}
+                  disabled={savingEdit}
+                >
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-no-hp">
+                  Nomor WhatsApp / HP <span className="portal-edit-req">*</span>
+                </label>
+                <input
+                  id="portal-edit-no-hp"
+                  type="tel"
+                  className="portal-edit-input"
+                  value={editForm.no_hp}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, no_hp: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Contoh: 081234567890"
+                  required
+                />
+              </div>
+
+              <div className="portal-edit-field col-span-2">
+                <label className="portal-edit-label" htmlFor="portal-edit-email">
+                  Alamat Email <span className="portal-edit-req">*</span>
+                </label>
+                <input
+                  id="portal-edit-email"
+                  type="email"
+                  className="portal-edit-input"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Contoh: nama@email.com"
+                  required
+                />
+              </div>
+
+              <div className="portal-edit-field col-span-2">
+                <label className="portal-edit-label" htmlFor="portal-edit-alamat">
+                  Alamat Lengkap <span className="portal-edit-req">*</span>
+                </label>
+                <textarea
+                  id="portal-edit-alamat"
+                  className="portal-edit-textarea"
+                  rows={2}
+                  value={editForm.alamat_lengkap}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, alamat_lengkap: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Nama jalan, nomor rumah, RT/RW"
+                  required
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-provinsi">
+                  Provinsi
+                </label>
+                <input
+                  id="portal-edit-provinsi"
+                  type="text"
+                  className="portal-edit-input"
+                  value={editForm.provinsi}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, provinsi: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Provinsi"
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-kabupaten">
+                  Kabupaten / Kota
+                </label>
+                <input
+                  id="portal-edit-kabupaten"
+                  type="text"
+                  className="portal-edit-input"
+                  value={editForm.kabupaten_kota}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, kabupaten_kota: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Kabupaten / Kota"
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-kecamatan">
+                  Kecamatan
+                </label>
+                <input
+                  id="portal-edit-kecamatan"
+                  type="text"
+                  className="portal-edit-input"
+                  value={editForm.kecamatan}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, kecamatan: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Kecamatan"
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-kelurahan">
+                  Kelurahan / Desa
+                </label>
+                <input
+                  id="portal-edit-kelurahan"
+                  type="text"
+                  className="portal-edit-input"
+                  value={editForm.kelurahan_desa}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, kelurahan_desa: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="Kelurahan / Desa"
+                />
+              </div>
+
+              <div className="portal-edit-field">
+                <label className="portal-edit-label" htmlFor="portal-edit-kodepos">
+                  Kode Pos
+                </label>
+                <input
+                  id="portal-edit-kodepos"
+                  type="text"
+                  maxLength={5}
+                  className="portal-edit-input"
+                  value={editForm.kode_pos}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, kode_pos: e.target.value }))}
+                  disabled={savingEdit}
+                  placeholder="5 digit angka"
+                />
+              </div>
+            </div>
+
+            <div className="portal-edit-actions">
+              <button
+                type="button"
+                className="portal-btn-cancel-edit"
+                onClick={handleCancelEdit}
+                disabled={savingEdit}
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="portal-btn-save-edit"
+                disabled={savingEdit}
+              >
+                {savingEdit ? (
+                  <>
+                    <span className="mini-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <span>Simpan</span>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="jamaah-grid">
+            <div className="jamaah-item">
+              <span className="jamaah-item-label">Nama Lengkap</span>
+              <span className="jamaah-item-val bold">{nama}</span>
+            </div>
+
+            <div className="jamaah-item">
+              <span className="jamaah-item-label">NIK (Nomor Induk Kependudukan)</span>
+              <span className="jamaah-item-val monospace">{nik}</span>
+            </div>
+
+            <div className="jamaah-item">
+              <span className="jamaah-item-label">Tempat & Tanggal Lahir</span>
+              <span className="jamaah-item-val">{tempatTglLahir}</span>
+            </div>
+
+            <div className="jamaah-item">
+              <span className="jamaah-item-label">Jenis Kelamin</span>
+              <span className="jamaah-item-val">{jenisKelamin}</span>
+            </div>
+
+            <div className="jamaah-item">
+              <span className="jamaah-item-label">Nomor WhatsApp / HP</span>
+              <span className="jamaah-item-val">{noHp}</span>
+            </div>
+
+            <div className="jamaah-item">
+              <span className="jamaah-item-label">Alamat Email</span>
+              <span className="jamaah-item-val">{email}</span>
+            </div>
+
+            <div className="jamaah-item jamaah-col-span-2">
+              <span className="jamaah-item-label">Alamat Lengkap</span>
+              <span className="jamaah-item-val">{alamat}</span>
+            </div>
+
+            {(kelurahanDesa || kecamatan || kabupatenKota || provinsi || kodePos) && (
+              <div className="jamaah-address-breakdown jamaah-col-span-2">
+                <div className="address-chip">
+                  <span className="address-chip-label">Kelurahan / Desa:</span>
+                  <span className="address-chip-val">{kelurahanDesa || "-"}</span>
+                </div>
+                <div className="address-chip">
+                  <span className="address-chip-label">Kecamatan:</span>
+                  <span className="address-chip-val">{kecamatan || "-"}</span>
+                </div>
+                <div className="address-chip">
+                  <span className="address-chip-label">Kabupaten / Kota:</span>
+                  <span className="address-chip-val">{kabupatenKota || "-"}</span>
+                </div>
+                <div className="address-chip">
+                  <span className="address-chip-label">Provinsi:</span>
+                  <span className="address-chip-val">{provinsi || "-"}</span>
+                </div>
+                {kodePos && (
+                  <div className="address-chip">
+                    <span className="address-chip-label">Kode Pos:</span>
+                    <span className="address-chip-val">{kodePos}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2457,7 +2885,22 @@ const Portal = () => {
             ) : activeTab === "data-jamaah" ? (
               <TabDataJamaah
                 dashData={dashData}
+                token={token}
                 onOpenInvoice={() => setShowInvoiceModal(true)}
+                onCustomerUpdated={(updatedCust) => {
+                  setDashData((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          nama: updatedCust.nama || prev.nama,
+                          customer: {
+                            ...prev.customer,
+                            ...updatedCust,
+                          },
+                        }
+                      : prev
+                  );
+                }}
               />
             ) : activeTab === "pembayaran" ? (
               <TabPembayaran

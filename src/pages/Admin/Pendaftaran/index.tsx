@@ -759,6 +759,154 @@ export const DetailModal = ({
   const [batalSubmitting, setBatalSubmitting] = useState(false);
   const [batalError, setBatalError] = useState("");
 
+  // ── Form Edit Data Jamaah ──
+  const [isEditingJamaah, setIsEditingJamaah] = useState(false);
+  const [savingJamaah, setSavingJamaah] = useState(false);
+  const [editJamaahError, setEditJamaahError] = useState("");
+  const [editJamaahSuccess, setEditJamaahSuccess] = useState("");
+  const [editJamaahForm, setEditJamaahForm] = useState({
+    nama: "",
+    tempat_lahir: "",
+    tanggal_lahir: "",
+    jenis_kelamin: "Laki-laki",
+    no_hp: "",
+    email: "",
+    alamat_lengkap: "",
+    provinsi: "",
+    kabupaten_kota: "",
+    kecamatan: "",
+    kelurahan_desa: "",
+    kode_pos: "",
+  });
+
+  const handleOpenEditJamaah = () => {
+    if (!data) return;
+    const rawTgl = data.tanggal_lahir || "";
+    const matchTgl = rawTgl.match(/^(\d{4}-\d{2}-\d{2})/);
+    const formattedTgl = matchTgl
+      ? matchTgl[1]
+      : rawTgl && !isNaN(new Date(rawTgl).getTime())
+      ? new Date(rawTgl).toISOString().split("T")[0]
+      : "";
+    const rawJk = (data.jenis_kelamin || "").trim().toLowerCase();
+    const normalizedJk = rawJk === "p" || rawJk === "perempuan" ? "Perempuan" : "Laki-laki";
+
+    setEditJamaahForm({
+      nama: data.nama_customer && data.nama_customer !== "-" ? data.nama_customer : "",
+      tempat_lahir: data.tempat_lahir && data.tempat_lahir !== "-" ? data.tempat_lahir : "",
+      tanggal_lahir: formattedTgl,
+      jenis_kelamin: normalizedJk,
+      no_hp: data.no_hp && data.no_hp !== "-" ? data.no_hp : "",
+      email: data.email && data.email !== "-" ? data.email : "",
+      alamat_lengkap: data.alamat_lengkap || "",
+      provinsi: data.provinsi || "",
+      kabupaten_kota: data.kabupaten_kota || "",
+      kecamatan: data.kecamatan || "",
+      kelurahan_desa: data.kelurahan_desa || "",
+      kode_pos: data.kode_pos || "",
+    });
+    setEditJamaahError("");
+    setEditJamaahSuccess("");
+    setIsEditingJamaah(true);
+  };
+
+  const handleCancelEditJamaah = () => {
+    if (savingJamaah) return;
+    setIsEditingJamaah(false);
+    setEditJamaahError("");
+  };
+
+  const handleSaveEditJamaah = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data || savingJamaah) return;
+
+    setEditJamaahError("");
+    setEditJamaahSuccess("");
+
+    const trimmedNama = editJamaahForm.nama.trim();
+    const trimmedTempatLahir = editJamaahForm.tempat_lahir.trim();
+    const trimmedTanggalLahir = editJamaahForm.tanggal_lahir.trim();
+    const trimmedJenisKelamin = editJamaahForm.jenis_kelamin.trim();
+    const trimmedNoHp = editJamaahForm.no_hp.trim();
+    const trimmedEmail = editJamaahForm.email.trim();
+    const trimmedAlamat = editJamaahForm.alamat_lengkap.trim();
+    const trimmedProvinsi = editJamaahForm.provinsi.trim();
+    const trimmedKabupaten = editJamaahForm.kabupaten_kota.trim();
+    const trimmedKecamatan = editJamaahForm.kecamatan.trim();
+    const trimmedKelurahan = editJamaahForm.kelurahan_desa.trim();
+    const trimmedKodePos = editJamaahForm.kode_pos.trim();
+
+    if (
+      !trimmedNama ||
+      !trimmedTempatLahir ||
+      !trimmedTanggalLahir ||
+      !trimmedJenisKelamin ||
+      !trimmedNoHp ||
+      !trimmedEmail ||
+      !trimmedAlamat
+    ) {
+      setEditJamaahError("Semua field biodata utama wajib diisi.");
+      return;
+    }
+
+    if (trimmedNama.length < 2) {
+      setEditJamaahError("Nama lengkap minimal 2 karakter.");
+      return;
+    }
+
+    if (!/^\+?\d{9,15}$/.test(trimmedNoHp)) {
+      setEditJamaahError("Nomor HP tidak valid (gunakan 10–15 digit angka).");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEditJamaahError("Format alamat email tidak valid.");
+      return;
+    }
+
+    if (trimmedKodePos && !/^\d{5}$/.test(trimmedKodePos)) {
+      setEditJamaahError("Kode pos harus terdiri dari 5 digit angka.");
+      return;
+    }
+
+    setSavingJamaah(true);
+    try {
+      const res = await axios.put(
+        `${API}/admin/pendaftaran/${data.nomor_pendaftaran}/jamaah`,
+        {
+          nama: trimmedNama,
+          tempat_lahir: trimmedTempatLahir,
+          tanggal_lahir: trimmedTanggalLahir,
+          jenis_kelamin: trimmedJenisKelamin,
+          no_hp: trimmedNoHp,
+          email: trimmedEmail,
+          alamat_lengkap: trimmedAlamat,
+          provinsi: trimmedProvinsi,
+          kabupaten_kota: trimmedKabupaten,
+          kecamatan: trimmedKecamatan,
+          kelurahan_desa: trimmedKelurahan,
+          kode_pos: trimmedKodePos,
+        },
+        { headers: authH }
+      );
+
+      const successMessage = res.data?.message || "✓ Data jamaah berhasil diperbarui.";
+      showToast("success", successMessage);
+      setEditJamaahSuccess(successMessage);
+      setIsEditingJamaah(false);
+      await fetchData();
+      onAssigned?.();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error ?? "Gagal menyimpan perubahan data jamaah."
+        : "Gagal menyimpan perubahan data jamaah.";
+      setEditJamaahError(msg);
+      showToast("error", msg);
+    } finally {
+      setSavingJamaah(false);
+    }
+  };
+
   const handleConfirmBatal = async () => {
     const trimmed = batalAlasan.trim();
     if (!trimmed) {
@@ -2143,10 +2291,41 @@ export const DetailModal = ({
                 <div className="modal-section">
                   <div className="modal-section-title">
                     <span>👥 {embedded ? "Informasi Biodata Jamaah" : "Data Jamaah"}</span>
+                    {!isEditingJamaah && data.status !== "batal" && (
+                      <button
+                        type="button"
+                        className="modal-btn-secondary"
+                        style={{ padding: "0.35rem 0.75rem", fontSize: "0.78rem" }}
+                        onClick={handleOpenEditJamaah}
+                      >
+                        ✏️ Edit Data Jamaah
+                      </button>
+                    )}
                   </div>
 
-                    <div className="modal-jamaah-card">
-                      {!embedded && (
+                  {editJamaahSuccess && !isEditingJamaah && (
+                    <div
+                      style={{
+                        background: "#f0fdf4",
+                        border: "1px solid #86efac",
+                        color: "#059669",
+                        borderRadius: "10px",
+                        padding: "0.65rem 0.9rem",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        marginBottom: "0.85rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.45rem",
+                      }}
+                    >
+                      <span>✅</span>
+                      <span>{editJamaahSuccess}</span>
+                    </div>
+                  )}
+
+                  <div className="modal-jamaah-card">
+                    {!embedded && (
                       <div className="modal-jamaah-header">
                         <div>
                           <span className="modal-jamaah-name">{data.nama_customer || "-"}</span>
@@ -2155,7 +2334,365 @@ export const DetailModal = ({
                           </span>
                         </div>
                       </div>
-                      )}
+                    )}
+
+                    {isEditingJamaah ? (
+                      <form onSubmit={handleSaveEditJamaah} noValidate style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+                        {editJamaahError && (
+                          <div
+                            style={{
+                              background: "#fef2f2",
+                              border: "1px solid #fecaca",
+                              color: "#dc2626",
+                              borderRadius: "9px",
+                              padding: "0.65rem 0.875rem",
+                              fontSize: "0.82rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            ⚠️ {editJamaahError}
+                          </div>
+                        )}
+
+                        <div className="modal-grid-3">
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-nama-${data.nomor_pendaftaran}`}>
+                              Nama Lengkap <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              id={`admin-edit-nama-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={editJamaahForm.nama}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, nama: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Nama lengkap sesuai KTP"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              required
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-nik-${data.nomor_pendaftaran}`}>
+                              NIK (Identitas Utama)
+                            </label>
+                            <input
+                              id={`admin-edit-nik-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={data.nik || "-"}
+                              disabled
+                              readOnly
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #e2e8f0",
+                                background: "#f1f5f9",
+                                color: "#64748b",
+                                fontSize: "0.84rem",
+                                fontFamily: "monospace",
+                                boxSizing: "border-box",
+                                cursor: "not-allowed",
+                              }}
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-jk-${data.nomor_pendaftaran}`}>
+                              Jenis Kelamin <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <select
+                              id={`admin-edit-jk-${data.nomor_pendaftaran}`}
+                              value={editJamaahForm.jenis_kelamin}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, jenis_kelamin: e.target.value }))}
+                              disabled={savingJamaah}
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                background: "#fff",
+                                boxSizing: "border-box",
+                              }}
+                            >
+                              <option value="Laki-laki">Laki-laki</option>
+                              <option value="Perempuan">Perempuan</option>
+                            </select>
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-tempat-${data.nomor_pendaftaran}`}>
+                              Tempat Lahir <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              id={`admin-edit-tempat-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={editJamaahForm.tempat_lahir}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, tempat_lahir: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Kota kelahiran"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              required
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-tgl-${data.nomor_pendaftaran}`}>
+                              Tanggal Lahir <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              id={`admin-edit-tgl-${data.nomor_pendaftaran}`}
+                              type="date"
+                              max={new Date().toISOString().split("T")[0]}
+                              value={editJamaahForm.tanggal_lahir}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, tanggal_lahir: e.target.value }))}
+                              disabled={savingJamaah}
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              required
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-hp-${data.nomor_pendaftaran}`}>
+                              Nomor HP <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              id={`admin-edit-hp-${data.nomor_pendaftaran}`}
+                              type="tel"
+                              value={editJamaahForm.no_hp}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, no_hp: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="081234567890"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              required
+                            />
+                          </div>
+
+                          <div className="modal-info-item full">
+                            <label className="modal-info-label" htmlFor={`admin-edit-email-${data.nomor_pendaftaran}`}>
+                              Email <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              id={`admin-edit-email-${data.nomor_pendaftaran}`}
+                              type="email"
+                              value={editJamaahForm.email}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, email: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="nama@email.com"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              required
+                            />
+                          </div>
+
+                          <div className="modal-info-item full">
+                            <label className="modal-info-label" htmlFor={`admin-edit-alamat-${data.nomor_pendaftaran}`}>
+                              Alamat Lengkap <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <textarea
+                              id={`admin-edit-alamat-${data.nomor_pendaftaran}`}
+                              rows={2}
+                              value={editJamaahForm.alamat_lengkap}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, alamat_lengkap: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Nama jalan, nomor rumah, RT/RW"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              required
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-provinsi-${data.nomor_pendaftaran}`}>
+                              Provinsi
+                            </label>
+                            <input
+                              id={`admin-edit-provinsi-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={editJamaahForm.provinsi}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, provinsi: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Provinsi"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-kab-${data.nomor_pendaftaran}`}>
+                              Kabupaten / Kota
+                            </label>
+                            <input
+                              id={`admin-edit-kab-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={editJamaahForm.kabupaten_kota}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, kabupaten_kota: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Kabupaten / Kota"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-kec-${data.nomor_pendaftaran}`}>
+                              Kecamatan
+                            </label>
+                            <input
+                              id={`admin-edit-kec-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={editJamaahForm.kecamatan}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, kecamatan: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Kecamatan"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-kel-${data.nomor_pendaftaran}`}>
+                              Kelurahan / Desa
+                            </label>
+                            <input
+                              id={`admin-edit-kel-${data.nomor_pendaftaran}`}
+                              type="text"
+                              value={editJamaahForm.kelurahan_desa}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, kelurahan_desa: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="Kelurahan / Desa"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+
+                          <div className="modal-info-item">
+                            <label className="modal-info-label" htmlFor={`admin-edit-kodepos-${data.nomor_pendaftaran}`}>
+                              Kode Pos
+                            </label>
+                            <input
+                              id={`admin-edit-kodepos-${data.nomor_pendaftaran}`}
+                              type="text"
+                              maxLength={5}
+                              value={editJamaahForm.kode_pos}
+                              onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, kode_pos: e.target.value }))}
+                              disabled={savingJamaah}
+                              placeholder="5 digit angka"
+                              style={{
+                                width: "100%",
+                                padding: "0.55rem 0.75rem",
+                                borderRadius: 8,
+                                border: "1.5px solid #cbd5e1",
+                                fontSize: "0.84rem",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
+                          <button
+                            type="button"
+                            className="modal-btn-secondary"
+                            onClick={handleCancelEditJamaah}
+                            disabled={savingJamaah}
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="submit"
+                            className="modal-assign-btn"
+                            style={{ padding: "0.55rem 1.25rem" }}
+                            disabled={savingJamaah}
+                          >
+                            {savingJamaah ? (
+                              <>
+                                <div className="mini-spin-w" />
+                                <span>Menyimpan...</span>
+                              </>
+                            ) : (
+                              <span>Simpan</span>
+                            )}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
                       <div className="modal-grid-3">
                         <div className="modal-info-item">
                           <span className="modal-info-label">Nama Lengkap</span>
@@ -2195,8 +2732,25 @@ export const DetailModal = ({
                               "-"}
                           </span>
                         </div>
+                        {(data.kelurahan_desa || data.kecamatan || data.kabupaten_kota || data.provinsi || data.kode_pos) && (
+                          <div className="modal-info-item full" style={{ marginTop: "0.2rem" }}>
+                            <span className="modal-info-label">Detail Wilayah</span>
+                            <span className="modal-info-val" style={{ fontSize: "0.82rem", color: "#475569" }}>
+                              {[
+                                data.kelurahan_desa ? `Kel/Desa ${data.kelurahan_desa}` : "",
+                                data.kecamatan ? `Kec. ${data.kecamatan}` : "",
+                                data.kabupaten_kota || "",
+                                data.provinsi || "",
+                                data.kode_pos || "",
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* ── 3. Informasi Paket Umrah & Perlengkapan ── */}
@@ -2940,11 +3494,14 @@ const GrupDetailModal = ({
   };
 
   const handleJamaahLoaded = useCallback((d: DetailPendaftaran) => {
-    const sig = `${d.status}|${d.document_status}|${d.total_tagihan}|${d.total_pembayaran}|${d.total_perlengkapan}|${d.ambil_perlengkapan}`;
+    const sig = `${d.nama_customer}|${d.status}|${d.document_status}|${d.total_tagihan}|${d.total_pembayaran}|${d.total_perlengkapan}|${d.ambil_perlengkapan}`;
     const prev = syncSigRef.current[d.nomor_pendaftaran];
     if (prev !== undefined && prev !== sig) dirtyRef.current = true;
     syncSigRef.current[d.nomor_pendaftaran] = sig;
     setLiveInfo((cur) => ({ ...cur, [d.nomor_pendaftaran]: { status: d.status, document_status: d.document_status } }));
+    setGrupJamaah((cur) =>
+      cur.map((g) => (g.nomor_pendaftaran === d.nomor_pendaftaran && d.nama_customer ? { ...g, nama: d.nama_customer } : g))
+    );
     if (d.total_tagihan !== undefined) setTotalTagihan(d.total_tagihan);
     if (d.total_pembayaran !== undefined) setTotalPembayaran(d.total_pembayaran);
     if (d.total_perlengkapan !== undefined) setTotalPerlengkapan(d.total_perlengkapan);
@@ -4208,84 +4765,234 @@ const PICDetailModal = ({
   p,
   token,
   onClose,
+  onUpdated,
 }: {
   p: PendaftaranItem;
   token: string | null;
   onClose: () => void;
+  onUpdated?: () => void;
 }) => {
   const [data, setData] = useState<DetailPendaftaran | null>(null);
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<{ id: string; jumlah: number; status: string; tanggal: string; bukti: string }[]>([]);
   const [docs, setDocs] = useState<{ id: string; jenis: string; status: string; file_path: string; created_at?: string }[]>([]);
+  const { showToast } = useToast();
+
+  const [isEditingJamaah, setIsEditingJamaah] = useState(false);
+  const [savingJamaah, setSavingJamaah] = useState(false);
+  const [editJamaahError, setEditJamaahError] = useState("");
+  const [editJamaahSuccess, setEditJamaahSuccess] = useState("");
+  const [editJamaahForm, setEditJamaahForm] = useState({
+    nama: "",
+    tempat_lahir: "",
+    tanggal_lahir: "",
+    jenis_kelamin: "Laki-laki",
+    no_hp: "",
+    email: "",
+    alamat_lengkap: "",
+    provinsi: "",
+    kabupaten_kota: "",
+    kecamatan: "",
+    kelurahan_desa: "",
+    kode_pos: "",
+  });
+
+  const fetchDetail = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `${API}/admin/pendaftaran/${p.nomor_pendaftaran}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const dp = res.data?.pendaftaran;
+      setData({
+        nomor_pendaftaran: dp?.NomorPendaftaran ?? dp?.nomor_pendaftaran,
+        nama_customer: dp?.Customer?.Nama ?? dp?.Customer?.nama,
+        nik: dp?.Customer?.NIK ?? dp?.Customer?.nik ?? "-",
+        no_hp: dp?.Customer?.NoHP ?? dp?.Customer?.NoHp ?? dp?.Customer?.no_hp ?? "-",
+        email: dp?.Customer?.Email ?? dp?.Customer?.email ?? "-",
+        tempat_lahir: dp?.Customer?.TempatLahir ?? dp?.Customer?.tempat_lahir ?? "-",
+        tanggal_lahir: dp?.Customer?.TanggalLahir ?? dp?.Customer?.tanggal_lahir ?? "",
+        jenis_kelamin: dp?.Customer?.JenisKelamin ?? dp?.Customer?.jenis_kelamin ?? "-",
+        alamat_lengkap: dp?.Customer?.AlamatLengkap ?? dp?.Customer?.alamat_lengkap ?? "",
+        provinsi: dp?.Customer?.Provinsi ?? dp?.Customer?.provinsi ?? "",
+        kabupaten_kota: dp?.Customer?.KabupatenKota ?? dp?.Customer?.kabupaten_kota ?? "",
+        kecamatan: dp?.Customer?.Kecamatan ?? dp?.Customer?.kecamatan ?? "",
+        kelurahan_desa: dp?.Customer?.KelurahanDesa ?? dp?.Customer?.kelurahan_desa ?? "",
+        kode_pos: dp?.Customer?.KodePos ?? dp?.Customer?.kode_pos ?? "",
+        paket: dp?.Paket?.NamaPaket ?? dp?.Paket?.nama_paket,
+        harga: dp?.Paket?.Harga ?? dp?.Paket?.harga ?? 0,
+        tanggal_berangkat: dp?.Paket?.TanggalBerangkat ?? dp?.Paket?.tanggal_berangkat,
+        payment_status: dp?.PaymentStatus ?? dp?.payment_status,
+        total_tagihan: dp?.TotalTagihan ?? dp?.total_tagihan ?? 0,
+        total_pembayaran: dp?.TotalPembayaran ?? dp?.total_pembayaran ?? 0,
+        total_perlengkapan: dp?.TotalPerlengkapan ?? dp?.total_perlengkapan ?? 0,
+        ambil_perlengkapan: dp?.AmbilPerlengkapan ?? dp?.ambil_perlengkapan ?? false,
+        harga_perlengkapan: dp?.HargaPerlengkapan ?? dp?.harga_perlengkapan ?? 0,
+        grup_count: dp?.GrupCount ?? dp?.grup_count ?? 1,
+        nomor_invoice: dp?.NomorInvoice ?? dp?.nomor_invoice ?? "",
+        document_status: dp?.DocumentStatus ?? dp?.document_status,
+        status: dp?.Status ?? dp?.status,
+        alasan_pembatalan: dp?.alasan_pembatalan ?? dp?.AlasanPembatalan ?? null,
+        dibatalkan_pada: dp?.dibatalkan_pada ?? dp?.DibatalkanPada ?? null,
+        dibatalkan_oleh_nama: dp?.dibatalkan_oleh_nama ?? dp?.DibatalkanOlehNama ?? dp?.Pembatal?.Nama ?? dp?.pembatal?.nama ?? null,
+        admin_pic: dp?.User?.Nama ?? dp?.User?.nama ?? null,
+      });
+      // Pembayaran: Go model → field PascalCase
+      const rawBayar = res.data?.pembayaran ?? [];
+      const mappedBayar = rawBayar.map((b: Record<string, unknown>) => ({
+        id: String(b.ID ?? b.id ?? ""),
+        jumlah: (b.Jumlah ?? b.jumlah ?? 0) as number,
+        status: (b.Status ?? b.status ?? "") as string,
+        tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
+        bukti: String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
+      }));
+      mappedBayar.sort((a: { tanggal: string }, b: { tanggal: string }) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+      setPayments(mappedBayar);
+      // Dokumen: Go model → field PascalCase
+      const rawDok = res.data?.dokumen ?? [];
+      const mappedDocs = rawDok.map((d: Record<string, unknown>) => ({
+        id: String(d.ID ?? d.id ?? ""),
+        jenis: String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
+        status: (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
+        file_path: String(d.FilePath ?? d.file_path ?? ""),
+        created_at: String(d.CreatedAt ?? d.created_at ?? ""),
+      }));
+      mappedDocs.sort((a: { created_at: string }, b: { created_at: string }) => {
+        if (!a.created_at && !b.created_at) return 0;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      });
+      setDocs(mappedDocs);
+    } catch {
+      /* silent */
+    } finally {
+      setLoading(false);
+    }
+  }, [p.nomor_pendaftaran, token]);
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      try {
-        const res = await axios.get(
-          `${API}/admin/pendaftaran/${p.nomor_pendaftaran}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const dp = res.data?.pendaftaran;
-        setData({
-          nomor_pendaftaran: dp?.NomorPendaftaran ?? dp?.nomor_pendaftaran,
-          nama_customer: dp?.Customer?.Nama ?? dp?.Customer?.nama,
-          nik: dp?.Customer?.NIK ?? dp?.Customer?.nik ?? "-",
-          no_hp: dp?.Customer?.NoHP ?? dp?.Customer?.NoHp ?? dp?.Customer?.no_hp ?? "-",
-          email: dp?.Customer?.Email ?? dp?.Customer?.email ?? "-",
-          tempat_lahir: dp?.Customer?.TempatLahir ?? dp?.Customer?.tempat_lahir ?? "-",
-          tanggal_lahir: dp?.Customer?.TanggalLahir ?? dp?.Customer?.tanggal_lahir ?? "",
-          jenis_kelamin: dp?.Customer?.JenisKelamin ?? dp?.Customer?.jenis_kelamin ?? "-",
-          paket: dp?.Paket?.NamaPaket ?? dp?.Paket?.nama_paket,
-          harga: dp?.Paket?.Harga ?? dp?.Paket?.harga ?? 0,
-          tanggal_berangkat: dp?.Paket?.TanggalBerangkat ?? dp?.Paket?.tanggal_berangkat,
-          payment_status: dp?.PaymentStatus ?? dp?.payment_status,
-          total_tagihan: dp?.TotalTagihan ?? dp?.total_tagihan ?? 0,
-          total_pembayaran: dp?.TotalPembayaran ?? dp?.total_pembayaran ?? 0,
-          total_perlengkapan: dp?.TotalPerlengkapan ?? dp?.total_perlengkapan ?? 0,
-          ambil_perlengkapan: dp?.AmbilPerlengkapan ?? dp?.ambil_perlengkapan ?? false,
-          harga_perlengkapan: dp?.HargaPerlengkapan ?? dp?.harga_perlengkapan ?? 0,
-          grup_count: dp?.GrupCount ?? dp?.grup_count ?? 1,
-          nomor_invoice: dp?.NomorInvoice ?? dp?.nomor_invoice ?? "",
-          document_status: dp?.DocumentStatus ?? dp?.document_status,
-          status: dp?.Status ?? dp?.status,
-          alasan_pembatalan: dp?.alasan_pembatalan ?? dp?.AlasanPembatalan ?? null,
-          dibatalkan_pada: dp?.dibatalkan_pada ?? dp?.DibatalkanPada ?? null,
-          dibatalkan_oleh_nama: dp?.dibatalkan_oleh_nama ?? dp?.DibatalkanOlehNama ?? dp?.Pembatal?.Nama ?? dp?.pembatal?.nama ?? null,
-          admin_pic: dp?.User?.Nama ?? dp?.User?.nama ?? null,
-        });
-        // Pembayaran: Go model → field PascalCase
-        const rawBayar = res.data?.pembayaran ?? [];
-        const mappedBayar = rawBayar.map((b: Record<string, unknown>) => ({
-          id: String(b.ID ?? b.id ?? ""),
-          jumlah: (b.Jumlah ?? b.jumlah ?? 0) as number,
-          status: (b.Status ?? b.status ?? "") as string,
-          tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
-          bukti: String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
-        }));
-        mappedBayar.sort((a: { tanggal: string }, b: { tanggal: string }) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-        setPayments(mappedBayar);
-        // Dokumen: Go model → field PascalCase
-        const rawDok = res.data?.dokumen ?? [];
-        const mappedDocs = rawDok.map((d: Record<string, unknown>) => ({
-          id: String(d.ID ?? d.id ?? ""),
-          jenis: String(d.JenisDokumen ?? d.jenis_dokumen ?? d.Jenis ?? d.jenis ?? "-"),
-          status: (d.StatusValidasi ?? d.status_validasi ?? d.Status ?? d.status ?? "") as string,
-          file_path: String(d.FilePath ?? d.file_path ?? ""),
-          created_at: String(d.CreatedAt ?? d.created_at ?? ""),
-        }));
-        mappedDocs.sort((a: { created_at: string }, b: { created_at: string }) => {
-          if (!a.created_at && !b.created_at) return 0;
-          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-        });
-        setDocs(mappedDocs);
-      } catch {
-        /* silent */
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDetail();
-  }, [p.nomor_pendaftaran, token]);
+  }, [fetchDetail]);
+
+  const handleOpenEditJamaah = () => {
+    if (!data) return;
+    const rawTgl = data.tanggal_lahir || "";
+    const matchTgl = rawTgl.match(/^(\d{4}-\d{2}-\d{2})/);
+    const formattedTgl = matchTgl
+      ? matchTgl[1]
+      : rawTgl && !isNaN(new Date(rawTgl).getTime())
+      ? new Date(rawTgl).toISOString().split("T")[0]
+      : "";
+    const rawJk = (data.jenis_kelamin || "").trim().toLowerCase();
+    const normalizedJk = rawJk === "p" || rawJk === "perempuan" ? "Perempuan" : "Laki-laki";
+
+    setEditJamaahForm({
+      nama: data.nama_customer && data.nama_customer !== "-" ? data.nama_customer : "",
+      tempat_lahir: data.tempat_lahir && data.tempat_lahir !== "-" ? data.tempat_lahir : "",
+      tanggal_lahir: formattedTgl,
+      jenis_kelamin: normalizedJk,
+      no_hp: data.no_hp && data.no_hp !== "-" ? data.no_hp : "",
+      email: data.email && data.email !== "-" ? data.email : "",
+      alamat_lengkap: data.alamat_lengkap || "",
+      provinsi: data.provinsi || "",
+      kabupaten_kota: data.kabupaten_kota || "",
+      kecamatan: data.kecamatan || "",
+      kelurahan_desa: data.kelurahan_desa || "",
+      kode_pos: data.kode_pos || "",
+    });
+    setEditJamaahError("");
+    setEditJamaahSuccess("");
+    setIsEditingJamaah(true);
+  };
+
+  const handleSaveEditJamaah = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data || savingJamaah) return;
+
+    setEditJamaahError("");
+    setEditJamaahSuccess("");
+
+    const trimmedNama = editJamaahForm.nama.trim();
+    const trimmedTempatLahir = editJamaahForm.tempat_lahir.trim();
+    const trimmedTanggalLahir = editJamaahForm.tanggal_lahir.trim();
+    const trimmedJenisKelamin = editJamaahForm.jenis_kelamin.trim();
+    const trimmedNoHp = editJamaahForm.no_hp.trim();
+    const trimmedEmail = editJamaahForm.email.trim();
+    const trimmedAlamat = editJamaahForm.alamat_lengkap.trim();
+    const trimmedProvinsi = editJamaahForm.provinsi.trim();
+    const trimmedKabupaten = editJamaahForm.kabupaten_kota.trim();
+    const trimmedKecamatan = editJamaahForm.kecamatan.trim();
+    const trimmedKelurahan = editJamaahForm.kelurahan_desa.trim();
+    const trimmedKodePos = editJamaahForm.kode_pos.trim();
+
+    if (
+      !trimmedNama ||
+      !trimmedTempatLahir ||
+      !trimmedTanggalLahir ||
+      !trimmedJenisKelamin ||
+      !trimmedNoHp ||
+      !trimmedEmail ||
+      !trimmedAlamat
+    ) {
+      setEditJamaahError("Semua field biodata utama wajib diisi.");
+      return;
+    }
+
+    if (trimmedNama.length < 2) {
+      setEditJamaahError("Nama lengkap minimal 2 karakter.");
+      return;
+    }
+
+    if (!/^\+?\d{9,15}$/.test(trimmedNoHp)) {
+      setEditJamaahError("Nomor HP tidak valid (gunakan 10–15 digit angka).");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEditJamaahError("Format alamat email tidak valid.");
+      return;
+    }
+
+    if (trimmedKodePos && !/^\d{5}$/.test(trimmedKodePos)) {
+      setEditJamaahError("Kode pos harus terdiri dari 5 digit angka.");
+      return;
+    }
+
+    setSavingJamaah(true);
+    try {
+      const res = await axios.put(
+        `${API}/admin/pendaftaran/${data.nomor_pendaftaran}/jamaah`,
+        {
+          nama: trimmedNama,
+          tempat_lahir: trimmedTempatLahir,
+          tanggal_lahir: trimmedTanggalLahir,
+          jenis_kelamin: trimmedJenisKelamin,
+          no_hp: trimmedNoHp,
+          email: trimmedEmail,
+          alamat_lengkap: trimmedAlamat,
+          provinsi: trimmedProvinsi,
+          kabupaten_kota: trimmedKabupaten,
+          kecamatan: trimmedKecamatan,
+          kelurahan_desa: trimmedKelurahan,
+          kode_pos: trimmedKodePos,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const msg = res.data?.message || "✓ Data jamaah berhasil diperbarui.";
+      showToast("success", msg);
+      setEditJamaahSuccess(msg);
+      setIsEditingJamaah(false);
+      await fetchDetail();
+      onUpdated?.();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error ?? "Gagal menyimpan perubahan data jamaah."
+        : "Gagal menyimpan perubahan data jamaah.";
+      setEditJamaahError(msg);
+      showToast("error", msg);
+    } finally {
+      setSavingJamaah(false);
+    }
+  };
 
   const isSelesai = p.status?.toLowerCase() === "selesai";
 
@@ -4372,37 +5079,181 @@ const PICDetailModal = ({
               )}
 
               {/* Info Jamaah */}
-              <div className="modal-section-title">👤 Informasi Jamaah</div>
-              <div className="modal-info-grid">
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">Nama</div>
-                  <div className="modal-info-val">{data.nama_customer}</div>
-                </div>
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">NIK</div>
-                  <div className="modal-info-val" style={{ fontFamily: "monospace" }}>{data.nik}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Tempat Lahir</div>
-                  <div className="modal-info-val">{data.tempat_lahir}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Tanggal Lahir</div>
-                  <div className="modal-info-val">{data.tanggal_lahir ? fmtDate(data.tanggal_lahir) : "-"}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">Jenis Kelamin</div>
-                  <div className="modal-info-val">{data.jenis_kelamin}</div>
-                </div>
-                <div className="modal-info-item">
-                  <div className="modal-info-label">No. HP</div>
-                  <div className="modal-info-val">{data.no_hp}</div>
-                </div>
-                <div className="modal-info-item full">
-                  <div className="modal-info-label">Email</div>
-                  <div className="modal-info-val">{data.email}</div>
-                </div>
+              <div className="modal-section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>👤 Informasi Jamaah</span>
+                {!isEditingJamaah && data.status !== "batal" && (
+                  <button
+                    type="button"
+                    className="modal-btn-secondary"
+                    style={{ padding: "0.3rem 0.65rem", fontSize: "0.75rem" }}
+                    onClick={handleOpenEditJamaah}
+                  >
+                    ✏️ Edit Data Jamaah
+                  </button>
+                )}
               </div>
+
+              {editJamaahSuccess && !isEditingJamaah && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #86efac", color: "#059669", borderRadius: 8, padding: "0.55rem 0.8rem", fontSize: "0.8rem", fontWeight: 600 }}>
+                  ✅ {editJamaahSuccess}
+                </div>
+              )}
+
+              {isEditingJamaah ? (
+                <form onSubmit={handleSaveEditJamaah} noValidate style={{ display: "flex", flexDirection: "column", gap: "0.75rem", background: "#f8fafc", padding: "0.9rem", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+                  {editJamaahError && (
+                    <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 8, padding: "0.55rem 0.75rem", fontSize: "0.8rem", fontWeight: 600 }}>
+                      ⚠️ {editJamaahError}
+                    </div>
+                  )}
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item full">
+                      <label className="modal-info-label">Nama Lengkap *</label>
+                      <input
+                        type="text"
+                        value={editJamaahForm.nama}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, nama: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", boxSizing: "border-box" }}
+                        required
+                      />
+                    </div>
+                    <div className="modal-info-item full">
+                      <label className="modal-info-label">NIK (Identitas Utama)</label>
+                      <input
+                        type="text"
+                        value={data.nik}
+                        disabled
+                        readOnly
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#f1f5f9", color: "#64748b", fontSize: "0.84rem", fontFamily: "monospace", boxSizing: "border-box" }}
+                      />
+                    </div>
+                    <div className="modal-info-item">
+                      <label className="modal-info-label">Tempat Lahir *</label>
+                      <input
+                        type="text"
+                        value={editJamaahForm.tempat_lahir}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, tempat_lahir: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", boxSizing: "border-box" }}
+                        required
+                      />
+                    </div>
+                    <div className="modal-info-item">
+                      <label className="modal-info-label">Tanggal Lahir *</label>
+                      <input
+                        type="date"
+                        max={new Date().toISOString().split("T")[0]}
+                        value={editJamaahForm.tanggal_lahir}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, tanggal_lahir: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", boxSizing: "border-box" }}
+                        required
+                      />
+                    </div>
+                    <div className="modal-info-item">
+                      <label className="modal-info-label">Jenis Kelamin *</label>
+                      <select
+                        value={editJamaahForm.jenis_kelamin}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, jenis_kelamin: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", background: "#fff", boxSizing: "border-box" }}
+                      >
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                      </select>
+                    </div>
+                    <div className="modal-info-item">
+                      <label className="modal-info-label">No. HP *</label>
+                      <input
+                        type="tel"
+                        value={editJamaahForm.no_hp}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, no_hp: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", boxSizing: "border-box" }}
+                        required
+                      />
+                    </div>
+                    <div className="modal-info-item full">
+                      <label className="modal-info-label">Email *</label>
+                      <input
+                        type="email"
+                        value={editJamaahForm.email}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, email: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", boxSizing: "border-box" }}
+                        required
+                      />
+                    </div>
+                    <div className="modal-info-item full">
+                      <label className="modal-info-label">Alamat Lengkap *</label>
+                      <textarea
+                        rows={2}
+                        value={editJamaahForm.alamat_lengkap}
+                        onChange={(e) => setEditJamaahForm((prev) => ({ ...prev, alamat_lengkap: e.target.value }))}
+                        disabled={savingJamaah}
+                        style={{ width: "100%", padding: "0.5rem 0.7rem", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: "0.84rem", boxSizing: "border-box" }}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "0.25rem" }}>
+                    <button
+                      type="button"
+                      className="modal-btn-secondary"
+                      onClick={() => { if (!savingJamaah) { setIsEditingJamaah(false); setEditJamaahError(""); } }}
+                      disabled={savingJamaah}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="modal-assign-btn"
+                      style={{ padding: "0.45rem 1.1rem" }}
+                      disabled={savingJamaah}
+                    >
+                      {savingJamaah ? "Menyimpan..." : "Simpan"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="modal-info-grid">
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">Nama</div>
+                    <div className="modal-info-val">{data.nama_customer}</div>
+                  </div>
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">NIK</div>
+                    <div className="modal-info-val" style={{ fontFamily: "monospace" }}>{data.nik}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Tempat Lahir</div>
+                    <div className="modal-info-val">{data.tempat_lahir}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Tanggal Lahir</div>
+                    <div className="modal-info-val">{data.tanggal_lahir ? fmtDate(data.tanggal_lahir) : "-"}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">Jenis Kelamin</div>
+                    <div className="modal-info-val">{data.jenis_kelamin}</div>
+                  </div>
+                  <div className="modal-info-item">
+                    <div className="modal-info-label">No. HP</div>
+                    <div className="modal-info-val">{data.no_hp}</div>
+                  </div>
+                  <div className="modal-info-item full">
+                    <div className="modal-info-label">Email</div>
+                    <div className="modal-info-val">{data.email}</div>
+                  </div>
+                  {data.alamat_lengkap && (
+                    <div className="modal-info-item full">
+                      <div className="modal-info-label">Alamat Lengkap</div>
+                      <div className="modal-info-val">{data.alamat_lengkap}</div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Info Paket */}
               <div className="modal-section-title">🕌 Paket</div>
@@ -4766,6 +5617,7 @@ const JamaahSayaView = ({
           p={selectedJamaah}
           token={token}
           onClose={() => setSelectedJamaah(null)}
+          onUpdated={() => fetchList()}
         />
       )}
 

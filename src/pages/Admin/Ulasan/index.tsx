@@ -291,7 +291,7 @@ const AdminUlasan = () => {
             title="Muat Ulang Data"
           >
             <FiRefreshCw size={14} className={loading ? "spin" : ""} />
-            Segarkan
+            Refresh
           </button>
         </div>
       </div>
