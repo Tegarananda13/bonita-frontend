@@ -330,8 +330,34 @@ const JENIS_DOKUMEN = [
   { value: "lainnya", label: "Lainnya", required: false },
 ];
 
-type PayItem = { id: string; jumlah: number; status: string; tanggal: string; bukti: string };
+type PayItem = {
+  id: string;
+  jumlah: number;
+  status: string;
+  tanggal: string;
+  bukti: string;
+  metode_pembayaran?: string;
+  bank_tujuan?: string;
+  sumber_pembayaran?: string;
+  metode_label?: string;
+};
 type DocItem = { id: string; jenis: string; status: string; file_path: string; created_at?: string };
+
+const ADMIN_PAYMENT_OPTIONS = [
+  { key: "transfer", label: "Transfer", metode: "transfer" as const, icon: "🏦" },
+  { key: "tunai", label: "Tunai (Cash)", metode: "tunai" as const, icon: "💵" },
+];
+
+const formatPayMethodLabel = (metode?: string, bank?: string, label?: string): string => {
+  if (label) return label;
+  const m = (metode || "transfer").toLowerCase();
+  const b = (bank || "").toUpperCase();
+  if (m === "tunai") return "Tunai (Pembayaran di Kantor)";
+  if (b === "BSI") return "Transfer Bank BSI";
+  if (b === "MANDIRI") return "Transfer Bank Mandiri";
+  if (b === "BCA") return "Transfer Bank BCA";
+  return "Transfer Bank";
+};
 
 // Set jenis dokumen yang wajib (required)
 export const REQUIRED_JENIS = new Set(JENIS_DOKUMEN.filter(j => j.required).map(j => j.value));
@@ -734,6 +760,8 @@ export const DetailModal = ({
   // ── Modal Tambah/Edit Pembayaran ──
   const [showPayModal, setShowPayModal] = useState(false);
   const [editPay, setEditPay] = useState<PayItem | null>(null);
+  const [payMetode, setPayMetode] = useState<"transfer" | "tunai">("transfer");
+  const [payBank, setPayBank] = useState<"BSI" | "MANDIRI" | "BCA" | "">("");
   const [payJumlah, setPayJumlah] = useState("");
   const [payTanggal, setPayTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [payFile, setPayFile] = useState<File | null>(null);
@@ -1120,6 +1148,10 @@ export const DetailModal = ({
         status: (b.Status ?? b.status ?? "") as string,
         tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
         bukti: String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
+        metode_pembayaran: String(b.MetodePembayaran ?? b.metode_pembayaran ?? "transfer"),
+        bank_tujuan: String(b.BankTujuan ?? b.bank_tujuan ?? ""),
+        sumber_pembayaran: String(b.SumberPembayaran ?? b.sumber_pembayaran ?? "customer"),
+        metode_label: b.MetodeLabel || b.metode_label ? String(b.MetodeLabel ?? b.metode_label) : undefined,
       }));
       mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
       setPayments(mappedBayar);
@@ -1173,6 +1205,8 @@ export const DetailModal = ({
 
   const openAddPay = () => {
     setEditPay(null);
+    setPayMetode("transfer");
+    setPayBank("");
     setPayJumlah("");
     setPayTanggal(new Date().toISOString().split("T")[0]);
     setPayFile(null);
@@ -1181,7 +1215,13 @@ export const DetailModal = ({
   };
 
   const openEditPay = (pay: PayItem) => {
+    const m = (pay.metode_pembayaran || "transfer").toLowerCase() === "tunai" ? "tunai" : "transfer";
+    const bRaw = (pay.bank_tujuan || "").toUpperCase();
+    const b: "BSI" | "MANDIRI" | "BCA" | "" =
+      m === "tunai" ? "" : bRaw === "MANDIRI" || bRaw === "BCA" || bRaw === "BSI" ? bRaw : "";
     setEditPay(pay);
+    setPayMetode(m);
+    setPayBank(b);
     setPayJumlah(fmtPayInput(String(Math.round(pay.jumlah))));
     setPayTanggal(pay.tanggal ? pay.tanggal.split("T")[0] : new Date().toISOString().split("T")[0]);
     setPayFile(null);
@@ -1190,7 +1230,7 @@ export const DetailModal = ({
   };
 
   const submitPay = async () => {
-    if (!data) return;
+    if (!data || paySubmitting) return;
     setPayError("");
     const nominal = parseFloat(payJumlah.replace(/[^\d]/g, ""));
     if (!nominal || isNaN(nominal) || nominal <= 0) {
@@ -1198,12 +1238,24 @@ export const DetailModal = ({
       showToast("error", "Jumlah pembayaran tidak valid.");
       return;
     }
+    if (!payTanggal) {
+      setPayError("Tanggal pembayaran wajib diisi");
+      showToast("error", "Tanggal pembayaran wajib diisi.");
+      return;
+    }
+    if (payMetode === "transfer" && !payBank) {
+      setPayError("Bank tujuan wajib dipilih untuk metode pembayaran transfer");
+      showToast("error", "Bank tujuan wajib dipilih untuk metode pembayaran transfer.");
+      return;
+    }
     setPaySubmitting(true);
     try {
       const fd = new FormData();
       fd.append("jumlah", String(nominal));
       fd.append("tanggal_bayar", payTanggal);
-      if (payFile) fd.append("bukti", payFile);
+      fd.append("metode_pembayaran", payMetode);
+      fd.append("bank_tujuan", payMetode === "transfer" ? payBank : "");
+      if (payMetode === "transfer" && payFile) fd.append("bukti", payFile);
 
       if (editPay) {
         await axios.put(`${API}/admin/pembayaran/${editPay.id}/admin`, fd, { headers: authH });
@@ -1212,9 +1264,9 @@ export const DetailModal = ({
       }
       setShowPayModal(false);
       await fetchData();
-      showToast("success", "Bukti pembayaran berhasil disimpan.");
+      showToast("success", editPay ? "Pembayaran berhasil diperbarui." : "Pembayaran berhasil dicatat dan langsung diterima.");
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Bukti pembayaran gagal disimpan.") : "Bukti pembayaran gagal disimpan.";
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Pembayaran gagal disimpan.") : "Pembayaran gagal disimpan.";
       setPayError(msg);
       showToast("error", msg);
     } finally {
@@ -1357,6 +1409,63 @@ export const DetailModal = ({
                 </div>
               )}
 
+              {/* Metode Pembayaran */}
+              <label style={inlineLabel}>Metode Pembayaran *</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                {ADMIN_PAYMENT_OPTIONS.map((opt) => {
+                  const isSelected = payMetode === opt.metode;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      disabled={paySubmitting}
+                      onClick={() => {
+                        setPayMetode(opt.metode);
+                        if (opt.metode === "tunai") {
+                          setPayBank("");
+                          setPayFile(null);
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.45rem",
+                        padding: "0.6rem 0.75rem",
+                        borderRadius: "10px",
+                        border: isSelected ? "2px solid #1a6b43" : "1.5px solid #e2e8f0",
+                        background: isSelected ? "#f0fdf4" : "#ffffff",
+                        color: isSelected ? "#15803d" : "#334155",
+                        fontWeight: isSelected ? 700 : 600,
+                        fontSize: "0.82rem",
+                        cursor: paySubmitting ? "not-allowed" : "pointer",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <span>{opt.icon}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {payMetode === "transfer" && (
+                <>
+                  <label style={inlineLabel}>Bank Tujuan *</label>
+                  <select
+                    style={inlineInput}
+                    value={payBank}
+                    onChange={(e) => setPayBank(e.target.value as "BSI" | "MANDIRI" | "BCA" | "")}
+                    disabled={paySubmitting}
+                  >
+                    <option value="">-- Pilih Bank Tujuan --</option>
+                    <option value="BSI">Bank BSI</option>
+                    <option value="MANDIRI">Bank Mandiri</option>
+                    <option value="BCA">Bank BCA</option>
+                  </select>
+                </>
+              )}
+
               {/* Jumlah */}
               <label style={inlineLabel}>Jumlah Pembayaran *</label>
               <div style={{ position: "relative" }}>
@@ -1394,46 +1503,63 @@ export const DetailModal = ({
                 disabled={paySubmitting}
               />
 
-              {/* File Upload */}
-              <label style={inlineLabel}>Bukti Pembayaran {editPay ? "(opsional — ganti jika perlu)" : "(opsional)"}</label>
-              <div style={{
-                border: "2px dashed #bbf7d0",
-                borderRadius: "10px",
-                padding: "0.875rem",
-                background: payFile ? "#f0fdf4" : "#f8fafc",
-                textAlign: "center",
-                transition: "all 0.2s",
-                cursor: "pointer",
-              }}>
-                <input
-                  id="pay-file-input"
-                  type="file"
-                  accept="image/*,.pdf"
-                  style={{ display: "none" }}
-                  onChange={e => setPayFile(e.target.files?.[0] ?? null)}
-                  disabled={paySubmitting}
-                />
-                <label htmlFor="pay-file-input" style={{ cursor: "pointer", display: "block" }}>
-                  {payFile ? (
-                    <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
-                      ✅ {payFile.name}
-                      <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
-                        {(payFile.size / 1024).toFixed(0)} KB — klik untuk ganti
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
-                      <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>📁</div>
-                      <div style={{ fontWeight: 600, color: "#1a6b43" }}>Pilih file</div>
-                      <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
+              {/* File Upload (hanya tampil untuk Transfer, disembunyikan untuk Tunai) */}
+              {payMetode === "transfer" ? (
+                <>
+                  <label style={inlineLabel}>Bukti Transfer {editPay ? "(opsional — ganti jika perlu)" : "(opsional)"}</label>
+                  <div style={{
+                    border: "2px dashed #bbf7d0",
+                    borderRadius: "10px",
+                    padding: "0.875rem",
+                    background: payFile ? "#f0fdf4" : "#f8fafc",
+                    textAlign: "center",
+                    transition: "all 0.2s",
+                    cursor: "pointer",
+                  }}>
+                    <input
+                      id="pay-file-input"
+                      type="file"
+                      accept="image/*,.pdf"
+                      style={{ display: "none" }}
+                      onChange={e => setPayFile(e.target.files?.[0] ?? null)}
+                      disabled={paySubmitting}
+                    />
+                    <label htmlFor="pay-file-input" style={{ cursor: "pointer", display: "block" }}>
+                      {payFile ? (
+                        <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
+                          ✅ {payFile.name}
+                          <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
+                            {(payFile.size / 1024).toFixed(0)} KB — klik untuk ganti
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
+                          <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>📁</div>
+                          <div style={{ fontWeight: 600, color: "#1a6b43" }}>Pilih file (tidak wajib)</div>
+                          <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                  {editPay?.bukti && !payFile && (
+                    <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "5px", textAlign: "center" }}>
+                      Saat ini:{" "}
+                      <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#1a6b43", fontWeight: 600 }}>Lihat bukti lama</a>
                     </div>
                   )}
-                </label>
-              </div>
-              {editPay?.bukti && !payFile && (
-                <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "5px", textAlign: "center" }}>
-                  Saat ini:{" "}
-                  <a href={editPay.bukti} target="_blank" rel="noreferrer" style={{ color: "#1a6b43", fontWeight: 600 }}>Lihat bukti lama</a>
+                </>
+              ) : (
+                <div style={{
+                  marginTop: "0.85rem",
+                  padding: "0.65rem 0.9rem",
+                  borderRadius: "10px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  color: "#166534",
+                  fontSize: "0.78rem",
+                  lineHeight: 1.4,
+                }}>
+                  💵 <strong>Pembayaran Tunai di Kantor:</strong> Transaksi langsung dicatat dengan status <strong>Diterima</strong> tanpa memerlukan bukti transfer.
                 </div>
               )}
             </div>
@@ -3032,10 +3158,16 @@ export const DetailModal = ({
                             fontSize: "0.86rem",
                           }}
                         >
-                          <span style={{ color: "#374151", fontWeight: 600 }}>
-                            {payLabel(i)}
-                            {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                            <span style={{ color: "#374151", fontWeight: 600 }}>
+                              {payLabel(i)}
+                              {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
+                            </span>
+                            <span style={{ fontSize: "0.75rem", color: "#15803d", fontWeight: 600 }}>
+                              {pay.metode_pembayaran?.toLowerCase() === "tunai" ? "💵 " : "🏦 "}
+                              {formatPayMethodLabel(pay.metode_pembayaran, pay.bank_tujuan, pay.metode_label)}
+                            </span>
+                          </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                             <span style={{ fontWeight: 700, color: "#1e293b" }}>{fmtRupiah(pay.jumlah)}</span>
                             <StatusPill value={pay.status} />
@@ -3482,6 +3614,8 @@ const GrupDetailModal = ({
 
   // ── Modal Tambah Pembayaran Grup ──
   const [showPayModal, setShowPayModal] = useState(false);
+  const [payMetode, setPayMetode] = useState<"transfer" | "tunai">("transfer");
+  const [payBank, setPayBank] = useState<"BSI" | "MANDIRI" | "BCA" | "">("");
   const [payJumlah, setPayJumlah] = useState("");
   const [payTanggal, setPayTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [payFile, setPayFile] = useState<File | null>(null);
@@ -3601,6 +3735,8 @@ const GrupDetailModal = ({
   };
 
   const openAddPay = () => {
+    setPayMetode("transfer");
+    setPayBank("");
     setPayJumlah("");
     setPayTanggal(new Date().toISOString().split("T")[0]);
     setPayFile(null);
@@ -3609,7 +3745,7 @@ const GrupDetailModal = ({
   };
 
   const submitPay = async () => {
-    if (!first) return;
+    if (!first || paySubmitting) return;
     setPayError("");
     const nominal = parseFloat(payJumlah.replace(/[^\d]/g, ""));
     if (!nominal || isNaN(nominal) || nominal <= 0) {
@@ -3617,22 +3753,34 @@ const GrupDetailModal = ({
       showToast("error", "Jumlah pembayaran tidak valid.");
       return;
     }
+    if (!payTanggal) {
+      setPayError("Tanggal pembayaran wajib diisi");
+      showToast("error", "Tanggal pembayaran wajib diisi.");
+      return;
+    }
+    if (payMetode === "transfer" && !payBank) {
+      setPayError("Bank tujuan wajib dipilih untuk metode pembayaran transfer");
+      showToast("error", "Bank tujuan wajib dipilih untuk metode pembayaran transfer.");
+      return;
+    }
     setPaySubmitting(true);
     try {
       const fd = new FormData();
       fd.append("jumlah", String(nominal));
       fd.append("tanggal_bayar", payTanggal);
-      if (payFile) fd.append("bukti", payFile);
+      fd.append("metode_pembayaran", payMetode);
+      fd.append("bank_tujuan", payMetode === "transfer" ? payBank : "");
+      if (payMetode === "transfer" && payFile) fd.append("bukti", payFile);
 
       await axios.post(`${API}/admin/pendaftaran/${first.nomor_pendaftaran}/pembayaran`, fd, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShowPayModal(false);
       dirtyRef.current = true;
-      showToast("success", "Bukti pembayaran berhasil disimpan.");
+      showToast("success", "Pembayaran berhasil dicatat dan langsung diterima.");
       await fetchGroupDetail();
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Bukti pembayaran gagal disimpan.") : "Bukti pembayaran gagal disimpan.";
+      const msg = axios.isAxiosError(err) ? (err.response?.data?.error ?? "Pembayaran gagal disimpan.") : "Pembayaran gagal disimpan.";
       setPayError(msg);
       showToast("error", msg);
     } finally {
@@ -3682,6 +3830,62 @@ const GrupDetailModal = ({
                 </div>
               )}
 
+              <label style={inlineLabel}>Metode Pembayaran *</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                {ADMIN_PAYMENT_OPTIONS.map((opt) => {
+                  const isSelected = payMetode === opt.metode;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      disabled={paySubmitting}
+                      onClick={() => {
+                        setPayMetode(opt.metode);
+                        if (opt.metode === "tunai") {
+                          setPayBank("");
+                          setPayFile(null);
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.45rem",
+                        padding: "0.6rem 0.75rem",
+                        borderRadius: "10px",
+                        border: isSelected ? "2px solid #1a6b43" : "1.5px solid #e2e8f0",
+                        background: isSelected ? "#f0fdf4" : "#ffffff",
+                        color: isSelected ? "#15803d" : "#334155",
+                        fontWeight: isSelected ? 700 : 600,
+                        fontSize: "0.82rem",
+                        cursor: paySubmitting ? "not-allowed" : "pointer",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <span>{opt.icon}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {payMetode === "transfer" && (
+                <>
+                  <label style={inlineLabel}>Bank Tujuan *</label>
+                  <select
+                    style={inlineInput}
+                    value={payBank}
+                    onChange={(e) => setPayBank(e.target.value as "BSI" | "MANDIRI" | "BCA" | "")}
+                    disabled={paySubmitting}
+                  >
+                    <option value="">-- Pilih Bank Tujuan --</option>
+                    <option value="BSI">Bank BSI</option>
+                    <option value="MANDIRI">Bank Mandiri</option>
+                    <option value="BCA">Bank BCA</option>
+                  </select>
+                </>
+              )}
+
               <label style={inlineLabel}>Jumlah Pembayaran *</label>
               <div style={{ position: "relative" }}>
                 <span style={{
@@ -3710,37 +3914,54 @@ const GrupDetailModal = ({
                 style={inlineInput}
               />
 
-              <label style={inlineLabel}>Bukti Transfer (opsional)</label>
-              <div style={{
-                border: "2px dashed #cbd5e1", borderRadius: "10px",
-                padding: "0.9rem 1rem", background: payFile ? "#f0fdf4" : "#f8fafc",
-                textAlign: "center", cursor: "pointer", transition: "all 0.15s",
-              }}>
-                <input
-                  id="pay-file-input-grup"
-                  type="file"
-                  accept="image/*,.pdf"
-                  style={{ display: "none" }}
-                  onChange={(e) => setPayFile(e.target.files?.[0] ?? null)}
-                  disabled={paySubmitting}
-                />
-                <label htmlFor="pay-file-input-grup" style={{ cursor: "pointer", display: "block" }}>
-                  {payFile ? (
-                    <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
-                      ✅ {payFile.name}
-                      <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
-                        {(payFile.size / 1024).toFixed(0)} KB — klik untuk ganti
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
-                      <div style={{ fontSize: "1.3rem", marginBottom: "3px" }}>📎</div>
-                      <div style={{ fontWeight: 600, color: "#1a6b43" }}>Pilih file bukti</div>
-                      <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
-                    </div>
-                  )}
-                </label>
-              </div>
+              {payMetode === "transfer" ? (
+                <>
+                  <label style={inlineLabel}>Bukti Transfer (opsional)</label>
+                  <div style={{
+                    border: "2px dashed #cbd5e1", borderRadius: "10px",
+                    padding: "0.9rem 1rem", background: payFile ? "#f0fdf4" : "#f8fafc",
+                    textAlign: "center", cursor: "pointer", transition: "all 0.15s",
+                  }}>
+                    <input
+                      id="pay-file-input-grup"
+                      type="file"
+                      accept="image/*,.pdf"
+                      style={{ display: "none" }}
+                      onChange={(e) => setPayFile(e.target.files?.[0] ?? null)}
+                      disabled={paySubmitting}
+                    />
+                    <label htmlFor="pay-file-input-grup" style={{ cursor: "pointer", display: "block" }}>
+                      {payFile ? (
+                        <div style={{ color: "#059669", fontWeight: 600, fontSize: "0.84rem" }}>
+                          ✅ {payFile.name}
+                          <div style={{ color: "#64748b", fontWeight: 400, fontSize: "0.75rem", marginTop: "2px" }}>
+                            {(payFile.size / 1024).toFixed(0)} KB — klik untuk ganti
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ color: "#94a3b8", fontSize: "0.83rem" }}>
+                          <div style={{ fontSize: "1.3rem", marginBottom: "3px" }}>📎</div>
+                          <div style={{ fontWeight: 600, color: "#1a6b43" }}>Pilih file bukti (opsional)</div>
+                          <div style={{ fontSize: "0.75rem", marginTop: "2px" }}>JPG, PNG, atau PDF</div>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <div style={{
+                  marginTop: "0.85rem",
+                  padding: "0.65rem 0.9rem",
+                  borderRadius: "10px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  color: "#166534",
+                  fontSize: "0.78rem",
+                  lineHeight: 1.4,
+                }}>
+                  💵 <strong>Pembayaran Tunai di Kantor:</strong> Transaksi langsung dicatat dengan status <strong>Diterima</strong> tanpa memerlukan bukti transfer.
+                </div>
+              )}
             </div>
 
             <div style={inlineActions}>
@@ -4774,7 +4995,7 @@ const PICDetailModal = ({
 }) => {
   const [data, setData] = useState<DetailPendaftaran | null>(null);
   const [loading, setLoading] = useState(true);
-  const [payments, setPayments] = useState<{ id: string; jumlah: number; status: string; tanggal: string; bukti: string }[]>([]);
+  const [payments, setPayments] = useState<PayItem[]>([]);
   const [docs, setDocs] = useState<{ id: string; jenis: string; status: string; file_path: string; created_at?: string }[]>([]);
   const { showToast } = useToast();
 
@@ -4839,14 +5060,18 @@ const PICDetailModal = ({
       });
       // Pembayaran: Go model → field PascalCase
       const rawBayar = res.data?.pembayaran ?? [];
-      const mappedBayar = rawBayar.map((b: Record<string, unknown>) => ({
+      const mappedBayar: PayItem[] = rawBayar.map((b: Record<string, unknown>) => ({
         id: String(b.ID ?? b.id ?? ""),
         jumlah: (b.Jumlah ?? b.jumlah ?? 0) as number,
         status: (b.Status ?? b.status ?? "") as string,
         tanggal: (b.TanggalBayar ?? b.tanggal_bayar ?? b.tanggal ?? "") as string,
         bukti: String(b.BuktiPembayaran ?? b.bukti_pembayaran ?? ""),
+        metode_pembayaran: String(b.MetodePembayaran ?? b.metode_pembayaran ?? "transfer"),
+        bank_tujuan: String(b.BankTujuan ?? b.bank_tujuan ?? ""),
+        sumber_pembayaran: String(b.SumberPembayaran ?? b.sumber_pembayaran ?? "customer"),
+        metode_label: b.MetodeLabel || b.metode_label ? String(b.MetodeLabel ?? b.metode_label) : undefined,
       }));
-      mappedBayar.sort((a: { tanggal: string }, b: { tanggal: string }) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+      mappedBayar.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
       setPayments(mappedBayar);
       // Dokumen: Go model → field PascalCase
       const rawDok = res.data?.dokumen ?? [];
@@ -5279,10 +5504,16 @@ const PICDetailModal = ({
                   {payments.map((pay, i) => (
                     <div key={pay.id || i} style={{ background: "#f8fafc", borderRadius: "10px", marginBottom: "0.5rem", border: "1px solid #e2e8f0", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.875rem", fontSize: "0.85rem" }}>
-                        <span style={{ color: "#374151", fontWeight: 600 }}>
-                          {payments.length - i === 1 ? "DP" : `Pembayaran ${payments.length - i}`}
-                          {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
-                        </span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                          <span style={{ color: "#374151", fontWeight: 600 }}>
+                            {payments.length - i === 1 ? "DP" : `Pembayaran ${payments.length - i}`}
+                            {pay.tanggal ? ` — ${fmtDate(pay.tanggal)}` : ""}
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "#15803d", fontWeight: 600 }}>
+                            {pay.metode_pembayaran?.toLowerCase() === "tunai" ? "💵 " : "🏦 "}
+                            {formatPayMethodLabel(pay.metode_pembayaran, pay.bank_tujuan, pay.metode_label)}
+                          </span>
+                        </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <span style={{ fontWeight: 700, color: "#1e293b" }}>{fmtRupiah(pay.jumlah)}</span>
                           <StatusPill value={pay.status} />

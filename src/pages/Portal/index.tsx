@@ -14,7 +14,22 @@ interface PembayaranItem {
   tanggal: string;
   bukti: string;
   alasan_penolakan?: string;
+  metode_pembayaran?: string;
+  bank_tujuan?: string;
+  sumber_pembayaran?: string;
+  metode_label?: string;
 }
+
+const getPortalPayMethodLabel = (p: PembayaranItem): string => {
+  if (p.metode_label) return p.metode_label;
+  const m = (p.metode_pembayaran || "transfer").toLowerCase();
+  if (m === "tunai") return "Tunai (Pembayaran di Kantor)";
+  const b = (p.bank_tujuan || "").toUpperCase();
+  if (b === "BSI") return "Transfer Bank BSI";
+  if (b === "MANDIRI") return "Transfer Bank Mandiri";
+  if (b === "BCA") return "Transfer Bank BCA";
+  return "Transfer Bank";
+};
 
 interface DokumenItem {
   id: string;
@@ -468,7 +483,8 @@ const TabPembayaran = ({
   const [nomorInvoice, setNomorInvoice] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Form state — all-in-one: nominal + bukti
+  // Form state — all-in-one: bank tujuan + nominal + bukti (khusus transfer)
+  const [selectedBank, setSelectedBank] = useState<"BSI" | "MANDIRI" | "BCA">("BSI");
   const [jumlah, setJumlah] = useState("");
   const [buktiFile, setBuktiFile] = useState<File | null>(null);
   const [buktiPreview, setBuktiPreview] = useState("");
@@ -540,10 +556,14 @@ const TabPembayaran = ({
     try {
       setSubmitting(true);
 
-      // Step 1: Buat record pembayaran
+      // Step 1: Buat record pembayaran (transfer ke rekening resmi Bonita Umroh)
       const createRes = await axios.post(
         `${API}/customer/pembayaran`,
-        { jumlah: nominal },
+        {
+          jumlah: nominal,
+          metode_pembayaran: "transfer",
+          bank_tujuan: selectedBank,
+        },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -653,6 +673,40 @@ const TabPembayaran = ({
           {/* Info Rekening Bank */}
           <BankInfoCard />
 
+          {/* Pilihan Rekening Tujuan Transfer (Hanya BSI, Mandiri, BCA) */}
+          <div className="bayar-field-label">Rekening Tujuan Transfer <span style={{ color: '#ef4444' }}>*</span></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginBottom: "0.9rem" }}>
+            {([
+              { code: "BSI" as const, label: "Bank BSI" },
+              { code: "MANDIRI" as const, label: "Bank Mandiri" },
+              { code: "BCA" as const, label: "Bank BCA" },
+            ]).map((b) => {
+              const active = selectedBank === b.code;
+              return (
+                <button
+                  key={b.code}
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setSelectedBank(b.code)}
+                  style={{
+                    padding: "0.6rem 0.5rem",
+                    borderRadius: "10px",
+                    border: active ? "2px solid #1a6b43" : "1.5px solid #cbd5e1",
+                    background: active ? "#f0fdf4" : "#ffffff",
+                    color: active ? "#15803d" : "#334155",
+                    fontWeight: active ? 700 : 600,
+                    fontSize: "0.82rem",
+                    cursor: submitting ? "not-allowed" : "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  🏦 {b.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Nominal */}
           <div className="bayar-field-label">Jumlah yang Ditransfer <span style={{ color: '#ef4444' }}>*</span></div>
           <div className="bayar-jumlah-wrap">
@@ -740,10 +794,33 @@ const TabPembayaran = ({
           </div>
         ) : (
           <div className="riwayat-list">
-            {riwayat.map((p) => (
+            {riwayat.map((p) => {
+              const metodeLabel = getPortalPayMethodLabel(p);
+              const isTunai = (p.metode_pembayaran || "").toLowerCase() === "tunai";
+              return (
               <div className="riwayat-item" key={p.id}>
                 <div className="riwayat-left">
                   <div className="riwayat-jumlah">{fmtRupiah(p.jumlah)}</div>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      color: isTunai ? "#15803d" : "#0f5132",
+                      background: isTunai ? "#dcfce7" : "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: "6px",
+                      padding: "0.12rem 0.5rem",
+                      marginTop: "0.2rem",
+                      marginBottom: "0.15rem",
+                      width: "fit-content",
+                    }}
+                  >
+                    <span>{isTunai ? "💵" : "🏦"}</span>
+                    <span>{metodeLabel}</span>
+                  </div>
                   <div className="riwayat-tanggal">{fmtDate(p.tanggal)}</div>
                 </div>
                 <div className="riwayat-right">
@@ -773,7 +850,8 @@ const TabPembayaran = ({
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
